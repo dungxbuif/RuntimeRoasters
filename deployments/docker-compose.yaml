@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL - Source of Truth
+  postgres:
+    image: postgres:16-alpine
+    container_name: rr-postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rr-network
+
+  # 2. Redpanda - High performance Kafka alternative
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: rr-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --rpc-addr 0.0.0.0:33145
+      - --advertise-rpc-addr redpanda:33145
+    ports:
+      - "19092:19092"
+      - "18082:18082"
+    networks:
+      - rr-network
+
+  # 3. Console - Web UI for Kafka/Redpanda
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: rr-redpanda-console
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda
+    networks:
+      - rr-network
+
+  # 4. Elasticsearch - CQRS Read Model
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: rr-elastic
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    networks:
+      - rr-network
+
+  # 5. Valkey - High speed GEO & Distributed Lock (Redis alternative)
+  valkey:
+    image: valkey/valkey:latest
+    container_name: rr-valkey
+    ports:
+      - "6379:6379"
+    networks:
+      - rr-network
+
+  # 6. Apache Cassandra - Audit Logs
+  cassandra:
+    image: cassandra:latest
+    container_name: rr-cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - rr-network
+
+  # 7. Jaeger - Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: rr-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+    networks:
+      - rr-network
+
+networks:
+  rr-network:
+    name: rr-network
+    driver: bridge
+
+volumes:
+  postgres_data:

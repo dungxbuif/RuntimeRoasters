@@ -1,0 +1,55 @@
+# 🌊 Detailed Data Flow & Integration Steps
+
+Tài liệu này mô tả chi tiết các bước thực thi kỹ thuật cho từng luồng nghiệp vụ quan trọng.
+
+---
+
+## 1. Luồng Thu hoạch & Truy xuất (Farm to Trace Flow)
+
+Đây là luồng minh chứng cho **CQRS** và **Transactional Outbox**.
+
+### Bước 1: Client gửi yêu cầu thu hoạch
+*   **Action:** UI gửi `POST /api/v1/batches` tới API Gateway.
+*   **Auth:** Gateway kiểm tra JWT, thêm `X-User-Role: Farmer` vào header.
+
+### Bước 2: Xử lý tại Farm Service (Write Side)
+1.  **Delivery layer:** Nhận JSON, validate cấu hình (variety, weight).
+2.  **UseCase layer:** Gọi `CreateBatch`.
+3.  **Repository layer:** Mở một Database Transaction:
+    *   `INSERT INTO harvest_batches (...)`
+    *   `INSERT INTO outbox (event_type, payload) VALUES ('BatchCreated', '...')`
+4.  **Commit Transaction:** Dữ liệu được lưu vĩnh viễn vào Postgres.
+
+### Bước 3: Đẩy sự kiện lên Kafka (Asynchronous)
+1.  **Outbox Worker** (Goroutine ngầm): Quét bảng `outbox` mỗi 500ms.
+2.  **Publisher:** Đẩy message lên Kafka topic `farm.batch.events`.
+3.  **Action:** Đánh dấu record outbox là `processed` hoặc xóa đi.
+
+### Bước 4: Cập nhật Read-Model tại Trace Service (Read Side)
+1.  **Consumer:** Trace Service lắng nghe topic `farm.batch.events`.
+2.  **Idempotency Check:** Kiểm tra `Message_ID` đã xử lý chưa (Inbox Pattern).
+3.  **Indexing:** Thực hiện **Upsert** vào Elasticsearch index `coffee_traces`.
+4.  **Status:** Dữ liệu sẵn sàng để tìm kiếm full-text.
+
+---
+
+## 2. Luồng Thanh toán & Saga (Payment & Saga Flow)
+
+### Bước 1: Retail Service khởi tạo Saga
+*   Tạo Order với trạng thái `PENDING`.
+*   Ghi Outbox sự kiện `OrderCreated`.
+
+### Bước 2: Warehouse Service giữ hàng
+*   Nghe `OrderCreated`.
+*   Dùng **Valkey Distributed Lock** để khóa mã hàng.
+*   Trừ tồn kho tạm thời (Reserve).
+*   Ghi Outbox `InventoryReserved`.
+
+### Bước 3: Webhook Service nhận tiền
+*   Stripe gửi Webhook `payment_intent.succeeded`.
+*   Webhook Service verify **HMAC signature**.
+*   Ghi Inbox (tránh duplicate) -> Publish `PaymentCompleted`.
+
+### Bước 4: Saga Kết thúc
+*   Retail Service nghe đủ 2 sự kiện thành công -> Chuyển Order thành `SUCCESS`.
+*   Nếu 1 trong 2 thất bại -> Kích hoạt **Compensating Action** (Hoàn tiền / Nhả kho).
