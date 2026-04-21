@@ -1,35 +1,34 @@
-# [RR-5] Farm Service - Persistence Layer (Repository)
+# [RR-5] Docker Complete — SigNoz + Full Compose Overhaul
 
-- **Summary:** Cài đặt lớp lưu trữ dữ liệu (PostgreSQL) cho Farm Service.
-- **Priority:** `MEDIUM`
-- **Description:** Implement cơ chế truy xuất dữ liệu nông trại và mẻ cà phê theo chuẩn Clean Architecture.
-
----
-
-## 🔍 Acceptance Criteria (BDD Specification)
-
-### Scenario 1: Thiết kế Database Schema
-- **Given:** Các thực thể `Farm` và `HarvestBatch`.
-- **When:** Tôi thực hiện migration SQL.
-- **Then:** Các bảng dữ liệu với quan hệ 1-N phải có cấu trúc đúng thiết kế (UUID, Foreign Keys, Index).
-
-### Scenario 2: Lưu trữ Farm mới
-- **Given:** Dữ liệu farm hợp lệ.
-- **When:** Tôi gọi hàm `repository.CreateFarm(ctx, farm)`.
-- **Then:** Bản ghi phải được lưu vĩnh viễn vào bảng `farms` và trả về thông tin đã lưu.
-
-### Scenario 3: Quản lý Transaction cho mẻ thu hoạch
-- **Given:** Yêu cầu tạo mới một Batch.
-- **When:** Tôi thực hiện lệnh SQL.
-- **Then:** Phải sử dụng Database Transaction để đảm bảo tính ACID khi ghi thêm các thông tin liên quan (nếu có).
+- **Summary:** Hoàn thiện `docker-compose.yaml` với SigNoz observability stack và fix toàn bộ port conflicts.
+- **Priority:** `HIGH`
 
 ---
 
-## 🛠️ Technical Notes
-- Sử dụng thư viện `jmoiron/sqlx` hoặc GORM.
-- Sử dụng UUID v4 cho Primary Keys.
+## User Story
 
-## 📋 Sub-tasks
-- [ ] Thiết kế `sql/migrations/`.
-- [ ] Implement `internal/repository/postgres/`.
-- [ ] Viết Unit Test cơ bản cho Repository.
+> As a developer, I want a single `docker compose up -d` to bring up the complete infrastructure including observability, so that I can develop without manually configuring any monitoring tool.
+
+---
+
+## Acceptance Criteria
+
+### Scenario 1: SigNoz khởi động và nhận OTLP data
+- **Given:** `docker-compose.yaml` đã được cập nhật.
+- **When:** Tôi chạy `docker compose up -d`.
+- **Then:** Container `rr-signoz` và `rr-clickhouse` ở trạng thái `Running`. SigNoz nhận OTLP data tại port `4317` (gRPC) và `4318` (HTTP).
+
+### Scenario 2: SigNoz UI không expose ra host
+- **Given:** `docker compose up -d` đã hoàn tất.
+- **When:** Tôi thử truy cập `localhost:3301` trực tiếp trên browser.
+- **Then:** Connection bị từ chối — port 3301 không được bind ra host.
+
+### Scenario 3: Redpanda Console không conflict
+- **Given:** `docker compose up -d` đã hoàn tất.
+- **When:** Tôi kiểm tra danh sách port đang lắng nghe.
+- **Then:** Redpanda Console chạy tại `8090`, không conflict với bất kỳ service nào khác.
+
+### Scenario 4: Toàn bộ containers start không lỗi
+- **Given:** `docker-compose.yaml` đã đúng.
+- **When:** Tôi chạy `docker compose up -d && docker compose ps`.
+- **Then:** Tất cả containers có status `running` hoặc `healthy`.

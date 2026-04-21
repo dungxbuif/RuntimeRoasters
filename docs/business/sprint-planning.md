@@ -1,74 +1,78 @@
 # Lộ trình Phát triển RuntimeRoasters (Portfolio Edition)
 
-**Mục tiêu cốt lõi:** Xây dựng một project cực mạnh về Technical (Showcase cho vị trí Senior Backend), thể hiện khả năng thiết kế hệ thống phân tán, xử lý dữ liệu lớn và kiến trúc Microservices phức tạp bằng Golang.
+**Mục tiêu cốt lõi:** Showcase Senior Backend — kiến trúc phân tán, OTel, Clean Architecture, DI, API Gateway.
 
-**Chiến lược (The PM & TA View):**
-*   **Nguồn lực:** 1 Solo Developer (Full-stack/Backend focus).
-*   **Độ dài Sprint:** 1 Tuần / Sprint (Giữ nhịp độ nhanh, tập trung dứt điểm từng pattern).
-*   **Phương pháp:** Vertical Slice (Cắt dọc). Không làm dàn trải tất cả các API, mà chọn những luồng (flow) khó nhất để làm từ A-Z (từ DB lên tới Kafka rồi sang Service khác).
-
----
-
-## 🚀 Phase 1: The Foundation & "Hello World" of Events
-*Mục tiêu: Đặt nền móng vững chắc và chứng minh khả năng giao tiếp bất đồng bộ.*
-
-### Sprint 1: Kỷ nguyên Hạ tầng & Core Framework
-*   **Task 1 (DevOps):** Viết file `compose.yaml` dựng toàn bộ Local Infra: PostgreSQL, Kafka (hoặc Redpanda cho nhẹ), Valkey, Elasticsearch, Jaeger. Đảm bảo tất cả giao tiếp được với nhau.
-*   **Task 2 (TA):** Xây dựng "Internal Framework" tại `pkg/`:
-    *   `pkg/logger`: Tích hợp Zap, tự động nhận Trace-ID.
-    *   `pkg/response`: Implement chuẩn lỗi **RFC 7807** (Problem Details).
-    *   `pkg/database`: Helper kết nối Postgres (GORM hoặc sqlx).
-*   **Task 3 (TA):** Setup API Gateway cơ bản (Kong hoặc KrakenD) để làm chốt chặn.
-
-### Sprint 2: The First Vertical Slice (Outbox & CQRS)
-*Chứng minh bạn biết cách giải quyết bài toán Dual-Write và tách biệt luồng Đọc/Ghi.*
-*   **Task 1 (Farm Service):** Xây dựng API `POST /farms/batches` (Tạo mẻ cà phê).
-    *   *Hardcore element:* Implement **Transactional Outbox**. Khi tạo mẻ, lưu vào DB và lưu 1 record vào bảng `outbox` trong cùng 1 Transaction.
-*   **Task 2 (Farm Worker):** Viết 1 background goroutine đọc bảng `outbox` và publish event `BatchCreated` lên Kafka một cách an toàn (At-least-once delivery).
-*   **Task 3 (Trace Service - CQRS):** Xây dựng consumer lắng nghe Kafka topic. Nhận event `BatchCreated` và thực hiện Upsert vào **Elasticsearch**.
-*   **Task 4 (Trace Service):** Xây dựng API `GET /traces/{batch_id}` đọc siêu tốc từ Elasticsearch.
-
-*=> Hết Sprint 2: Bạn đã có thể chém gió trong CV về Event-Driven, Outbox Pattern và CQRS.*
+**Chiến lược:**
+- 1 Solo Developer (Full-stack/Backend focus)
+- Sprint 1 = **Infrastructure only** — mọi boilerplate, base code, infra setup phải hoàn tất
+- Sprint 2+ = **Business logic only** — chỉ viết domain/usecase/repo, không setup thêm gì
+- Ticket style: BDD AC only. Technical design do Dev tự tạo khi implement.
 
 ---
 
-## ⚡ Phase 2: Distributed Transactions (Saga Pattern)
-*Mục tiêu: Xử lý bài toán khó nhất của Microservices - Giao dịch phân tán.*
+## Sprint 1 — Complete Infrastructure
 
-### Sprint 3: The Orchestrator & The Participant
-*   **Task 1 (Retail Service):** Xây dựng API `POST /orders` (Tạo đơn nhập hàng cho tiệm).
-    *   Trạng thái ban đầu: `PENDING`.
-    *   Publish event `OrderCreated` lên Kafka (vẫn dùng Outbox Pattern).
-*   **Task 2 (Warehouse Service):** Lắng nghe `OrderCreated`.
-    *   Thực hiện logic: Kiểm tra tồn kho -> Reserve (giữ chỗ) số lượng.
-    *   *Thành công:* Publish `InventoryReserved`.
-    *   *Thất bại (Hết hàng):* Publish `InventoryFailed`.
+**Goal:** Sau Sprint 1, mọi thứ đều chạy được end-to-end. Sprint 2 chỉ viết business logic.
 
-### Sprint 4: External Webhooks & The Rollback (Compensating Action)
-*Chứng minh bạn biết cách handle 3rd party an toàn và xử lý lỗi dây chuyền.*
-*   **Task 1 (Webhook Service):** Xây dựng API nhận Webhook từ Stripe (giả lập thanh toán).
-    *   *Hardcore element:* Verify chữ ký **HMAC**. Áp dụng **Inbox Pattern** (lưu `Message_ID` vào DB) để chống Duplicate Webhook (Idempotency). Sau đó publish `PaymentCompleted` lên Kafka.
-*   **Task 2 (Retail Service - Saga Coordinator):** Lắng nghe các event từ Warehouse và Payment.
-    *   Nếu nhận `InventoryFailed` hoặc timeout Payment: Chuyển order sang `CANCELLED`.
-    *   *Saga Rollback:* Publish event `OrderCancelled`.
-*   **Task 3 (Warehouse & Payment Service):** Lắng nghe `OrderCancelled` để thực hiện bù trừ (Release tồn kho đã giữ, gọi API Stripe để Refund).
+**Demo Service** (`apps/demo-service/`) = canonical template cho tất cả services sau. Farm Service bắt đầu sạch từ Sprint 2 bằng cách copy từ đây.
 
-*=> Hết Phase 2: Resume của bạn có thể ghi "Designed and implemented Saga Choreography with automatic compensating actions & dual idempotency".*
+| Ticket | Summary | Status |
+| :--- | :--- | :--- |
+| RR-1 | Infra Kick-off — Monorepo, Go Workspaces | ✅ Done |
+| RR-2 | Config & Logger — Viper, Zap, BaseConfig | ✅ Done |
+| RR-3 | Base & Errs — RFC 9457, app lifecycle | ✅ Done |
+| RR-4 | Proto + Wire + KrakenD + Client Shell | 🕒 To Do |
+| RR-5 | Docker Complete — SigNoz + Full Compose | 🕒 To Do |
+| RR-6 | Demo Service — Clean Arch + Full Stack Slice | 🕒 To Do |
+| RR-7 | Client App — Control Plane | 🕒 To Do |
+| RR-8 | Client App — Business UI Shell | 🕒 To Do |
+
+Chi tiết: [`docs/business/sprint1/main.md`](./sprint1/main.md)
 
 ---
 
-## 🛡️ Phase 3: "God Mode" & Security
-*Mục tiêu: Đạt chuẩn Production-grade, biến project thành một hệ thống hoàn hảo.*
+## Sprint 2 — Farm Service Business Logic
 
-### Sprint 5: Traceability & Real-time
-*   **Task 1 (Logistics Service):** Viết API cập nhật tọa độ GPS liên tục. Lưu trạng thái vào **Valkey** (GEO caching) thay vì DB để tối ưu performance.
-*   **Task 2 (Observability):** Chăm chút lại OpenTelemetry. Đảm bảo 1 request từ lúc Retail tạo Order, chui qua Kafka đến Warehouse, trả về KQ... đều nối chung 1 `Trace-ID` và vẽ lên biểu đồ Gantt của **Jaeger** thật đẹp (Dùng để cap màn hình gắn vào README/CV).
+**Goal:** Farm Service đầy đủ CRUD. Copy boilerplate từ `apps/demo-service/`, chỉ viết business logic.
 
-### Sprint 6: Zero Trust & Auth
-*   **Task 1 (Security):** Tích hợp Ory Kratos hoặc tự viết 1 service Auth cấp phát JWT.
-    *   Cấu hình Gateway offload việc verify JWT.
-*   **Task 2 (Authorization):** Tích hợp **Casbin** vào middleware của Go để phân quyền chi tiết (RBAC/ABAC).
-*   **Task 3 (Internal Sec):** Setup **mTLS** (chứng chỉ số) cho các kết nối gRPC nội bộ giữa các service (nếu bạn dùng gRPC cho luồng sync).
+**Giả định từ Sprint 1 (tất cả đã sẵn sàng):**
+- `apps/demo-service/` là template — copy structure, xóa demo logic, viết Farm domain
+- `pkg/telemetry`, `pkg/base` (OTel), `pkg/database` (otelsql), `pkg/redis` đã có
+- Wire DI pattern đã được chứng minh
+- docker-compose, KrakenD, SigNoz đang chạy
+
+| Ticket | Summary |
+| :--- | :--- |
+| S2-1 | Farm Service — Bootstrap từ demo-service template |
+| S2-2 | Farm Domain — Entities & DB Schema |
+| S2-3 | Farm Repository — Full CRUD (sqlx) |
+| S2-4 | Farm UseCase — Business Rules |
+| S2-5 | Farm Delivery — gRPC + REST handlers |
+| S2-6 | Farm UI — List + Create Farm (`/app/farms`) |
+| S2-7 | Farm UI — Batch Management |
 
 ---
 
+## Sprint 3 — Distributed Transactions (Saga)
+
+**Goal:** Retail Service + Warehouse Service + Saga Choreography.
+
+| Ticket | Summary |
+| :--- | :--- |
+| S3-1 | Retail Service — POST /orders, Outbox Pattern |
+| S3-2 | Warehouse Service — Reserve inventory, Saga participant |
+| S3-3 | Saga Rollback — Compensating actions |
+| S3-4 | Trace Service — Kafka consumer → Elasticsearch CQRS |
+
+---
+
+## Sprint 4 — Security & Auth
+
+**Goal:** Production-grade security.
+
+| Ticket | Summary |
+| :--- | :--- |
+| S4-1 | Ory Kratos — Identity, JWT, JWKS |
+| S4-2 | In-service JWT validation (in-memory JWKS) |
+| S4-3 | Casbin — RBAC/ABAC per service |
+| S4-4 | mTLS — gRPC internal certificates |

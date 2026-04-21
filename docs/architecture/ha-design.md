@@ -184,7 +184,7 @@
     func (w *RefundWorker) Run(ctx context.Context) {
         ticker := time.NewTicker(1 * time.Minute)
         for range ticker.C {
-            lock := lock.NewLock(w.valkey, "payment:refund-worker:lock", 55*time.Second)
+            lock := lock.NewLock(w.redis, "payment:refund-worker:lock", 55*time.Second)
 
             acquired, err := lock.Acquire(ctx)
             if err != nil || !acquired {
@@ -225,7 +225,7 @@
     * **Structured Logging:** Tích hợp sẵn Zap logger với việc tự động inject `Trace-ID` từ context.
     * **Observability:** Khởi tạo OpenTelemetry provider (Tracing & Metrics) hướng về Jaeger/Prometheus.
     * **Graceful Shutdown:** Tự động lắng nghe tín hiệu OS để đóng kết nối DB, gRPC, HTTP một cách an toàn.
-* **Chuẩn hóa Phản hồi Lỗi (RFC 7807):**
+* **Chuẩn hóa Phản hồi Lỗi (RFC 9457):**
     * Sử dụng middleware tập trung để chuyển đổi các lỗi nghiệp vụ (Domain Errors) thành format **Problem Details**.
     * Đảm bảo hệ thống luôn trả về thông tin lỗi có cấu trúc, giúp việc debug và giám sát (Monitoring) trở nên chính xác hơn.
 * **Chiến lược Testing:**

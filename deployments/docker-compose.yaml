@@ -1,7 +1,28 @@
 version: '3.8'
 
+# =============================================================================
+# RuntimeRoasters — Local Development Infrastructure
+# Port map:
+#   3000  client-app (Next.js)
+#   4317  SigNoz OTLP gRPC   (services → SigNoz)
+#   4318  SigNoz OTLP HTTP   (services → SigNoz)
+#   3301  SigNoz UI          ← NOT exposed; accessed via /signoz/* proxy in client-app
+#   5432  PostgreSQL
+#   6379  Redis
+#   8081  KrakenD API Gateway
+#   8090  Redpanda Console   (changed from 8080 to avoid conflict)
+#   9042  Cassandra
+#   9200  Elasticsearch
+#   19092 Redpanda Kafka (external)
+#   50051 demo-service gRPC
+# =============================================================================
+
 services:
-  # 1. PostgreSQL - Source of Truth
+
+  # ---------------------------------------------------------------------------
+  # Data Persistence
+  # ---------------------------------------------------------------------------
+
   postgres:
     image: postgres:16-alpine
     container_name: rr-postgres
@@ -13,10 +34,51 @@ services:
     volumes:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rr-network
 
-  # 2. Redpanda - High performance Kafka alternative
+  redis:
+    image: redis:7-alpine
+    container_name: rr-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rr-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: rr-elastic
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    networks:
+      - rr-network
+
+  cassandra:
+    image: cassandra:4
+    container_name: rr-cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - rr-network
+
+  # ---------------------------------------------------------------------------
+  # Message Broker
+  # ---------------------------------------------------------------------------
+
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:latest
     container_name: rr-redpanda
@@ -36,59 +98,96 @@ services:
     networks:
       - rr-network
 
-  # 3. Console - Web UI for Kafka/Redpanda
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:latest
     container_name: rr-redpanda-console
     environment:
       KAFKA_BROKERS: redpanda:9092
     ports:
-      - "8080:8080"
+      - "8090:8080"   # Changed from 8080 → 8090 (conflict with demo-service HTTP)
     depends_on:
       - redpanda
     networks:
       - rr-network
 
-  # 4. Elasticsearch - CQRS Read Model
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    container_name: rr-elastic
+  # ---------------------------------------------------------------------------
+  # Observability — SigNoz
+  # SigNoz UI (port 3301) is NOT exposed to host.
+  # Access via client-app /signoz/* reverse proxy (Next.js rewrite → signoz:3301).
+  # Auth is enforced by client-app middleware.ts before reaching /signoz/*.
+  # Works identically in Docker Compose (service DNS), Docker Swarm (overlay DNS),
+  # and K8s (ClusterIP service DNS) — only SIGNOZ_INTERNAL_URL env var changes.
+  # ---------------------------------------------------------------------------
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1.2-alpine
+    container_name: rr-clickhouse
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
+      CLICKHOUSE_DB: signoz_metrics
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: 27ff0399-0d3a-4bd8-919d-17c2181e6fb9
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
     networks:
       - rr-network
 
-  # 5. Valkey - High speed GEO & Distributed Lock (Redis alternative)
-  valkey:
-    image: valkey/valkey:latest
-    container_name: rr-valkey
-    ports:
-      - "6379:6379"
-    networks:
-      - rr-network
-
-  # 6. Apache Cassandra - Audit Logs
-  cassandra:
-    image: cassandra:latest
-    container_name: rr-cassandra
-    ports:
-      - "9042:9042"
-    networks:
-      - rr-network
-
-  # 7. Jaeger - Distributed Tracing
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: rr-jaeger
+  signoz:
+    image: signoz/signoz:latest
+    container_name: rr-signoz
     environment:
-      - COLLECTOR_OTLP_ENABLED=true
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=9000
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=27ff0399-0d3a-4bd8-919d-17c2181e6fb9
     ports:
-      - "16686:16686" # UI
+      # OTLP ingestion: exposed so local Go services (running outside Docker) can push telemetry
       - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      # Port 3301 (SigNoz UI) intentionally NOT exposed — accessed via /signoz/* proxy only
+    depends_on:
+      - clickhouse
+    networks:
+      - rr-network
+
+  # ---------------------------------------------------------------------------
+  # API Gateway — KrakenD
+  # ---------------------------------------------------------------------------
+
+  krakend:
+    image: devopsfaith/krakend:2
+    container_name: rr-krakend
+    volumes:
+      - ./krakend/krakend.json:/etc/krakend/krakend.json:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - rr-network
+
+  # ---------------------------------------------------------------------------
+  # Client App — Next.js (Control Plane + Business UI)
+  # SigNoz reverse proxy: /signoz/* → http://signoz:3301/* (internal Docker DNS)
+  # Env var SIGNOZ_INTERNAL_URL makes this portable across envs:
+  #   Docker Compose / Swarm: http://signoz:3301
+  #   K8s: http://signoz.{namespace}.svc.cluster.local:3301
+  # ---------------------------------------------------------------------------
+
+  client-app:
+    build:
+      context: ../apps/client-app
+      dockerfile: Dockerfile
+    container_name: rr-client-app
+    environment:
+      # BFF: internal service URLs (server-side only, not NEXT_PUBLIC_)
+      SIGNOZ_INTERNAL_URL: http://signoz:3301
+      KRAKEND_INTERNAL_URL: http://krakend:8080
+      DEMO_SERVICE_INTERNAL_URL: http://demo-service:8080
+      # Client: browser calls gateway directly
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:8081
+    ports:
+      - "3000:3000"
+    depends_on:
+      - krakend
+      - signoz
     networks:
       - rr-network
 
@@ -99,3 +198,4 @@ networks:
 
 volumes:
   postgres_data:
+  clickhouse_data:

@@ -1,0 +1,35 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/tmp/
+
+# Go
+vendor/
+*.out
+coverage.out
+gotestsum.json.out
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Air (hot reload)
+/tmp/
+
+# Proto generated (tracked separately)
+# api/gen/
+
+# Reference template (not part of the project)
+go-clean-arch/

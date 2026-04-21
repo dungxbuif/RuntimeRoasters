@@ -1,4 +1,4 @@
-# 🏟️ RuntimeRoasters (OriginFlow) - System Architecture & Development Blueprint
+# RuntimeRoasters — System Architecture & Development Blueprint
 
 Tài liệu này định nghĩa kiến trúc tổng thể, các tiêu chuẩn kỹ thuật và lộ trình thực thi cho dự án **RuntimeRoasters**. Đây là bản cam kết về chất lượng kỹ thuật (Production-grade) và tư duy hệ thống phân tán.
 
@@ -9,139 +9,237 @@ Tài liệu này định nghĩa kiến trúc tổng thể, các tiêu chuẩn k�
 Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Tin cậy - Quan sát được"**. Hệ thống không chỉ giải quyết bài toán nghiệp vụ Chuỗi cung ứng cà phê mà còn là một bản showcase về các mẫu thiết kế (Design Patterns) hiện đại nhất trong hệ sinh thái Go.
 
 ### Nguyên tắc cốt lõi (Core Principles):
-*   **Abstraction First:** Không phụ thuộc vào framework. Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
-*   **No Hardcoding:** Tuyệt đối không hardcode. Sử dụng cấu hình đa môi trường qua Viper & Environment Variables.
-*   **Database per Service:** Đảm bảo tính độc lập và khả năng mở rộng riêng biệt cho từng service.
-*   **Standardization:** Thống nhất format Log, Error (RFC 7807), và cách khởi tạo Service thông qua bộ khung `pkg/` dùng chung.
+- **Abstraction First:** Không phụ thuộc vào framework. Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
+- **No Hardcoding:** Tuyệt đối không hardcode. Sử dụng cấu hình đa môi trường qua Viper & Environment Variables.
+- **Database per Service:** Đảm bảo tính độc lập và khả năng mở rộng riêng biệt cho từng service.
+- **Standardization:** Thống nhất format Log, Error (RFC 9457), và cách khởi tạo Service thông qua bộ khung `pkg/` dùng chung.
+- **Sprint Discipline:** Sprint 1 = infrastructure only. Sprint 2+ = business logic only. Không setup infra trong sprint nghiệp vụ.
 
 ---
 
-## 2. Sơ đồ Hạ tầng Tổng thể (Infrastructure Diagram)
+## 2. Client App Architecture
+
+### Một codebase, hai data patterns
+
+```
+apps/client-app/ (Next.js 15 — App Router)
+│
+├── /control/*  [Admin Only — BFF Pattern]
+│   Browser → Next.js Route Handler → SigNoz API / internal service endpoints
+│   - /control/services     : Health monitoring cards
+│   - /control/api-explorer : Swagger UI (swagger-ui-react)
+│   - /control/observability: SigNoz UI (iframe proxy via /signoz/*)
+│
+└── /app/*  [Business UI — Direct Pattern]
+    Browser → KrakenD :8081 → Microservices
+    - /app/farms     : Farm management (Sprint 2)
+    - /app/batches   : Batch tracking (Sprint 2)
+    - /app/logistics : Delivery tracking (Sprint 3)
+```
+
+### SigNoz Proxy (Admin-only)
+
+`client-app` hoạt động như transparent proxy cho SigNoz. Port 3301 **không expose** ra host — chỉ accessible qua `/signoz/*` proxy sau khi qua admin auth.
+
+```
+Browser → /control/observability
+  └─ iframe src="/signoz/"
+       └─ next.config.ts rewrite: /signoz/* → http://signoz:3301/*
+            └─ middleware.ts: admin auth enforced before proxy
+```
+
+Cùng pattern hoạt động trong mọi môi trường — chỉ đổi `SIGNOZ_INTERNAL_URL`:
+- Docker Compose: `http://signoz:3301`
+- Docker Swarm: `http://signoz:3301` (overlay DNS)
+- Kubernetes: `http://signoz.monitoring.svc.cluster.local:3301`
+
+---
+
+## 3. Sơ đồ Hạ tầng Tổng thể
 
 ```mermaid
 graph TB
     subgraph "External World"
-        Client([Dashboard UI / Mobile])
-        Stripe([Stripe / IoT GPS])
+        Browser([Browser / Mobile])
     end
 
-    subgraph "Public Cloud / DMZ"
-        GW[API Gateway - KrakenD]
-        WH[Webhook Ingress Service]
+    subgraph "Client App (Next.js 15)"
+        CA[client-app :3000]
+        CA_BFF[BFF Route Handlers]
+        CA_UI[Business UI /app/*]
     end
 
-    subgraph "Event Bus (Async Backbone)"
-        Kafka{Apache Kafka Cluster}
+    subgraph "API Gateway"
+        GW[KrakenD :8081]
     end
 
-    subgraph "Microservices Cluster"
-        FS[Farm Service]
-        PS[Process Service]
-        WS[Warehouse Service]
-        TS[Trace Service]
+    subgraph "Microservices"
+        DS[demo-service :8080/:50051]
+        FS[farm-service Sprint 2+]
+        WS[warehouse-service Sprint 3+]
     end
 
-    subgraph "Data Persistence Layer"
-        FDB[(Postgres - Farm)]
-        PDB[(Postgres - Process)]
-        WDB[(Postgres - Warehouse)]
-        EDB[(Elasticsearch - Search)]
-        VDB[(Valkey - Geo/Cache)]
-        MDB[(Cassandra - Audit)]
+    subgraph "Observability (SigNoz)"
+        SZ[SigNoz :3301 internal]
+        CH[(ClickHouse)]
+        SZ --- CH
     end
 
-    %% Giao tiếp HTTP/gRPC
-    Client -->|REST| GW
-    GW -->|gRPC/mTLS| FS
-    GW -->|gRPC/mTLS| PS
-    GW -->|gRPC/mTLS| WS
-    GW -->|REST| TS
-    Stripe -->|Webhook| WH
+    subgraph "Data Persistence"
+        PG[(PostgreSQL :5432)]
+        RD[(Redis :6379)]
+        ES[(Elasticsearch :9200)]
+        CS[(Cassandra :9042)]
+    end
 
-    %% Giao tiếp Event-Driven
-    FS -.->|Outbox Event| Kafka
-    PS -.->|Outbox Event| Kafka
-    WH -.->|Validated Event| Kafka
-    Kafka -.->|Consumer| TS
-    Kafka -.->|Consumer| WS
-    Kafka -.->|Archive| MDB
+    subgraph "Message Broker"
+        RP[Redpanda :19092]
+        RPC[Redpanda Console :8090]
+        RPC --- RP
+    end
 
-    %% Persistence
-    FS --- FDB
-    PS --- PDB
-    WS --- WDB
-    TS --- EDB
-    FS --- VDB
-    WS --- VDB
+    Browser -->|:3000| CA
+    CA --> CA_BFF
+    CA --> CA_UI
+    CA_BFF -->|proxy /signoz/*| SZ
+    CA_UI -->|REST :8081| GW
+    GW -->|gRPC| DS
+    GW -->|gRPC Sprint 2| FS
+    DS --> PG
+    DS --> RD
+    DS -.->|Kafka| RP
+    DS -->|OTLP :4317| SZ
+    FS -->|OTLP :4317| SZ
+    CA -->|OTLP :4318| SZ
 ```
 
 ---
 
-## 3. Các Thử thách Kỹ thuật & Giải pháp (Technical Challenges)
+## 4. Port Map (Final — no conflicts)
 
-| Thử thách | Giải pháp | Tại sao lựa chọn? |
+| Service | Port | Note |
 | :--- | :--- | :--- |
-| **Dual-Write Consistency** | **Transactional Outbox** | Đảm bảo DB và Kafka luôn đồng bộ, không mất mát dữ liệu khi crash. |
-| **Distributed Transaction** | **Saga Choreography** | Quản lý luồng nghiệp vụ liên dịch vụ (Order -> Warehouse -> Payment) một cách phi tập trung. |
-| **Search Performance** | **CQRS + Elasticsearch** | Tách biệt luồng ghi và đọc. Cung cấp tính năng tìm kiếm full-text hành trình cà phê siêu tốc. |
-| **Data Integrity** | **Hash Chaining (Cassandra)** | Lưu trữ Audit log với chuỗi băm để chống gian lận dữ liệu từ bên trong. |
-| **High Load GPS** | **Valkey (GEO commands)** | Sử dụng bộ nhớ đệm tốc độ cao để lưu tọa độ GPS thời gian thực của các xe vận tải. |
-| **Standardized Error** | **RFC 7807** | UI luôn nhận được format lỗi đồng nhất, dễ dàng xử lý và hiển thị thông báo. |
+| client-app | 3000 | Control Plane + Business UI |
+| KrakenD | 8081 | API Gateway |
+| demo-service HTTP | 8080 | grpc-gateway (Sprint 1) |
+| demo-service gRPC | 50051 | |
+| farm-service HTTP | 8080 | grpc-gateway (Sprint 2) |
+| farm-service gRPC | 50051 | |
+| PostgreSQL | 5432 | |
+| Redis | 6379 | |
+| Elasticsearch | 9200 | |
+| Cassandra | 9042 | |
+| Redpanda Kafka | 19092 | external |
+| Redpanda Console | 8090 | conflict-free (moved from 8080) |
+| SigNoz OTLP gRPC | 4317 | Go services → SigNoz |
+| SigNoz OTLP HTTP | 4318 | browser → SigNoz |
+| SigNoz UI | 3301 | **NOT exposed** — proxy via /signoz/* |
 
 ---
 
-## 4. Thiết kế Chi tiết Framework nội bộ (`pkg/`)
+## 5. Thiết kế Framework nội bộ (`pkg/`)
 
-Đây là phần "Móng" gánh toàn bộ hệ thống, đảm bảo tính tái sử dụng cực cao:
-
-1.  **`pkg/config`**: Dùng **Viper** để load config. Hỗ trợ `.env`, YAML và biến môi trường.
-2.  **`pkg/logger`**: Dựng trên **Uber Zap**. Log ra JSON cho Production, Console cho Dev. Tự động inject Trace-ID.
-3.  **`pkg/base`**: Định nghĩa Application Lifecycle. Quản lý việc khởi tạo gRPC/HTTP server, Health Checks (`/health/live`, `/health/ready`), và Graceful Shutdown.
-4.  **`pkg/errs`**: Chuyển đổi Go Errors thành chuẩn RFC 7807 (Problem Details).
-5.  **`pkg/database`**: Wrapper cho SQL (GORM/sqlx) hỗ trợ Transaction, Connection Pool và Migration tự động.
-
----
-
-## 5. Quy hoạch Sprints (Scope-based)
-
-### 🏗️ Sprint 1: The Interactive Core (Móng & UI Farm)
-*   Dựng hạ tầng cơ bản (Postgres, Valkey).
-*   Xây dựng `pkg/` (Config, Logger, Base, Errs).
-*   **Farm Service:** CRUD Nông trại & Mẻ thu hoạch.
-*   **UI Dashboard (Phase 1):** Giao diện quản lý Farm/Batch (Next.js + React Query).
-
-### 📡 Sprint 2: The Distributed Pulse (Kafka, Trace Service & Traceability GraphQL Engine)
-*   Bổ sung Kafka & Elasticsearch.
-*   Implement **Transactional Outbox** pattern tại Farm Service.
-*   **Trace Service:** Consumer Kafka → Lưu Elasticsearch (CQRS Read Model).
-*   **Traceability GraphQL Engine (Phương án C):** Expose GraphQL endpoint chuyên biệt trong Trace Service để truy vấn đồ thị vòng đời sản phẩm (Quét mã QR). Sử dụng `gqlgen`, Schema-First, Query Complexity Limit, Casbin Resolver Auth.
-*   **UI Update:** Timeline hành trình mẻ cà phê thời gian thực + QR Trace page.
-*   *Phương án B (GraphQL BFF Service) sẽ được lên kế hoạch ở giai đoạn sau.*
-*   Tham khảo: [`docs/architecture/graphql-integration.md`](../architecture/graphql-integration.md)
-
-### 🔄 Sprint 3: The Complex Business (Saga & Warehouse)
-*   **Retail Service** (Đặt hàng) & **Warehouse Service** (Quản lý kho).
-*   Implement **Saga Choreography** (Order -> Reserve stock).
-*   Xử lý logic Rollback/Compensation.
-
-### 🛡️ Sprint 4: God Mode (Security & Observability)
-*   **mTLS** cho gRPC nội bộ.
-*   **Ory Kratos** cho Identity & Auth.
-*   **Distributed Tracing** (OpenTelemetry + Jaeger) soi sáng toàn bộ request flow.
+| Package | Vai trò |
+| :--- | :--- |
+| `pkg/config` | Viper: load từ `.env`, YAML, env vars. `BaseConfig` embed vào mọi service config. |
+| `pkg/logger` | Zap: JSON cho prod, console cho dev. `FromContext(ctx)` tự inject trace_id. |
+| `pkg/base` | Application lifecycle: gRPC/HTTP server, health checks, graceful shutdown, OTel init. |
+| `pkg/errs` | RFC 9457 Problem Details. `GinErrorHandler()` middleware. `SubProblem[]` support. |
+| `pkg/database` | sqlx wrapper: connection pool, otelsql auto-instrumentation, migration scaffold. |
+| `pkg/redis` | go-redis wrapper: redisotel tracing + metrics. |
+| `pkg/telemetry` | OTel TracerProvider + MeterProvider + W3C propagator. `InjectKafkaHeaders` / `ExtractKafkaHeaders`. |
 
 ---
 
-## 6. Cấu trúc thư mục Monorepo
+## 6. Các Mẫu Thiết kế Kỹ thuật Nâng cao
+
+1. **Saga Pattern & Distributed Transactions:**
+   - Phase 1 (Choreography): Outbox Pattern + Kafka. Compensating Actions tự động.
+   - Phase 2 (Orchestration): Temporal.io — loại bỏ phức tạp quản lý trạng thái.
+
+2. **Transactional Outbox & Inbox:**
+   - Outbox: Atomicity giữa DB write và event publish.
+   - Inbox: Idempotency bằng `Message_ID` — chống duplicate event.
+
+3. **CQRS & Real-time Traceability:**
+   - Write: PostgreSQL (ACID transactions).
+   - Read: Elasticsearch (full-text search, hành trình sản phẩm).
+   - Sync: Trace Service consume Kafka → upsert Elasticsearch.
+
+4. **Standardized API Response (RFC 9457):**
+   - `type`, `title`, `status`, `detail`, `instance`, `trace_id`, `errors[]`.
+   - `application/problem+json` Content-Type.
+
+5. **Decentralized Authorization:** Mỗi service giữ bộ Casbin rules riêng.
+
+6. **Hash Chaining (Cassandra):** Audit log chống gian lận nội bộ.
+
+---
+
+## 7. Quan sát (Observability)
+
+**SigNoz** thay thế toàn bộ stack cũ (OTel Collector + Jaeger + Prometheus + Loki + Grafana). Xem chi tiết: [docs/architecture/telemetry.md](./telemetry.md).
+
+Auto-instrumentation qua `pkg/base.NewApp()`:
+- HTTP spans (otelgin)
+- gRPC spans (otelgrpc)
+- SQL spans (otelsql)
+- Redis spans (redisotel)
+- Kafka trace propagation (W3C headers)
+- Log correlation (trace_id + span_id in every log line)
+
+---
+
+## 8. Bảo mật & Xác thực
+
+- **Identity:** Ory Kratos (JWT cấp phát + JWKS).
+- **Gateway:** KrakenD forward JWT, không validate — services tự validate in-memory.
+- **In-service auth:** Services load JWKS khi startup, verify JWT không cần network call.
+- **mTLS:** gRPC nội bộ bắt buộc mutual TLS.
+- **Webhook:** HMAC signature verify tại Webhook Ingress Service.
+- **Control Plane:** `middleware.ts` trong client-app gate tất cả `/control/*` và `/signoz/*`.
+
+---
+
+## 9. Cấu trúc Monorepo
 
 ```text
-/RuntimeRoasters (OriginFlow)
-├── api/             # gRPC Proto & Generated code
-├── apps/            # Các Microservices
-│   ├── farm-service/
-│   ├── warehouse-service/
-│   ├── dashboard-ui/ # Next.js App
-│   └── gateway/      # KrakenD / Nginx
-├── pkg/             # Thư viện dùng chung (The Foundation)
-├── deployments/     # Docker Compose & K8s configs
-└── docs/            # Architecture & Sprint docs
+RuntimeRoasters/
+├── api/                    # Proto definitions + buf toolchain
+│   └── farm/v1/
+├── apps/
+│   ├── client-app/         # Next.js 15 (Control Plane + Business UI)
+│   ├── demo-service/       # Sprint 1: canonical boilerplate template
+│   ├── farm-service/       # Sprint 2+: business logic (copy from demo-service)
+│   └── warehouse-service/  # Sprint 3+
+├── src/
+│   └── pkg/                # Go Workspaces shared packages
+│       ├── base/
+│       ├── config/
+│       ├── database/
+│       ├── errs/
+│       ├── logger/
+│       ├── redis/
+│       └── telemetry/
+├── deployments/
+│   ├── docker-compose.yaml
+│   ├── krakend/
+│   │   └── krakend.json
+│   └── init-db.sql
+└── docs/
+    ├── architecture/
+    └── business/
 ```
+
+---
+
+## 10. Sprint Roadmap
+
+| Sprint | Goal | Key Deliverable |
+| :--- | :--- | :--- |
+| **Sprint 1** | Complete Infrastructure | docker-compose, demo-service, client-app shell |
+| **Sprint 2** | Farm Service Business Logic | Farm CRUD, copy demo-service template |
+| **Sprint 3** | Distributed Transactions | Saga, Warehouse, Retail |
+| **Sprint 4** | Security | mTLS, Ory Kratos, Casbin |
+
+**Nguyên tắc:** Sprint 1 hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.

@@ -2,7 +2,7 @@
 
 - **Summary:** Xây dựng hệ thống Bootstrap cho mọi Microservice và chuẩn hóa phản hồi lỗi.
 - **Priority:** `HIGH`
-- **Description:** Implement thư viện khung khởi chạy (App Lifecycle) và chuyển đổi lỗi nghiệp vụ sang chuẩn RFC 7807 (Problem Details).
+- **Description:** Implement thư viện khung khởi chạy (App Lifecycle) và chuyển đổi lỗi nghiệp vụ sang chuẩn RFC 9457 (Problem Details).
 
 ---
 
@@ -18,7 +18,7 @@
 - **When:** Tôi nhấn `Ctrl+C` gửi tín hiệu `SIGINT`.
 - **Then:** Service phải dừng nhận request mới và hoàn tất xử lý in-flight requests trước khi thoát.
 
-### Scenario 3: Trả về lỗi theo chuẩn RFC 7807
+### Scenario 3: Trả về lỗi theo chuẩn RFC 9457
 - **Given:** Xảy ra lỗi nghiệp vụ (ví dụ: Không tìm thấy ID).
 - **When:** Service trả về lỗi cho Client.
 - **Then:** Payload trả về phải chứa đầy đủ các trường: `type`, `title`, `status`, `detail`, `instance`.

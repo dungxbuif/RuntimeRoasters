@@ -1,35 +1,35 @@
-# [RR-8] UI Integration - Farm & Batch Management
+# [RR-8] Client App — Business UI Shell
 
-- **Summary:** Kết nối UI Dashboard với Farm Service API.
-- **Priority:** `HIGH`
-- **Description:** Thực hiện luồng tương tác thực tế từ giao diện web xuống Backend để quản lý dữ liệu.
-
----
-
-## 🔍 Acceptance Criteria (BDD Specification)
-
-### Scenario 1: Hiển thị danh sách Farm
-- **Given:** Có dữ liệu Farm trong Backend.
-- **When:** Tôi truy cập trang Quản lý Nông trại.
-- **Then:** Một bảng hiển thị danh sách tất cả các Farm phải hiện ra với đầy đủ thông tin tên và vị trí.
-
-### Scenario 2: Tạo mẻ thu hoạch mới từ UI
-- **Given:** Người dùng đã chọn một Nông trại.
-- **When:** Người dùng điền form "Tạo mẻ" và nhấn "Lưu".
-- **Then:** Một request POST phải được gửi sang Farm Service và dữ liệu sau đó phải được hiển thị mới lại trên UI.
-
-### Scenario 3: Xử lý lỗi từ UI
-- **Given:** Backend trả về lỗi (ví dụ: Tên nông trại quá ngắn).
-- **When:** UI nhận được lỗi chuẩn RFC 7807.
-- **Then:** UI phải hiển thị thông báo lỗi chi tiết cho người dùng một cách thân thiện.
+- **Summary:** Xây dựng layout và shell cho Business UI — khu vực `/app/*` trong `apps/client-app/`.
+- **Priority:** `MEDIUM`
+- **Depends on:** RR-7
 
 ---
 
-## 🛠️ Technical Notes
-- Sử dụng Custom Hook (`useFarms`, `useCreateBatch`).
-- Sử dụng Axios interceptor để log trace ID.
+## User Story
 
-## 📋 Sub-tasks
-- [ ] Xây dựng trang Quản lý Nông trại.
-- [ ] Xây dựng Form tạo Mẻ thu hoạch.
-- [ ] Viết API client hooks sử dụng React Query.
+> As a user, I want a business operations dashboard with a clear layout and navigation, so that I can navigate to the core business features when they become available in Sprint 2.
+
+---
+
+## Acceptance Criteria
+
+### Scenario 1: Layout chuẩn responsive
+- **Given:** Client app đang chạy tại `localhost:3000`.
+- **When:** Tôi truy cập `/app`.
+- **Then:** Layout hiển thị Sidebar với navigation items (Farms, Batches, Logistics, Warehouse, Retail) và Main Content area — responsive trên desktop và tablet.
+
+### Scenario 2: Dashboard landing page
+- **Given:** Tôi đã đăng nhập.
+- **When:** Tôi truy cập `/app`.
+- **Then:** Trang hiển thị các placeholder sections: Supply Chain Overview, Recent Events, Quick Actions — đủ để demo UX mà chưa cần real data.
+
+### Scenario 3: Navigation hoạt động
+- **Given:** Tôi đang ở `/app`.
+- **When:** Tôi click vào "Farms" trong Sidebar.
+- **Then:** URL thay đổi thành `/app/farms` và hiển thị placeholder "Farm management — coming in Sprint 2".
+
+### Scenario 4: Business UI call KrakenD trực tiếp
+- **Given:** `NEXT_PUBLIC_GATEWAY_URL=http://localhost:8081` được set.
+- **When:** Business UI cần gọi API.
+- **Then:** Request đi thẳng từ browser đến KrakenD `:8081` — không qua BFF Route Handler. Không có `fetch` call nào trong Route Handler cho business data.

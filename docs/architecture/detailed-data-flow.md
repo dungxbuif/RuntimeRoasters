@@ -41,7 +41,7 @@ Tài liệu này mô tả chi tiết các bước thực thi kỹ thuật cho t�
 
 ### Bước 2: Warehouse Service giữ hàng
 *   Nghe `OrderCreated`.
-*   Dùng **Valkey Distributed Lock** để khóa mã hàng.
+*   Dùng **Redis Distributed Lock** để khóa mã hàng.
 *   Trừ tồn kho tạm thời (Reserve).
 *   Ghi Outbox `InventoryReserved`.
 

@@ -1,35 +1,65 @@
-# [RR-6] Farm Service - Business Logic & Delivery
+# [RR-6] Demo Service — Clean Architecture Boilerplate + Full Stack Vertical Slice
 
-- **Summary:** Hoàn thiện logic nghiệp vụ và các cổng giao tiếp (HTTP/gRPC).
-- **Priority:** `MEDIUM`
-- **Description:** Implement lớp UseCase để xử lý quy tắc nghiệp vụ và lớp Delivery để tiếp nhận yêu cầu từ UI/Gateway.
-
----
-
-## 🔍 Acceptance Criteria (BDD Specification)
-
-### Scenario 1: Kiểm tra nghiệp vụ khi tạo mẻ thu hoạch
-- **Given:** Một yêu cầu tạo mẻ thu hoạch cho Nông trại X.
-- **When:** Nông trại X không tồn tại trong hệ thống.
-- **Then:** Hệ thống phải trả về lỗi "Farm Not Found" với mã lỗi 404 chuẩn RFC 7807.
-
-### Scenario 2: Xử lý request REST API thành công
-- **Given:** Request `POST /api/v1/farms` hợp lệ từ Client.
-- **When:** Hệ thống xử lý xong.
-- **Then:** Client phải nhận được HTTP 201 Created kèm theo payload JSON đầy đủ thông tin farm vừa tạo.
-
-### Scenario 3: Tiêm phụ thuộc (Dependency Injection)
-- **Given:** Toàn bộ code các lớp Repository và UseCase đã hoàn thiện.
-- **When:** Khởi tạo service trong `main.go`.
-- **Then:** Phải sử dụng Constructor pattern để inject Repository vào UseCase và UseCase vào Handler.
+- **Summary:** Xây dựng `apps/demo-service/` với Clean Architecture đầy đủ và kết nối toàn bộ infrastructure — đây là canonical template cho mọi service sau.
+- **Priority:** `HIGH`
 
 ---
 
-## 🛠️ Technical Notes
-- Sử dụng Framework `Gin` cho HTTP layer.
-- Tuân thủ nghiêm ngặt Dependency Inversion (Interface-driven).
+## User Story
 
-## 📋 Sub-tasks
-- [ ] Implement `internal/usecase/`.
-- [ ] Implement `internal/delivery/http/`.
-- [ ] Viết `main.go` cho Farm Service sử dụng `pkg/base`.
+> As a developer, I want a dedicated demo service with clean architecture and full infrastructure connectivity, so that all future services (starting with Farm Service in Sprint 2) can copy this pattern without any setup overhead.
+
+---
+
+## Acceptance Criteria
+
+### Scenario 1: Clean Architecture đầy đủ layers
+- **Given:** `apps/demo-service/` đã được implement.
+- **When:** Tôi mở cấu trúc thư mục.
+- **Then:** Có đầy đủ `domain/`, `usecase/`, `infrastructure/`, `delivery/`. Dependency flow: `delivery → usecase (interface) → domain`. Infrastructure implements usecase interfaces. `go build ./...` passes.
+
+### Scenario 2: Wire DI hoạt động
+- **Given:** Demo Service sử dụng Google Wire.
+- **When:** Tôi mở `cmd/main.go`.
+- **Then:** File chỉ có: load config → `InitializeApp(cfg)` → `app.Run(...)`. Mọi dependency được wire tự động.
+
+### Scenario 3: Kết nối infrastructure
+- **Given:** Demo Service đang chạy với docker-compose up.
+- **When:** Tôi gọi `GET /health/ready`.
+- **Then:** Response JSON trả về status của PostgreSQL, Redis, và Kafka — tất cả `healthy`.
+
+### Scenario 4: Demo endpoint qua Gateway
+- **Given:** KrakenD và Demo Service đều đang chạy.
+- **When:** Tôi gọi `GET localhost:8081/v1/demo/ping`.
+- **Then:** Response JSON hợp lệ được trả về với `message` và `timestamp`.
+
+### Scenario 5: Trace visible trong SigNoz
+- **Given:** Demo Service đang chạy, SigNoz đang chạy.
+- **When:** Tôi gọi `GET /v1/demo/ping`.
+- **Then:** SigNoz UI hiển thị waterfall trace với các spans: HTTP, gRPC, DB query, Redis, Kafka produce — tất cả trong cùng 1 trace_id.
+
+### Scenario 6: Kafka message có trace context
+- **Given:** Demo Service produce Kafka message khi gọi ping endpoint.
+- **When:** Consumer nhận message.
+- **Then:** Kafka message headers có `traceparent` header theo W3C format — trace không bị đứt tại biên giới Kafka.
+
+### Scenario 7: Log correlation
+- **Given:** Demo Service đang xử lý request.
+- **When:** Tôi đọc stdout log.
+- **Then:** Mọi dòng log trong cùng request có cùng `trace_id` và `span_id` field trong JSON.
+
+---
+
+## Technical Scope
+
+Demo Service phải implement đủ để trở thành **canonical template**:
+
+- `pkg/telemetry` implementation hoàn chỉnh
+- `pkg/base` update: OTel middleware (otelgin + otelgrpc), grpc-gateway mount
+- `pkg/database` update: otelsql wrap
+- `pkg/redis` update: redisotel instrument
+- Demo domain entity (PingRecord: id, message, created_at)
+- Demo repository interface + postgres implementation
+- Demo usecase (Ping: create record → push Kafka → return)
+- Demo gRPC handler + grpc-gateway HTTP transcoding
+- Wire DI: tất cả layers

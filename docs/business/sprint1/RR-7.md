@@ -1,36 +1,40 @@
-# [RR-7] UI Shell - Next.js Dashboard Setup
+# [RR-7] Client App — Control Plane
 
-- **Summary:** Khởi tạo dự án Frontend và dựng khung giao diện Dashboard.
+- **Summary:** Xây dựng Control Plane dashboard trong `apps/client-app/` cho admin giám sát toàn bộ hệ thống.
 - **Priority:** `HIGH`
-- **Description:** Xây dựng nền móng cho Dashboard sử dụng Next.js 14+ với kiến trúc thành phần hiện đại.
+- **Depends on:** RR-5, RR-6
 
 ---
 
-## 🔍 Acceptance Criteria (BDD Specification)
+## User Story
 
-### Scenario 1: Khởi tạo dự án Next.js
-- **Given:** Máy dev đã có Node.js 20+.
-- **When:** Tôi chạy lệnh khởi tạo dự án với TypeScript và App Router.
-- **Then:** Dự án phải chạy thành công tại `localhost:3000`.
-
-### Scenario 2: Xây dựng Dashboard Layout
-- **Given:** CSS Tailwind đã được cài đặt.
-- **When:** Tôi thiết kế Sidebar và Header.
-- **Then:** Giao diện phải tương thích với các kích thước màn hình và có Sidebar hiển thị các mục "Farms", "Batches".
-
-### Scenario 3: Cấu hình quản lý trạng thái (React Query)
-- **Given:** Dự án đã có React Query.
-- **When:** Tôi thực hiện cấu hình Provider tại root.
-- **Then:** Toàn bộ ứng dụng phải sẵn sàng thực hiện các data fetching gọi API.
+> As an admin, I want a control plane dashboard showing live service health and an embedded observability UI, so that I can monitor the system from a single interface without needing to access internal ports directly.
 
 ---
 
-## 🛠️ Technical Notes
-- Next.js 14+ (App Router).
-- Tailwind CSS, Lucide Icons.
-- TanStack Query (React Query).
+## Acceptance Criteria
 
-## 📋 Sub-tasks
-- [ ] Khởi tạo dự án trong `apps/dashboard-ui`.
-- [ ] Thiết kế Layout & Theme.
-- [ ] Setup Axios client với Interceptor hỗ trợ tracing header.
+### Scenario 1: Admin auth gate
+- **Given:** Client app đang chạy tại `localhost:3000`.
+- **When:** Tôi truy cập `localhost:3000/control/services` mà chưa đăng nhập.
+- **Then:** Tôi bị redirect về `/login` — không thể truy cập bất kỳ trang `/control/*` nào.
+
+### Scenario 2: Service health dashboard
+- **Given:** Tôi đã đăng nhập với quyền admin.
+- **When:** Tôi truy cập `/control/services`.
+- **Then:** Trang hiển thị health cards cho từng service (demo-service, krakend, ...) với trạng thái Running/Degraded và latency từ health check endpoint.
+
+### Scenario 3: API Explorer load swagger
+- **Given:** Demo Service đang chạy.
+- **When:** Tôi truy cập `/control/api-explorer`.
+- **Then:** Swagger UI hiển thị đúng nội dung từ `demo.swagger.json`. Tôi có thể Execute một request qua KrakenD và nhận response.
+
+### Scenario 4: SigNoz accessible qua proxy
+- **Given:** SigNoz đang chạy (port 3301 internal only).
+- **When:** Tôi truy cập `/control/observability`.
+- **Then:** SigNoz UI hiển thị đúng trong iframe. Tôi có thể xem traces, metrics, logs. Port 3301 vẫn không accessible trực tiếp từ browser.
+
+### Scenario 5: SigNoz proxy hoạt động qua env var
+- **Given:** `SIGNOZ_INTERNAL_URL=http://signoz:3301` được set trong docker-compose.
+- **When:** Client app xử lý request `/signoz/*`.
+- **Then:** Request được forward đúng đến SigNoz internal URL — không hardcode hostname.

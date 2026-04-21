@@ -1,6 +1,6 @@
 # 📐 KIẾN TRÚC TÍCH HỢP GRAPHQL: BFF & TRACEABILITY ENGINE
 
-Việc kết hợp đồng thời **Phương án B (GraphQL BFF)** và **Phương án C (Traceability Graph Engine)** sẽ tạo ra một lớp giao diện dữ liệu cực kỳ mạnh mẽ cho MạchNguyên, tách biệt hoàn toàn giữa luồng nghiệp vụ phức tạp của ứng dụng và luồng truy xuất dữ liệu lịch sử.
+Việc kết hợp đồng thời **Phương án B (GraphQL BFF)** và **Phương án C (Traceability Graph Engine)** sẽ tạo ra một lớp giao diện dữ liệu cực kỳ mạnh mẽ cho RuntimeRoasters, tách biệt hoàn toàn giữa luồng nghiệp vụ phức tạp của ứng dụng và luồng truy xuất dữ liệu lịch sử.
 
 > **Lộ trình thực thi:**
 > - **Phương án C — Traceability Graph Engine:** Triển khai trong **Sprint 2** (giai đoạn hiện tại).
