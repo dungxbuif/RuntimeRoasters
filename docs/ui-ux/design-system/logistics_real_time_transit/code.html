@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Runtime Roasters | Logistics &amp; GPS Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;family=Indie+Flower&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-bright": "#f7f9fb",
+                        "primary": "#004ac6",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-container": "#57657a",
+                        "tertiary-container": "#007d55",
+                        "surface-dim": "#d8dadc",
+                        "outline": "#737686",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "tertiary": "#006242",
+                        "on-tertiary-container": "#bdffdb",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#eeefff",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-container": "#d5e3fc",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface-container": "#eceef0",
+                        "surface": "#f7f9fb",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#191c1e",
+                        "background": "#f7f9fb",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary": "#515f74",
+                        "primary-fixed": "#dbe1ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-surface-variant": "#434655",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-low": "#f2f4f6",
+                        "inverse-surface": "#2d3133"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "display": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"],
+                        "marker": ["Indie Flower"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .marker-font { font-family: 'Indie Flower', cursive; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+        }
+        .rough-line {
+            stroke-dasharray: 2, 1;
+            stroke-linecap: round;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-tertiary-fixed selection:text-on-tertiary-fixed">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-8 py-4 w-full sticky top-0 z-50 bg-slate-100/50 dark:bg-slate-900/50 border-none">
+<div class="flex items-center gap-8">
+<h1 class="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter font-['Space_Grotesk']">Runtime Roasters</h1>
+<nav class="hidden md:flex items-center space-x-6">
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-3 py-1 rounded-lg" href="#">Patterns</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-3 py-1 rounded-lg" href="#">Case Studies</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-3 py-1 rounded-lg" href="#">Library</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined text-outline absolute left-3 top-1/2 -translate-y-1/2">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64 transition-all" placeholder="Search architecture..." type="text"/>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<img alt="Lead Architect Avatar" class="w-10 h-10 rounded-full border-2 border-primary-fixed" data-alt="A professional headshot of a lead architect in a minimalist studio environment. The lighting is soft and directional, casting subtle shadows that highlight a sophisticated, tech-forward aesthetic. The background consists of blurred architectural blueprints and modern glass partitions, maintaining a clean, high-key color palette consistent with a premium enterprise software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAho6cP6PGOwGqDZP97DZtll6uU-q-mikSaY93bVOW5G_XkfvznWvK5TFGax4Vf7KI4yzDlb24SVuETEw2hr0tiYLvWxZH4kTU3R0u0rh0GsP9MnLb8D_phqSS_2MXqx8faD7kAyihMFnA0s8XBLlsVVCtgI7pYU4BS-bmYo3xkFYSPzbxP3u-26LNwBreMGLz5wuF5w43F5Ly48oBTd8xqVMgu1cZX-FvA0VLfAIjQFQA03yggXBdQC4kBm57uXAgBofM7lpy76Hpx"/>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full p-4 space-y-2 fixed left-0 top-0 z-40 w-64 bg-[#f2f4f6] dark:bg-slate-900 border-none pt-24">
+<div class="px-4 py-2 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm">account_tree</span>
+</div>
+<div>
+<h2 class="text-sm font-bold text-slate-900 dark:text-white leading-none">Project Alpha</h2>
+<span class="text-[10px] text-slate-500">Distributed System v2.4</span>
+</div>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-blue-600 transition-colors">account_tree</span>
+<span class="font-['Inter'] text-sm font-medium">System Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]" href="#">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">schema</span>
+<span class="font-['Inter'] text-sm font-medium">Logistics Flow</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-blue-600 transition-colors">dataset</span>
+<span class="font-['Inter'] text-sm font-medium">Telemetry</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-blue-600 transition-colors">dns</span>
+<span class="font-['Inter'] text-sm font-medium">Infrastructure</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-blue-600 transition-colors">monitoring</span>
+<span class="font-['Inter'] text-sm font-medium">Observability</span>
+</a>
+</nav>
+<div class="mt-auto pt-8 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">auto_stories</span>
+<span class="text-sm font-medium">Documentation</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">help_outline</span>
+<span class="text-sm font-medium">Help Center</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 p-8 pt-6">
+<!-- Hero Header -->
+<section class="mb-10">
+<div class="flex items-end justify-between mb-2">
+<div>
+<span class="text-primary font-bold tracking-widest text-xs uppercase">Service: Runtime Roasters Logistics</span>
+<h2 class="text-4xl font-black font-display text-on-surface">Fleet Telemetry &amp; Saga Control</h2>
+</div>
+<div class="flex gap-3">
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-sm">add</span>
+                            Provision Node
+                        </button>
+</div>
+</div>
+<p class="text-on-surface-variant max-w-2xl text-lg">Managing globally distributed delivery agents with real-time GPS ingestion into Valkey for low-latency participant coordination.</p>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Fleet Map (The Core Engine) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-2xl p-6 border-outline-variant/15 border flex flex-col min-h-[500px]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-display text-xl font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">map</span>
+                            Real-Time Fleet Distribution
+                        </h3>
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-xs font-bold text-on-surface-variant">482 ACTIVE NODES</span>
+</div>
+</div>
+<!-- Map Visualization -->
+<div class="flex-1 relative rounded-xl overflow-hidden bg-surface-container-low group">
+<img alt="Fleet Map Visualization" class="w-full h-full object-cover opacity-60" data-alt="A clean, high-contrast overhead map of a modern city center with stylized data overlays. Subtle blue and teal glowing lines represent traffic flow and logistics routes. The overall aesthetic is minimalist, using a light-mode color palette with white and light gray backgrounds, contrasted by crisp primary blue indicators for active delivery nodes." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnVV2m4VK5RhxWwEsxKf46AHYrkY6_XTLzLUbhdmfwdY6UWTpJGvQNNMVQ7CjhnAOr3zLMMvrbfTgyLUpQlxwpSslDfkfiEgGr0sqE8jQ-x2I5-BtkpM_iEK9ofblyJBxNVAfFT683v_HMIe0hQWZI5sktYV41oxbqOnIcpPUHI8M7IJf9hID4OTp-BrChSfDf9JkziZAhF66ajjfbKALBgKD6CMj5vp66U6GhFwcdUzStnuG0CcVrcv_j9DLjucRyMKGPy3o_lkT9"/>
+<!-- SVG Overlay for Nodes & Marker Style -->
+<div class="absolute inset-0 pointer-events-none">
+<!-- Hand-drawn style path -->
+<svg class="w-full h-full" viewbox="0 0 800 400">
+<path class="rough-line opacity-50" d="M100,200 Q200,150 300,250 T500,200" fill="none" stroke="#004ac6" stroke-linecap="round" stroke-width="3"></path>
+<circle cx="100" cy="200" fill="#004ac6" r="6"></circle>
+<circle cx="500" cy="200" fill="#004ac6" r="6"></circle>
+</svg>
+</div>
+<!-- Float Data Cards -->
+<div class="absolute top-4 left-4 glass-panel p-4 rounded-xl shadow-xl border border-white/40">
+<div class="text-[10px] text-on-surface-variant font-bold mb-1">TRUCK_ID: RR-8842</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">local_shipping</span>
+<span class="font-display font-bold">LAT: 34.0522° N</span>
+</div>
+<div class="mt-2 text-xs text-tertiary font-bold marker-font">Status: En route to Participant A</div>
+</div>
+</div>
+</div>
+<!-- Telemetry Sidebar -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<div class="bg-surface-container-lowest rounded-2xl p-6 border-outline-variant/15 border">
+<h3 class="font-display text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">database</span>
+                            Valkey Ingestion
+                        </h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">sensors</span>
+</div>
+<div>
+<div class="text-xs font-bold">GPS_PING</div>
+<div class="text-[10px] text-on-surface-variant">TTL: 300ms</div>
+</div>
+</div>
+<span class="text-xs font-mono text-primary font-bold">#28k/sec</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border-l-4 border-tertiary">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-sm">check_circle</span>
+</div>
+<div>
+<div class="text-xs font-bold">SAGA_STATE_COMMITTED</div>
+<div class="text-[10px] text-on-surface-variant">ID: 0x82...3f</div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary font-bold">SUCCESS</span>
+</div>
+<div class="p-3 bg-inverse-surface rounded-lg">
+<code class="text-[10px] text-inverse-on-surface font-mono">
+                                    XADD delivery_stream * driver_id 443 coord "34.05,-118.24"
+                                </code>
+</div>
+</div>
+</div>
+<!-- Metrics -->
+<div class="bg-primary-container text-on-primary-container rounded-2xl p-6 relative overflow-hidden">
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10">speed</span>
+<div class="relative z-10">
+<div class="text-xs font-bold opacity-80 mb-1">AVG. LATENCY</div>
+<div class="text-4xl font-black font-display mb-4">12.4ms</div>
+<div class="w-full bg-white/20 h-1.5 rounded-full">
+<div class="bg-white h-full w-[85%] rounded-full"></div>
+</div>
+<div class="text-[10px] mt-2 font-medium">99th Percentile Performance</div>
+</div>
+</div>
+</div>
+<!-- Saga Participant Diagram Section -->
+<div class="col-span-12 bg-surface-container-low rounded-3xl p-10 border border-outline-variant/20 mt-4 relative overflow-hidden">
+<div class="max-w-4xl mx-auto">
+<div class="text-center mb-12">
+<h3 class="text-3xl font-black font-display mb-4">Logistics: The Saga Participant</h3>
+<p class="text-on-surface-variant">The logistics service acts as a participant in the "Order Fulfilment" Saga, managing compensation logic and localized state transitions.</p>
+</div>
+<!-- Diagram Logic -->
+<div class="relative flex justify-between items-center py-20 px-10">
+<!-- Step 1 -->
+<div class="relative z-10 w-48 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<span class="material-symbols-outlined text-3xl text-primary mb-3">shopping_cart</span>
+<div class="font-bold text-sm">Order Service</div>
+<div class="text-[10px] text-on-surface-variant uppercase mt-1">Orchestrator</div>
+</div>
+<!-- Connector 1 -->
+<div class="flex-1 h-px bg-outline-variant relative mx-4">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+<div class="text-[10px] font-bold text-primary font-mono bg-primary-fixed px-2 py-0.5 rounded">PREPARE_SHIPMENT</div>
+<span class="material-symbols-outlined text-primary mt-1">arrow_forward</span>
+</div>
+</div>
+<!-- Step 2 (Active Participant) -->
+<div class="relative z-10 w-56 bg-surface-container-lowest p-6 rounded-2xl shadow-[0_12px_32px_-4px_rgba(25,28,30,0.12)] border-2 border-primary text-center">
+<span class="material-symbols-outlined text-3xl text-primary mb-3" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<div class="font-bold text-sm">Logistics Participant</div>
+<div class="marker-font text-tertiary text-xs mt-2">Locked inventory in Valkey</div>
+<!-- Hand-drawn annotation -->
+<div class="absolute -bottom-16 left-1/2 -translate-x-1/2 w-48 text-left">
+<svg class="w-12 h-12" viewbox="0 0 50 50">
+<path class="rough-line" d="M40,0 Q30,40 0,40" fill="none" stroke="#515f74" stroke-width="2"></path>
+</svg>
+<div class="marker-font text-secondary text-sm leading-tight ml-8">Update local state to 'PENDING' while waiting for Global ACK</div>
+</div>
+</div>
+<!-- Connector 2 -->
+<div class="flex-1 h-px bg-outline-variant relative mx-4">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+<div class="text-[10px] font-bold text-tertiary font-mono bg-tertiary-fixed px-2 py-0.5 rounded">COMPLETED_ACK</div>
+<span class="material-symbols-outlined text-tertiary mt-1">arrow_forward</span>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative z-10 w-48 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 text-center opacity-60">
+<span class="material-symbols-outlined text-3xl text-outline mb-3">account_balance_wallet</span>
+<div class="font-bold text-sm">Payment Participant</div>
+</div>
+</div>
+<!-- Compensation Flow Note -->
+<div class="mt-12 p-6 bg-error-container/30 rounded-2xl border border-error/10 flex items-start gap-4">
+<span class="material-symbols-outlined text-error">warning</span>
+<div>
+<h4 class="font-bold text-error text-sm">Compensation Logic Enabled</h4>
+<p class="text-xs text-on-error-container leading-relaxed">If Payment Participant fails, the Logistics Service triggers <code class="font-bold">ROLLBACK_SHIPMENT</code>, releasing the courier reservation in Valkey and emitting a <code class="font-bold">SHIPMENT_CANCELLED</code> event.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Action for Quick Event Inspection -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-on-background text-background rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-50">
+<span class="material-symbols-outlined">terminal</span>
+</button>
+</body></html>

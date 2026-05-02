@@ -1,40 +1,33 @@
-# [RR-7] Client App — Control Plane
+# [RR-7] Control App — Jaeger (Observability)
 
-- **Summary:** Xây dựng Control Plane dashboard trong `apps/client-app/` cho admin giám sát toàn bộ hệ thống.
+- **Summary:** Sử dụng Jaeger All-in-one làm Control Plane để giám sát hệ thống (Distributed Tracing).
 - **Priority:** `HIGH`
-- **Depends on:** RR-5, RR-6
+- **Status:** `TO_DO`
+- **Depends on:** RR-5
 
 ---
 
 ## User Story
 
-> As an admin, I want a control plane dashboard showing live service health and an embedded observability UI, so that I can monitor the system from a single interface without needing to access internal ports directly.
+> As an admin, I want to use Jaeger as the central tracing platform, so that I can monitor service interactions and performance without complex setup.
 
 ---
 
 ## Acceptance Criteria
 
-### Scenario 1: Admin auth gate
-- **Given:** Client app đang chạy tại `localhost:3000`.
-- **When:** Tôi truy cập `localhost:3000/control/services` mà chưa đăng nhập.
-- **Then:** Tôi bị redirect về `/login` — không thể truy cập bất kỳ trang `/control/*` nào.
+### Scenario 1: Jaeger UI accessible
+- **Given:** `docker compose up -d` hoàn tất.
+- **When:** Tôi truy cập `localhost:16686`.
+- **Then:** Jaeger UI hiển thị và sẵn sàng truy vấn traces.
 
-### Scenario 2: Service health dashboard
-- **Given:** Tôi đã đăng nhập với quyền admin.
-- **When:** Tôi truy cập `/control/services`.
-- **Then:** Trang hiển thị health cards cho từng service (demo-service, krakend, ...) với trạng thái Running/Degraded và latency từ health check endpoint.
+### Scenario 2: Trace visibility
+- **Given:** Demo Service và KrakenD đã cấu hình OTLP exporter.
+- **When:** Một request được gửi qua hệ thống.
+- **Then:** Trace tương ứng xuất hiện trong Jaeger với đầy đủ các span từ Gateway đến Service.
 
-### Scenario 3: API Explorer load swagger
-- **Given:** Demo Service đang chạy.
-- **When:** Tôi truy cập `/control/api-explorer`.
-- **Then:** Swagger UI hiển thị đúng nội dung từ `demo.swagger.json`. Tôi có thể Execute một request qua KrakenD và nhận response.
+---
 
-### Scenario 4: SigNoz accessible qua proxy
-- **Given:** SigNoz đang chạy (port 3301 internal only).
-- **When:** Tôi truy cập `/control/observability`.
-- **Then:** SigNoz UI hiển thị đúng trong iframe. Tôi có thể xem traces, metrics, logs. Port 3301 vẫn không accessible trực tiếp từ browser.
-
-### Scenario 5: SigNoz proxy hoạt động qua env var
-- **Given:** `SIGNOZ_INTERNAL_URL=http://signoz:3301` được set trong docker-compose.
-- **When:** Client app xử lý request `/signoz/*`.
-- **Then:** Request được forward đúng đến SigNoz internal URL — không hardcode hostname.
+## 🛠️ Technical Notes
+- Sử dụng Jaeger All-in-one (In-memory storage cho môi trường dev).
+- Cổng OTLP: `4317` (gRPC), `4318` (HTTP).
+- Giao diện UI: `16686`.

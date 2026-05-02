@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saga Orchestrator | Runtime Roasters</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Gaegu:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-bright": "#f7f9fb",
+                        "primary": "#004ac6",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-container": "#57657a",
+                        "tertiary-container": "#007d55",
+                        "surface-dim": "#d8dadc",
+                        "outline": "#737686",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "tertiary": "#006242",
+                        "on-tertiary-container": "#bdffdb",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#eeefff",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-container": "#d5e3fc",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface-container": "#eceef0",
+                        "surface": "#f7f9fb",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#191c1e",
+                        "background": "#f7f9fb",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary": "#515f74",
+                        "primary-fixed": "#dbe1ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-surface-variant": "#434655",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-low": "#f2f4f6",
+                        "inverse-surface": "#2d3133"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "display": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"],
+                        "marker": ["Gaegu"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .marker-path {
+            stroke-dasharray: 8;
+            filter: url(#rough-edge);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+        }
+        .ghost-border {
+            border: 1px solid rgba(195, 198, 215, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-tertiary-fixed">
+<!-- SVG Filter for Marker Effect -->
+<svg class="absolute" height="0" width="0">
+<filter id="rough-edge">
+<feturbulence basefrequency="0.05" numoctaves="3" result="noise" type="fractalNoise"></feturbulence>
+<fedisplacementmap in="SourceGraphic" in2="noise" scale="2"></fedisplacementmap>
+</filter>
+</svg>
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-50 bg-[#f2f4f6] dark:bg-slate-950 flex flex-col py-6 px-4 space-y-2">
+<div class="mb-8 px-4">
+<h1 class="font-['Space_Grotesk'] font-bold text-slate-900 dark:text-white text-lg">Runtime Roasters</h1>
+<p class="text-xs text-on-surface-variant opacity-70">Supply Chain OS</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-slate-600 dark:text-slate-400 flex items-center gap-3 px-4 py-3 hover:bg-[#e6e8ea] dark:hover:bg-slate-800 rounded-lg transition-all duration-300 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">agriculture</span>
+<span class="font-['Inter'] font-medium text-sm">Farms</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 flex items-center gap-3 px-4 py-3 hover:bg-[#e6e8ea] dark:hover:bg-slate-800 rounded-lg transition-all duration-300 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">factory</span>
+<span class="font-['Inter'] font-medium text-sm">Processing</span>
+</a>
+<a class="bg-[#6ffbbe]/20 text-[#2563EB] relative before:content-[''] before:absolute before:left-0 before:w-1 before:h-full before:bg-[#2563EB] rounded-r-lg flex items-center gap-3 px-4 py-3 font-['Inter'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span>Logistics</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 flex items-center gap-3 px-4 py-3 hover:bg-[#e6e8ea] dark:hover:bg-slate-800 rounded-lg transition-all duration-300 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">verified</span>
+<span class="font-['Inter'] font-medium text-sm">Quality</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 flex items-center gap-3 px-4 py-3 hover:bg-[#e6e8ea] dark:hover:bg-slate-800 rounded-lg transition-all duration-300 hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-['Inter'] font-medium text-sm">Analytics</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-outline-variant/10 space-y-1">
+<a class="text-slate-600 flex items-center gap-3 px-4 py-2 hover:bg-[#e6e8ea] rounded-lg transition-all text-xs" href="#">
+<span class="material-symbols-outlined text-sm">menu_book</span>
+<span>Documentation</span>
+</a>
+<a class="text-slate-600 flex items-center gap-3 px-4 py-2 hover:bg-[#e6e8ea] rounded-lg transition-all text-xs" href="#">
+<span class="material-symbols-outlined text-sm">cloud_done</span>
+<span>System Status</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="docked full-width top-0 sticky z-40 bg-[#f7f9fb] dark:bg-slate-900 flex justify-between items-center w-full px-6 py-3">
+<div class="flex items-center gap-4">
+<span class="text-xl font-black text-[#2563EB] tracking-tighter uppercase">Runtime Roasters</span>
+<div class="h-6 w-[1px] bg-outline-variant/30"></div>
+<h2 class="font-['Space_Grotesk'] font-bold tracking-tight text-slate-900 dark:text-slate-50">Saga Orchestrator</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">monitor_heart</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+</div>
+<img alt="System Administrator" class="w-8 h-8 rounded-full border-2 border-primary-container" data-alt="A professional headshot of a senior systems administrator with a friendly expression. He is wearing a clean, modern navy blue shirt against a softly blurred architectural background with cool lighting. The image maintains a high-key, bright aesthetic consistent with a modern enterprise software interface, using crisp focus and professional studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXLT6XVJPFl0B3E53JX4bgvYLNPvrW4ViB_GgbTKX3nV64iXin7gzag8ByPOLPruITJIbrmBZEDmXs0baOh8iL3s5LaRDUxPqIGszBXN46ThpEHEswTCVDhF9CANVnr7yMbbHsm0784z5r3LMGA6p06DOXLOVhKISgHb5EKM1Pt6_4fDu9aBm4URVK_DtgrgBbd_zYdIhTJtWbtdeZnN7BUzrQSgK1tXyS5C1Qp-5v_oWh81qNSN2I9IwMbzOQP1uqDWKnDWABjpl4"/>
+</div>
+</header>
+<!-- Canvas Body -->
+<div class="p-8 max-w-7xl mx-auto space-y-8">
+<!-- Hero Stats / Summary Section -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl ghost-border flex flex-col justify-between h-32">
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Active Sagas</span>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold">1,284</span>
+<span class="text-tertiary text-xs font-bold">+12%</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl ghost-border flex flex-col justify-between h-32">
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Failure Rate</span>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold">0.42%</span>
+<span class="text-tertiary text-xs font-bold">Stable</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl ghost-border flex flex-col justify-between h-32">
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Avg. Latency</span>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold">342ms</span>
+<span class="text-error text-xs font-bold">+14ms</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl ghost-border flex flex-col justify-between h-32">
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Rollback Count</span>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-headline font-bold">18</span>
+<span class="text-on-surface-variant text-xs opacity-50">Last 24h</span>
+</div>
+</div>
+</section>
+<!-- The Saga Visualizer (ByteByteGo Style) -->
+<section class="bg-surface-container-lowest rounded-xl p-12 ghost-border relative overflow-hidden">
+<div class="flex justify-between items-start mb-12">
+<div>
+<h3 class="text-2xl font-headline font-bold text-on-surface mb-2">Order #RR-9942 Transaction Flow</h3>
+<p class="text-on-surface-variant max-w-xl">Real-time trace of the distributed transaction. Visualizing the Choreography-based Saga with active compensation logic.</p>
+</div>
+<div class="flex gap-3">
+<span class="px-3 py-1 bg-error-container text-on-error-container rounded-full text-xs font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">warning</span> ROLLBACK_ACTIVE
+                        </span>
+</div>
+</div>
+<!-- Diagram Canvas -->
+<div class="relative min-h-[500px] w-full flex items-center justify-center">
+<!-- SVG Connector Lines Layer -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<!-- Forward Paths -->
+<path class="marker-path" d="M 220 250 L 380 250" fill="none" stroke="#004ac6" stroke-width="2.5"></path>
+<path class="marker-path" d="M 580 250 L 740 250" fill="none" stroke="#004ac6" stroke-width="2.5"></path>
+<!-- Failure Path (Logistics to Compensation) -->
+<path class="marker-path" d="M 840 290 Q 840 400 500 400" fill="none" stroke="#ba1a1a" stroke-dasharray="6" stroke-width="2"></path>
+<!-- Compensation Paths (Backward) -->
+<path class="marker-path" d="M 400 400 L 120 400 Q 80 400 80 290" fill="none" stroke="#ba1a1a" stroke-dasharray="6" stroke-width="2"></path>
+<!-- Pointers for Annotations -->
+<path class="marker-path" d="M 850 420 L 780 450" fill="none" stroke="#515f74" stroke-width="1.5"></path>
+<path class="marker-path" d="M 300 230 L 250 180" fill="none" stroke="#515f74" stroke-width="1.5"></path>
+</svg>
+<!-- Service Nodes -->
+<div class="flex justify-between w-full items-center gap-12 relative z-10 px-12">
+<!-- Node 1: Payment -->
+<div class="flex flex-col items-center gap-4">
+<div class="w-48 h-40 bg-surface-container-low rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 relative outline outline-2 outline-tertiary shadow-sm">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Payment Service</h4>
+<p class="text-[10px] text-on-surface-variant font-mono">STATUS: COMMITTED</p>
+</div>
+<div class="absolute -top-3 -right-3 w-8 h-8 bg-tertiary rounded-full flex items-center justify-center text-white text-xs">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+</div>
+<!-- Node 2: Warehouse -->
+<div class="flex flex-col items-center gap-4">
+<div class="w-48 h-40 bg-surface-container-low rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 relative outline outline-2 outline-tertiary shadow-sm">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Warehouse (WMS)</h4>
+<p class="text-[10px] text-on-surface-variant font-mono">STOCK_ALLOCATED</p>
+</div>
+<div class="absolute -top-3 -right-3 w-8 h-8 bg-tertiary rounded-full flex items-center justify-center text-white text-xs">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+</div>
+<!-- Node 3: Logistics (The Failure Point) -->
+<div class="flex flex-col items-center gap-4">
+<div class="w-48 h-40 bg-surface-container-low rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 relative outline outline-2 outline-error shadow-sm">
+<div class="w-12 h-12 bg-error-container rounded-full flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined">local_shipping</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Logistics API</h4>
+<p class="text-[10px] text-on-error-container font-mono">FAILURE: 404_ADDR</p>
+</div>
+<div class="absolute -top-3 -right-3 w-8 h-8 bg-error rounded-full flex items-center justify-center text-white text-xs">
+<span class="material-symbols-outlined text-sm">close</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Marker Annotations & Handwritten Elements -->
+<div class="absolute top-10 left-1/4 transform -translate-x-1/2">
+<div class="font-marker text-lg text-primary rotate-[-4deg] max-w-[180px]">
+                            Phase 1: Event-driven payment verification
+                        </div>
+</div>
+<div class="absolute bottom-24 left-1/2 transform -translate-x-1/2">
+<div class="bg-error-container/20 border border-error/20 p-4 rounded-lg">
+<div class="font-marker text-2xl text-error font-bold mb-1">Saga Rollback Triggered!</div>
+<p class="font-marker text-sm text-on-error-container">Reversing locally committed transactions...</p>
+</div>
+</div>
+<div class="absolute top-1/2 right-48 transform -translate-y-1/2 translate-x-24">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-on-surface-variant opacity-40">subdirectory_arrow_right</span>
+<div class="text-[10px] uppercase tracking-tighter text-on-surface-variant/60 font-bold max-w-[120px]">
+                                Orchestrator receives 'ShipmentFailed' event
+                            </div>
+</div>
+</div>
+</div>
+<!-- Footer Technical Breakdown -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-outline-variant/10">
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined">account_tree</span>
+</div>
+<div>
+<h5 class="font-bold text-sm mb-1">State Machine Sync</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Each step represents a local transaction. The orchestrator maintains the global state and emits compensating events upon failure.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<h5 class="font-bold text-sm mb-1">Idempotency Keys</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">UUID v4 keys ensure that retries of the warehouse 'de-allocation' are safe and do not cause double inventory adjustments.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined">restart_alt</span>
+</div>
+<div>
+<h5 class="font-bold text-sm mb-1">Compensating Action</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Triggering: <code>Refund(payment_id)</code> and <code>ReleaseStock(sku_id)</code>. Expected consistency in ~1200ms.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Dashboard Detail Section (Bento Style) -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Compensation Logs -->
+<div class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl ghost-border">
+<h3 class="font-headline font-bold text-lg mb-6">Live Compensation Log</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-xs font-mono">REFUND_TX_INITIATED</span>
+<span class="text-[10px] text-on-surface-variant">TXN_ID: 8829-PAY</span>
+</div>
+<span class="text-[10px] text-on-surface-variant">14:22:01.04</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-xs font-mono">STOCK_RESTORE_COMPLETE</span>
+<span class="text-[10px] text-on-surface-variant">SKU: ETH-L-01</span>
+</div>
+<span class="text-[10px] text-on-surface-variant">14:21:58.22</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-error-container/30 rounded-lg">
+<div class="flex items-center gap-3 text-error">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-xs font-mono font-bold">SHIPMENT_REJECTED</span>
+<span class="text-[10px] opacity-80">Invalid postal code format</span>
+</div>
+<span class="text-[10px] opacity-80">14:21:55.10</span>
+</div>
+</div>
+</div>
+<!-- Event Details Card -->
+<div class="bg-primary text-on-primary p-8 rounded-xl relative overflow-hidden shadow-xl">
+<div class="relative z-10">
+<h4 class="font-headline font-bold text-lg mb-4">Orchestrator Config</h4>
+<ul class="space-y-4 text-sm opacity-90">
+<li class="flex justify-between border-b border-on-primary/10 pb-2">
+<span>Timeout Policy</span>
+<span class="font-mono">5000ms</span>
+</li>
+<li class="flex justify-between border-b border-on-primary/10 pb-2">
+<span>Retry Strategy</span>
+<span class="font-mono">Exp. Backoff</span>
+</li>
+<li class="flex justify-between border-b border-on-primary/10 pb-2">
+<span>Max Retries</span>
+<span class="font-mono">3</span>
+</li>
+<li class="flex justify-between">
+<span>Consistency</span>
+<span class="font-mono">Eventual</span>
+</li>
+</ul>
+<button class="mt-8 w-full py-3 bg-surface-container-lowest text-primary font-bold rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">settings_suggest</span> Edit Orchestrator Logic
+                        </button>
+</div>
+<!-- Decorative Graphic -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

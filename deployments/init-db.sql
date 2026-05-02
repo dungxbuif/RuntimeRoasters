@@ -1,5 +1,5 @@
 -- Khởi tạo Database cho từng Microservice
-CREATE DATABASE farm_db;
+CREATE DATABASE demo_db;
 CREATE DATABASE process_db;
 CREATE DATABASE warehouse_db;
 CREATE DATABASE logistics_db;

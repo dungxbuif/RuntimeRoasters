@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package runtime.demo.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1;demov1";
+
+service DemoService {
+  rpc GetDemo(GetDemoRequest) returns (GetDemoResponse) {
+    option (google.api.http) = { get: "/v1/demo/ping" };
+  }
+}
+
+message GetDemoRequest {}
+
+message GetDemoResponse {
+  string id = 1;
+  string message = 2;
+}

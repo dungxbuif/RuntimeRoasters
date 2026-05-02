@@ -1,34 +1,14 @@
-# [RR-5] Docker Complete — SigNoz + Full Compose Overhaul
+# [RR-5] Observability Stack — SigNoz & Full Infrastructure
 
-- **Summary:** Hoàn thiện `docker-compose.yaml` với SigNoz observability stack và fix toàn bộ port conflicts.
+- **Summary:** Hoàn thiện `docker-compose.yaml` với SigNoz (ClickHouse) và các thành phần nâng cao (Redpanda, Cassandra, Elasticsearch).
 - **Priority:** `HIGH`
-
----
-
-## User Story
-
-> As a developer, I want a single `docker compose up -d` to bring up the complete infrastructure including observability, so that I can develop without manually configuring any monitoring tool.
 
 ---
 
 ## Acceptance Criteria
 
-### Scenario 1: SigNoz khởi động và nhận OTLP data
-- **Given:** `docker-compose.yaml` đã được cập nhật.
-- **When:** Tôi chạy `docker compose up -d`.
-- **Then:** Container `rr-signoz` và `rr-clickhouse` ở trạng thái `Running`. SigNoz nhận OTLP data tại port `4317` (gRPC) và `4318` (HTTP).
+### Scenario 1: SigNoz & ClickHouse
+- **Then:** `rr-signoz` và `rr-clickhouse` chạy ổn định, nhận OTLP tại `4317/4318`.
 
-### Scenario 2: SigNoz UI không expose ra host
-- **Given:** `docker compose up -d` đã hoàn tất.
-- **When:** Tôi thử truy cập `localhost:3301` trực tiếp trên browser.
-- **Then:** Connection bị từ chối — port 3301 không được bind ra host.
-
-### Scenario 3: Redpanda Console không conflict
-- **Given:** `docker compose up -d` đã hoàn tất.
-- **When:** Tôi kiểm tra danh sách port đang lắng nghe.
-- **Then:** Redpanda Console chạy tại `8090`, không conflict với bất kỳ service nào khác.
-
-### Scenario 4: Toàn bộ containers start không lỗi
-- **Given:** `docker-compose.yaml` đã đúng.
-- **When:** Tôi chạy `docker compose up -d && docker compose ps`.
-- **Then:** Tất cả containers có status `running` hoặc `healthy`.
+### Scenario 2: Nâng cao (Storage & Broker)
+- **Then:** Redpanda, Cassandra và Elasticsearch khởi động thành công, sẵn sàng cho các Sprint sau.

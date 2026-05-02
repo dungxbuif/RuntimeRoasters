@@ -23,7 +23,7 @@ Mục tiêu: mang lại trải nghiệm "zero-config" giống **.NET Aspire** �
 │              │     SigNoz       │  ← traces + metrics + logs     │
 │              │  :4317 (gRPC)    │    (embedded collector)        │
 │              │  :4318 (HTTP)    │                                │
-│              │  :3301 (UI) ─────┼──── NOT exposed to host ─────  │
+│              │  :3301 (UI) ─────┼──── EXPOSED to host ─────────  │
 │              └──────────────────┘                                │
 │                        ▲                                          │
 │              ┌──────────────────┐                                │
@@ -31,10 +31,9 @@ Mục tiêu: mang lại trải nghiệm "zero-config" giống **.NET Aspire** �
 │              └──────────────────┘                                │
 │                                                                   │
 │  ┌─────────────────────────────────────────────┐                 │
-│  │            client-app (Next.js)              │                │
-│  │   /control/observability → SigNoz proxy      │                │
-│  │   next.config.ts: /signoz/* → signoz:3301    │                │
-│  │   middleware.ts: admin auth gate             │                │
+│  │            control-app (Next.js)             │                │
+│  │   /control/services                          │                │
+│  │   /control/api-explorer                      │                │
 │  └─────────────────────────────────────────────┘                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -55,60 +54,13 @@ Mục tiêu: mang lại trải nghiệm "zero-config" giống **.NET Aspire** �
 | :--- | :--- | :--- |
 | `4317` | OTLP gRPC — Go services push traces/metrics/logs | **CÓ** |
 | `4318` | OTLP HTTP — browser/frontend push traces | **CÓ** |
-| `3301` | SigNoz UI | **KHÔNG** — chỉ internal Docker DNS |
+| `3301` | SigNoz UI | **CÓ** — Truy cập trực tiếp |
 
 ---
 
-## 2. SigNoz UI — Proxy qua Next.js
+## 2. SigNoz UI — Truy cập trực tiếp
 
-SigNoz UI (port 3301) **không được expose ra host**. Thay vào đó, `client-app` hoạt động như một transparent proxy, bảo vệ SigNoz bằng admin auth.
-
-### `apps/client-app/next.config.ts`
-
-```typescript
-const sigNozUrl = process.env.SIGNOZ_INTERNAL_URL ?? 'http://signoz:3301';
-
-const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/signoz/:path*',
-        destination: `${sigNozUrl}/:path*`,
-      },
-    ];
-  },
-};
-```
-
-### `apps/client-app/middleware.ts`
-
-```typescript
-export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/signoz/') ||
-      request.nextUrl.pathname.startsWith('/control/')) {
-    // Enforce admin auth before proxying to SigNoz
-    const session = request.cookies.get('session');
-    if (!session || !isAdmin(session)) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-  }
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ['/signoz/:path*', '/control/:path*'],
-};
-```
-
-### `SIGNOZ_INTERNAL_URL` theo môi trường
-
-| Môi trường | Giá trị `SIGNOZ_INTERNAL_URL` |
-| :--- | :--- |
-| Docker Compose (local dev) | `http://signoz:3301` |
-| Docker Swarm | `http://signoz:3301` (overlay DNS) |
-| Kubernetes | `http://signoz.monitoring.svc.cluster.local:3301` |
-
-**Cách hoạt động:** Browser gọi `/signoz/*` → Next.js route handler → `SIGNOZ_INTERNAL_URL/:path*` (internal Docker/K8s DNS). Không có port 3301 nào lộ ra ngoài.
+SigNoz UI (port 3301) được expose trực tiếp ra host để admin truy cập. Toàn bộ telemetry data (traces, metrics, logs) được SigNoz thu thập qua OTLP endpoints (4317, 4318).
 
 ---
 
@@ -510,7 +462,7 @@ signoz:
   ports:
     - "4317:4317"   # OTLP gRPC — exposed (Go services local)
     - "4318:4318"   # OTLP HTTP — exposed (browser)
-    # Port 3301 (SigNoz UI) NOT exposed — accessed via /signoz/* proxy only
+    - "3301:3301"   # SigNoz UI — EXPOSED for direct access
   depends_on:
     - clickhouse
 ```
@@ -543,7 +495,7 @@ demo-service (Go + Gin)
   ├─ rdb.Set(ctx, ...) → redisotel span "redis.set"
   └─ produce Kafka → telemetry.InjectKafkaHeaders(ctx)
 
-  → Toàn bộ waterfall trace visible trong SigNoz UI tại /control/observability
+  → Toàn bộ waterfall trace visible trong SigNoz UI tại localhost:3301
 ```
 
 ---
@@ -552,10 +504,10 @@ demo-service (Go + Gin)
 
 | Bước | Việc cần làm | Ticket |
 | :--- | :--- | :--- |
-| 1 | SigNoz + ClickHouse vào docker-compose | RR-5 |
+| 1 | SigNoz + ClickHouse vào docker-compose (expose 3301) | RR-5 |
 | 2 | `go get` các thư viện OTel | RR-6 |
 | 3 | Implement `pkg/telemetry/provider.go` + `kafka.go` | RR-6 |
 | 4 | Cập nhật `pkg/base/app.go` — wire OTel + otelgin + otelgrpc | RR-6 |
 | 5 | Cập nhật `pkg/logger`, `pkg/database`, `pkg/redis` | RR-6 |
 | 6 | Setup Frontend OTel (`initTelemetry`) | RR-7 |
-| 7 | `/control/observability` → SigNoz proxy | RR-7 |
+| 7 | Dashboard Health Monitoring (không proxy SigNoz) | RR-7 |

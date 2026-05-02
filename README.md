@@ -52,7 +52,7 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 | `Farm`      | Farmer management, plantation tracking, and harvest coffee batches                                    | `Outbox Pattern`        |
 | `Process`   | Mill/Roastery operations, processing raw beans into `Batch ID`s                                       | `Event-Driven`          |
 | `Warehouse` | Inventory management, stock reservation (`Saga Participant`)                                          | `Transactional DB`      |
-| `Logistics` | Route coordination, real-time `GPS` tracking via `Redis`                                             | `Geo-spatial Tracking`  |
+| `Logistics` | Route coordination, real-time `GPS` tracking via `Redis`                                              | `Geo-spatial Tracking`  |
 | `Retail`    | Store ordering, consumption tracking (`Saga Orchestrator`)                                            | `State Machine`         |
 | `Payment`   | `Stripe`/`VNPay` integration via `Strategy Pattern`, `Refund` management                              | `Inbox Pattern`, `HMAC` |
 | `Trace`     | Unified traceability engine aggregate data into `Elasticsearch`                                       | `CQRS` (`Read model`)   |
@@ -210,7 +210,7 @@ Dự án mô phỏng một hệ sinh thái nơi mỗi hạt cà phê đều có 
 | `Farm`      | Quản lý nông hộ, vườn cây và thu hoạch theo mẻ                                                               | `Outbox Pattern`        |
 | `Process`   | Tiếp nhận hạt thô, bóc vỏ, rang xay và cấp `Batch ID`                                                        | `Event-Driven`          |
 | `Warehouse` | Quản lý kho, giữ chỗ hàng (`Saga Participant`)                                                               | `Transactional DB`      |
-| `Logistics` | Điều phối vận tải, tracking `GPS` qua `Redis`                                                               | `Geo-spatial Tracking`  |
+| `Logistics` | Điều phối vận tải, tracking `GPS` qua `Redis`                                                                | `Geo-spatial Tracking`  |
 | `Retail`    | Cửa hàng đặt hàng, quản lý tiêu thụ (`Saga Orchestrator`)                                                    | `State Machine`         |
 | `Payment`   | Tích hợp `Stripe`/`VNPay` qua `Strategy Pattern`, quản lý `Refund`                                           | `Inbox Pattern`, `HMAC` |
 | `Trace`     | Tổng hợp hành trình hạt cà phê vào `Elasticsearch`                                                           | `CQRS` (`Read model`)   |

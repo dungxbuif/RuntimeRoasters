@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Architecture Narrator - Chaos Control Panel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&amp;family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#2d3133",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "primary": "#004ac6",
+                        "surface": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "tertiary": "#006242",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "surface-dim": "#d8dadc",
+                        "surface-bright": "#f7f9fb",
+                        "background": "#f7f9fb",
+                        "outline": "#737686",
+                        "inverse-primary": "#b4c5ff",
+                        "on-surface": "#191c1e",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-variant": "#e0e3e5",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-high": "#e6e8ea",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#434655",
+                        "secondary": "#515f74",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "tertiary-container": "#007d55",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-tint": "#0053db",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-secondary-container": "#57657a",
+                        "on-tertiary-container": "#bdffdb",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eceef0",
+                        "surface-container-low": "#f2f4f6",
+                        "secondary-container": "#d5e3fc",
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed": "#6ffbbe",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "secondary-fixed": "#d5e3fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "annotation": ["Indie Flower", "cursive"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .rough-stroke {
+            stroke-dasharray: 6, 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .marker-arrow {
+            marker-end: url(#arrowhead);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .ambient-shadow {
+            box-shadow: 0 12px 32px -4px rgba(25, 28, 30, 0.06);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #004ac6 0%, #2563eb 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Hidden on Mobile) -->
+<nav class="hidden md:flex flex-col h-screen w-64 border-none bg-[#f2f4f6] dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-['Inter'] text-sm font-medium text-slate-700 dark:text-slate-300 p-4 space-y-2 fixed left-0 top-0 z-40 bg-slate-200/40 dark:bg-slate-800/40 flat-no-shadows">
+<!-- Brand hidden as per style_brand_logo: "hidden" -->
+<div class="mb-8 flex items-center gap-3 px-3 py-2">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary-fixed-dim shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+</div>
+<div>
+<h2 class="font-headline font-bold text-on-surface">Project Alpha</h2>
+<p class="text-xs text-on-surface-variant">Distributed System v2.4</p>
+</div>
+</div>
+<div class="flex-1 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+                System Overview
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">schema</span>
+                Microservices
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">dataset</span>
+                Data Flow
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] font-bold transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dns</span>
+                Infrastructure
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+                Observability
+            </a>
+</div>
+<div class="mt-auto space-y-1 pt-4 border-t border-outline-variant/15">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+                Documentation
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-150 transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                Help
+            </a>
+<button class="mt-4 w-full primary-gradient text-on-primary font-medium py-2 rounded-md hover:opacity-90 transition-opacity">
+                New Component
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-8 py-4 w-full sticky top-0 z-50 bg-[#f7f9fb] dark:bg-slate-950 text-blue-600 dark:text-blue-400 font-['Space_Grotesk'] font-bold tracking-tight text-slate-900 dark:text-slate-100 docked full-width border-none bg-slate-100/50 dark:bg-slate-900/50 flat-no-shadows backdrop-blur-md">
+<div class="flex items-center gap-6">
+<span class="md:hidden material-symbols-outlined text-2xl cursor-pointer">menu</span>
+<h1 class="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">Runtime Roasters</h1>
+<nav class="hidden md:flex gap-6 ml-8">
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-2 py-1 rounded" href="#">Patterns</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-2 py-1 rounded" href="#">Case Studies</a>
+<a class="text-blue-700 dark:text-blue-300 border-b-2 border-blue-600 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors px-2 py-1" href="#">Library</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-b border-outline-variant/15 focus:border-primary focus:outline-none focus:ring-0 rounded-t-sm w-64 transition-colors" placeholder="Search components..." type="text"/>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-slate-500">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-slate-500">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="Lead Architect Avatar" class="w-9 h-9 rounded-full ring-2 ring-surface-container-high object-cover" data-alt="close up portrait of a male professional wearing glasses in a brightly lit office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA2SQSVbISKDWPYF_zQY_1fVtdPnl5UXqzypGpapRuaot1-YILF2bvDJVnjn7Re7ff2RAeFM7Zl70LSeHp3EqmlyCyOdnt6-Ksy4EM0nXrntUHp50IW7CbHulr-0RKXPi2lmqLo4VLeLV4Uv8HE1MiKCoGA5z6K8FBWk8W7kXw9H0k6AXRHUNvXj6M4SFxvjPLp5g0EEdmlWFokCCQuEhEXzQI_HE7ONsHLF1J8uymle8fI3prNE6vdgVR9Kra3fzoCcH-Ra4MoYB4"/>
+</div>
+</header>
+<!-- Content Area -->
+<div class="flex-1 p-6 lg:p-10 bg-surface">
+<!-- Header Section -->
+<div class="mb-10 max-w-5xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+<div>
+<h2 class="font-headline text-4xl lg:text-5xl font-bold text-on-surface mb-2 tracking-tight">Chaos Control Panel</h2>
+<p class="font-body text-on-surface-variant text-lg max-w-2xl">Simulate infrastructure failures to visualize resiliency patterns and fallback mechanisms in real-time.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline-variant/30 text-on-surface font-medium rounded-md hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">restart_alt</span>
+                            Reset State
+                        </button>
+</div>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Controls (4 cols) -->
+<div class="lg:col-span-4 space-y-6">
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/15 ambient-shadow">
+<h3 class="font-headline font-bold text-xl mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-error">warning</span>
+                            Simulated Outages
+                        </h3>
+<div class="space-y-4">
+<!-- Toggle 1 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">database</span>
+</div>
+<div>
+<div class="font-medium text-sm">Primary DB</div>
+<div class="text-xs text-on-surface-variant">PostgreSQL Cluster</div>
+</div>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-outline transition-transform duration-200 ease-in-out" id="toggle1" name="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle1"></label>
+</div>
+</div>
+<!-- Toggle 2 (Active/Failed) -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-error-container/30 border border-error/20 transition-colors cursor-pointer group relative overflow-hidden">
+<div class="absolute inset-0 border-2 border-error border-dashed opacity-50 rounded-lg pointer-events-none"></div>
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-8 h-8 rounded bg-error text-on-error flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">queue_music</span>
+</div>
+<div>
+<div class="font-medium text-sm text-error">Kafka Broker</div>
+<div class="text-xs text-on-surface-variant">Event Streaming</div>
+</div>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in z-10">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-error translate-x-5 transition-transform duration-200 ease-in-out" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-error cursor-pointer" for="toggle2"></label>
+</div>
+</div>
+<!-- Toggle 3 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">api</span>
+</div>
+<div>
+<div class="font-medium text-sm">Payment API</div>
+<div class="text-xs text-on-surface-variant">External Gateway</div>
+</div>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-outline transition-transform duration-200 ease-in-out" id="toggle3" name="toggle3" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-variant cursor-pointer" for="toggle3"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Status Annotation -->
+<div class="bg-surface-container-low rounded-xl p-5 border border-outline-variant/15 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 text-outline-variant/20 transform rotate-12">
+<span class="material-symbols-outlined text-8xl">sticky_note_2</span>
+</div>
+<h4 class="font-annotation text-xl text-secondary mb-2 relative z-10">System Status</h4>
+<p class="font-body text-sm text-on-surface-variant relative z-10">
+                            Kafka cluster is currently unresponsive. Observing fallback behavior triggered by the Outbox Pattern.
+                        </p>
+</div>
+</div>
+<!-- Right Column: Diagram Canvas (8 cols) -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/15 ambient-shadow min-h-[500px] relative flex items-center justify-center overflow-hidden">
+<!-- SVG Filters & Definitions -->
+<svg class="absolute w-0 h-0">
+<defs>
+<filter id="rough-edge">
+<feturbulence basefrequency="0.04" numoctaves="3" result="noise" type="fractalNoise"></feturbulence>
+<fedisplacementmap in="SourceGraphic" in2="noise" scale="3" xchannelselector="R" ychannelselector="G"></fedisplacementmap>
+</filter>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
+<polygon fill="#737686" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+<marker id="arrowhead-error" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
+<polygon fill="#ba1a1a" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+<marker id="arrowhead-primary" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
+<polygon fill="#004ac6" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+</svg>
+<!-- Diagram Container -->
+<div class="relative w-full max-w-2xl aspect-video">
+<!-- Order Service Node -->
+<div class="absolute top-1/2 left-10 -translate-y-1/2 w-32 h-24 bg-primary-fixed border-2 border-primary rounded-lg flex flex-col items-center justify-center z-20" style="filter: url(#rough-edge);">
+<span class="material-symbols-outlined text-primary mb-1">shopping_cart</span>
+<span class="font-body text-sm font-bold text-on-primary-fixed">Order Service</span>
+</div>
+<!-- Main Path Line (Failed) -->
+<svg class="absolute top-1/2 left-42 w-48 h-10 -translate-y-1/2 z-10" style="overflow: visible;">
+<path class="rough-stroke" d="M 0 5 L 180 5" fill="none" marker-end="url(#arrowhead-error)" stroke="#ba1a1a" stroke-width="2"></path>
+<!-- Red X -->
+<g transform="translate(90, 5)">
+<line stroke="#ba1a1a" stroke-linecap="round" stroke-width="3" x1="-8" x2="8" y1="-8" y2="8"></line>
+<line stroke="#ba1a1a" stroke-linecap="round" stroke-width="3" x1="8" x2="-8" y1="-8" y2="8"></line>
+</g>
+</svg>
+<!-- Kafka Node (Failed) -->
+<div class="absolute top-1/4 right-10 -translate-y-1/2 w-32 h-24 bg-error-container border-2 border-error border-dashed rounded-lg flex flex-col items-center justify-center z-20 opacity-80" style="filter: url(#rough-edge);">
+<span class="material-symbols-outlined text-error mb-1">queue_music</span>
+<span class="font-body text-sm font-bold text-on-error-container">Kafka</span>
+<span class="text-[10px] text-error font-medium uppercase mt-1 bg-error/10 px-2 py-0.5 rounded">Failed</span>
+</div>
+<!-- Fallback Path Line (Active) -->
+<svg class="absolute top-1/2 left-[168px] w-48 h-32 z-10" style="overflow: visible;">
+<path class="rough-stroke" d="M 0 10 Q 50 100 120 100 L 160 100" fill="none" marker-end="url(#arrowhead-primary)" stroke="#004ac6" stroke-dasharray="4, 4" stroke-width="2.5"></path>
+</svg>
+<!-- Outbox Table Node -->
+<div class="absolute bottom-1/4 right-10 translate-y-1/2 w-32 h-24 bg-secondary-container border-2 border-secondary rounded-lg flex flex-col items-center justify-center z-20" style="filter: url(#rough-edge);">
+<span class="material-symbols-outlined text-secondary mb-1">table_rows</span>
+<span class="font-body text-sm font-bold text-on-secondary-container">Outbox Table</span>
+</div>
+<!-- Annotations -->
+<div class="absolute top-[35%] left-[45%] font-annotation text-error text-lg transform -rotate-6">
+                            Event publishing fails!
+                        </div>
+<div class="absolute bottom-[10%] left-[30%] font-annotation text-primary text-lg transform rotate-3 flex items-center gap-2">
+<span>Fallback to local DB outbox</span>
+<svg class="overflow-visible" height="40" width="40">
+<path d="M 0 20 Q 20 0 35 15" fill="none" marker-end="url(#arrowhead-primary)" stroke="#004ac6" stroke-width="2" style="filter: url(#rough-edge);"></path>
+</svg>
+</div>
+<!-- Resiliency Pattern Label -->
+<div class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-full text-xs font-medium tracking-wide flex items-center gap-2 ambient-shadow">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed">verified</span>
+                            Transactional Outbox Pattern Active
+                        </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<style>
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ba1a1a; /* Error color for the active failed state to match diagram */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #ba1a1a;
+        }
+    </style>
+</body></html>

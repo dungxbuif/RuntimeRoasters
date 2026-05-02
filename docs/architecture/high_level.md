@@ -24,7 +24,8 @@ Trong văn hóa Việt, cà phê không chỉ là thức uống mà là "sợi d
 
 | Service | Chức năng | Patterns |
 | :--- | :--- | :--- |
-| **client-app** | Control Plane (admin) + Business UI (user) | BFF, Transparent Proxy |
+| **client-app** | Business UI (user) | React/Next.js |
+| **control-app** | Control Plane (admin) | BFF, Transparent Proxy |
 | **Gateway (KrakenD)** | Authentication offload, Rate Limiting, Routing | Gateway Pattern |
 | **demo-service** | Sprint 1 canonical template | Clean Arch, OTel, DI |
 | **Farm** | Quản lý nông hộ, vườn cây, thu hoạch | Outbox Pattern |
@@ -44,19 +45,25 @@ Trong văn hóa Việt, cà phê không chỉ là thức uống mà là "sợi d
 - **Message Broker:** Redpanda (Kafka-compatible).
 - **Databases:** PostgreSQL (source of truth), Elasticsearch (CQRS read), Cassandra (audit), Redis (cache/geo).
 - **Observability:** SigNoz (traces + metrics + logs, ClickHouse-backed). OTel SDK trong mọi service. Xem [telemetry.md](./telemetry.md).
-- **Frontend:** Next.js 15 App Router (BFF + Business UI). swagger-ui-react cho API Explorer.
+- **Frontend:**
+  - **client-app:** Next.js 15 App Router (Business UI).
+  - **control-app:** Next.js 15 (Admin Dashboard + SigNoz Proxy). swagger-ui-react cho API Explorer.
 - **Security:** Ory Kratos (identity), Casbin (RBAC/ABAC), mTLS (gRPC), HMAC (webhooks).
 
 ---
 
 ## Data Flow Patterns
 
-### Control Plane (Admin — BFF)
+### Control Plane (Admin — Dashboard)
 
 ```
-Browser → client-app /control/* → Route Handler (server-side) → internal services
-                                ↓
-                          /signoz/* proxy → SigNoz :3301 (internal only)
+Browser → control-app :3001 → internal services
+```
+
+### Observability (SigNoz UI)
+
+```
+Browser → SigNoz :3301 (Direct Access)
 ```
 
 ### Business UI (User — Direct)
@@ -71,4 +78,4 @@ Browser → client-app /app/* → KrakenD :8081 → Microservices (gRPC)
 
 SigNoz + OTel SDK tạo waterfall trace xuyên suốt toàn hệ thống. Mỗi request có `trace_id` duy nhất lan truyền qua HTTP Headers, gRPC Metadata, và Kafka Headers (W3C Trace Context).
 
-Admin xem trace tại `/control/observability` (SigNoz proxy — admin-only).
+Admin xem trace trực tiếp tại SigNoz UI (:3301).

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Architecture Narrator - God Mode</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&amp;family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config from Design System -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-surface": "#2d3133",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "primary": "#004ac6",
+                    "surface": "#f7f9fb",
+                    "on-background": "#191c1e",
+                    "on-error": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "tertiary": "#006242",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "surface-dim": "#d8dadc",
+                    "surface-bright": "#f7f9fb",
+                    "background": "#f7f9fb",
+                    "outline": "#737686",
+                    "inverse-primary": "#b4c5ff",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e0e3e5",
+                    "surface-variant": "#e0e3e5",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-container-high": "#e6e8ea",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface-variant": "#434655",
+                    "secondary": "#515f74",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-fixed": "#0d1c2e",
+                    "tertiary-container": "#007d55",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#c3c6d7",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-tint": "#0053db",
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "on-secondary-container": "#57657a",
+                    "on-tertiary-container": "#bdffdb",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceef0",
+                    "surface-container-low": "#f2f4f6",
+                    "secondary-container": "#d5e3fc",
+                    "primary-container": "#2563eb",
+                    "tertiary-fixed": "#6ffbbe",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "secondary-fixed": "#d5e3fc"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Space Grotesk", "sans-serif"],
+                    "handwriting": ["Indie Flower", "cursive"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        h1, h2, h3, h4, .font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .font-handwriting { font-family: 'Indie Flower', cursive; }
+        
+        /* SVG Roughness Filter to simulate marker strokes */
+        .rough-stroke {
+            filter: url(#roughness);
+        }
+    </style>
+</head>
+<body class="flex text-on-surface bg-surface min-h-screen overflow-x-hidden selection:bg-tertiary-fixed selection:text-on-surface">
+<!-- Global SVG Filter Definition for "Marker" effect -->
+<svg aria-hidden="true" focusable="false" style="width:0;height:0;position:absolute;">
+<filter height="140%" id="roughness" width="140%" x="-20%" y="-20%">
+<feturbulence basefrequency="0.04" numoctaves="3" result="noise" type="fractalNoise"></feturbulence>
+<fedisplacementmap in="SourceGraphic" in2="noise" scale="3" xchannelselector="R" ychannelselector="G"></fedisplacementmap>
+</filter>
+</svg>
+<!-- SIDE NAVIGATION (Shared Component) -->
+<!-- Applying explicit style keys from JSON -->
+<nav class="bg-[#f2f4f6] font-['Inter'] text-sm font-medium text-slate-700 docked left-0 h-screen w-64 border-none flex flex-col h-full p-4 space-y-2 fixed left-0 top-0 z-40">
+<div class="mb-8 mt-4 px-2">
+<!-- Header elements from JSON -->
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl">dns</span>
+</div>
+<div>
+<h2 class="font-headline font-bold text-slate-900 tracking-tight leading-tight">Project Alpha</h2>
+<p class="text-xs text-slate-500">Distributed System v2.4</p>
+</div>
+</div>
+</div>
+<div class="px-2 mb-6">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg py-2.5 px-4 font-body text-sm font-semibold shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] hover:opacity-90 transition-opacity flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Component
+            </button>
+</div>
+<div class="flex-1 space-y-1 overflow-y-auto">
+<!-- ACTIVE NAV ITEM: Mapped to "God Mode" intent -->
+<a class="bg-emerald-100 text-emerald-900 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] flex items-center gap-3 px-3 py-2.5 transition-all" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+                System Overview
+            </a>
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">schema</span>
+                Microservices
+            </a>
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dataset</span>
+                Data Flow
+            </a>
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dns</span>
+                Infrastructure
+            </a>
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">monitoring</span>
+                Observability
+            </a>
+</div>
+<div class="pt-4 border-t border-outline-variant/15 space-y-1">
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+                Documentation
+            </a>
+<a class="text-slate-600 hover:text-blue-600 hover:bg-white/50 rounded-lg flex items-center gap-3 px-3 py-2.5 transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                Help
+            </a>
+</div>
+</nav>
+<!-- MAIN CONTENT AREA -->
+<div class="ml-64 flex-1 flex flex-col relative w-full">
+<!-- TOP APP BAR (Shared Component) -->
+<header class="bg-[#f7f9fb] font-['Space_Grotesk'] font-bold tracking-tight text-slate-900 docked full-width top-0 border-none flex justify-between items-center px-8 py-4 w-full sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="text-2xl font-black text-blue-600 tracking-tighter">Runtime Roasters</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-500 font-medium hover:bg-blue-50 transition-colors px-3 py-1.5 rounded-md" href="#">Patterns</a>
+<a class="text-slate-500 font-medium hover:bg-blue-50 transition-colors px-3 py-1.5 rounded-md" href="#">Case Studies</a>
+<a class="text-slate-500 font-medium hover:bg-blue-50 transition-colors px-3 py-1.5 rounded-md" href="#">Library</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-500 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-9 h-9 rounded-full bg-surface-container-high border border-outline-variant/30 overflow-hidden ml-2 cursor-pointer">
+<!-- Generic Avatar placeholder as requested by no-image modification rule, using gradient instead of src -->
+<div class="w-full h-full bg-gradient-to-tr from-secondary to-primary opacity-80" title="Lead Architect Avatar"></div>
+</div>
+</div>
+</header>
+<!-- CANVAS: THE GOD MODE ARCHITECTURE DIAGRAM -->
+<main class="p-8 lg:p-12 pb-32">
+<div class="max-w-6xl mx-auto">
+<header class="mb-12 relative">
+<h1 class="text-4xl md:text-5xl font-headline font-black text-on-surface mb-4 tracking-tight">System Topography</h1>
+<p class="text-lg text-secondary max-w-2xl font-body">A high-level view of how user intent flows through our infrastructure stack. Highlighted paths represent the golden path for primary transactions.</p>
+<!-- Decorative hand-drawn annotation -->
+<div class="absolute -right-8 top-0 rotate-12 opacity-80 pointer-events-none">
+<span class="font-handwriting text-xl text-primary block mb-1">We are here!</span>
+<svg class="rough-stroke text-primary" fill="none" height="40" stroke="currentColor" stroke-width="2" viewbox="0 0 60 40" width="60">
+<path d="M50 5 Q30 30 5 35 M15 25 L5 35 L20 40" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</header>
+<!-- THE DIAGRAM BOARD (No solid borders, tonal layering) -->
+<div class="relative bg-surface-container-low rounded-[2rem] p-8 md:p-16 w-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] min-h-[800px]">
+<!-- LAYER 1: USER TOUCHPOINTS -->
+<div class="relative z-10 mb-24">
+<div class="absolute -left-6 top-0 bottom-0 flex items-center justify-center opacity-40 -rotate-90 pointer-events-none">
+<span class="font-headline font-bold text-xs uppercase tracking-[0.2em] text-secondary">Touchpoints</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border border-outline-variant/15 flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-transform relative">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined">devices</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface">Web Client</h3>
+<p class="text-xs text-on-surface-variant mt-1 font-body">React SPA</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border border-outline-variant/15 flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-transform relative z-20">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined">smartphone</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface">Mobile App</h3>
+<p class="text-xs text-on-surface-variant mt-1 font-body">iOS / Android Native</p>
+<!-- Floating Glass Annotation -->
+<div class="absolute -right-16 -top-10 bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/20 rounded-lg p-3 shadow-lg z-30 hidden md:block w-36 rotate-3">
+<span class="font-handwriting text-secondary text-sm leading-tight block">90% of traffic originates here</span>
+<svg class="absolute -bottom-4 left-4 rough-stroke text-secondary" fill="none" height="20" stroke="currentColor" stroke-width="1.5" width="20">
+<path d="M5 0 Q5 15 15 20" stroke-linecap="round"></path>
+</svg>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border border-outline-variant/15 flex flex-col items-center justify-center text-center group hover:-translate-y-1 transition-transform">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined">api</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface">External API</h3>
+<p class="text-xs text-on-surface-variant mt-1 font-body">Partner Integrations</p>
+</div>
+</div>
+</div>
+<!-- CONNECTION SVG ARROWS (Layer 1 to Layer 2) -->
+<div class="absolute inset-0 pointer-events-none z-0">
+<svg class="w-full h-full rough-stroke" preserveaspectratio="none" style="filter: url(#roughness);">
+<!-- Web to Gateway -->
+<path d="M 20% 180 Q 50% 250 50% 320" fill="none" stroke="#737686" stroke-dasharray="4 4" stroke-width="1.5"></path>
+<!-- Mobile to Gateway (Golden Path - Primary Color) -->
+<path d="M 50% 180 Q 50% 250 50% 320" fill="none" stroke="#004ac6" stroke-width="2.5"></path>
+<polygon fill="#004ac6" points="50%,325 47%,315 53%,315"></polygon>
+<!-- API to Gateway -->
+<path d="M 80% 180 Q 50% 250 50% 320" fill="none" stroke="#737686" stroke-dasharray="4 4" stroke-width="1.5"></path>
+</svg>
+</div>
+<!-- CENTRAL GATEWAY -->
+<div class="relative z-10 flex justify-center mb-24">
+<div class="bg-surface-container-lowest rounded-full py-4 px-12 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.08)] border border-primary/20 flex items-center gap-4 relative">
+<!-- Golden path highlight background -->
+<div class="absolute inset-0 bg-primary-fixed rounded-full opacity-30 pointer-events-none mix-blend-multiply"></div>
+<span class="material-symbols-outlined text-primary">router</span>
+<div>
+<h3 class="font-headline font-bold text-on-surface">API Gateway</h3>
+<p class="text-xs text-on-surface-variant font-body">Kong / Nginx</p>
+</div>
+</div>
+</div>
+<!-- CONNECTION SVG ARROWS (Gateway to Core) -->
+<div class="absolute inset-0 pointer-events-none z-0">
+<svg class="w-full h-full rough-stroke" preserveaspectratio="none">
+<!-- Gateway to Auth (Golden Path) -->
+<path d="M 50% 410 Q 50% 480 30% 550" fill="none" stroke="#004ac6" stroke-width="2"></path>
+<polygon fill="#004ac6" points="30%,555 28%,545 35%,547"></polygon>
+<!-- Gateway to Order -->
+<path d="M 50% 410 Q 50% 480 50% 550" fill="none" stroke="#737686" stroke-width="1.5"></path>
+<!-- Gateway to Inventory -->
+<path d="M 50% 410 Q 50% 480 70% 550" fill="none" stroke="#737686" stroke-width="1.5"></path>
+</svg>
+</div>
+<!-- LAYER 2: THE CORE -->
+<div class="relative z-10 mb-32">
+<div class="absolute -left-6 top-0 bottom-0 flex items-center justify-center opacity-40 -rotate-90 pointer-events-none">
+<span class="font-headline font-bold text-xs uppercase tracking-[0.2em] text-secondary">Microservices</span>
+</div>
+<!-- Handwritten Note for Core -->
+<div class="absolute -left-4 -top-8 rotate-[-5deg] z-20">
+<span class="font-handwriting text-xl text-tertiary-container block">Stateless Core</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Service 1 (Highlighted Golden Path) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border-2 border-primary/40 relative hover:bg-surface-bright transition-colors cursor-pointer group">
+<div class="absolute inset-0 bg-primary-fixed opacity-10 rounded-xl pointer-events-none"></div>
+<div class="flex items-start justify-between mb-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">passkey</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-primary px-2 py-1 bg-primary/10 rounded-full">critical path</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-lg">Auth Service</h3>
+<p class="text-sm text-on-surface-variant mt-2 font-body leading-relaxed">Handles JWT verification and session state.</p>
+</div>
+<!-- Service 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border border-outline-variant/15 relative hover:bg-surface-bright transition-colors cursor-pointer hover:border-tertiary-fixed">
+<div class="flex items-start justify-between mb-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-lg">Order Engine</h3>
+<p class="text-sm text-on-surface-variant mt-2 font-body leading-relaxed">Asynchronous order processing workflow.</p>
+</div>
+<!-- Service 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(25,28,30,0.06)] border border-outline-variant/15 relative hover:bg-surface-bright transition-colors cursor-pointer hover:border-tertiary-fixed">
+<div class="flex items-start justify-between mb-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-lg">Inventory Service</h3>
+<p class="text-sm text-on-surface-variant mt-2 font-body leading-relaxed">Real-time stock reservation system.</p>
+</div>
+</div>
+</div>
+<!-- CONNECTION SVG ARROWS (Core to Infra) -->
+<div class="absolute inset-0 pointer-events-none z-0">
+<svg class="w-full h-full rough-stroke" preserveaspectratio="none">
+<!-- Auth to DB (Golden path continues) -->
+<path d="M 30% 680 Q 30% 750 30% 810" fill="none" stroke="#004ac6" stroke-width="2"></path>
+<polygon fill="#004ac6" points="30%,815 27%,805 33%,805"></polygon>
+<!-- Order to Event Bus -->
+<path d="M 50% 680 Q 50% 750 50% 810" fill="none" stroke="#737686" stroke-width="1.5"></path>
+<!-- Inventory to DB -->
+<path d="M 70% 680 Q 70% 750 70% 810" fill="none" stroke="#737686" stroke-width="1.5"></path>
+</svg>
+</div>
+<!-- LAYER 3: INFRASTRUCTURE -->
+<div class="relative z-10">
+<div class="absolute -left-6 top-0 bottom-0 flex items-center justify-center opacity-40 -rotate-90 pointer-events-none">
+<span class="font-headline font-bold text-xs uppercase tracking-[0.2em] text-secondary">Persistence</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+<!-- Infra 1 -->
+<div class="flex flex-col items-center justify-center relative">
+<div class="w-20 h-16 bg-surface-container-lowest border border-outline-variant/30 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden group">
+<!-- DB visual stack lines -->
+<div class="absolute top-1/3 left-0 right-0 h-[1px] bg-outline-variant/30"></div>
+<div class="absolute top-2/3 left-0 right-0 h-[1px] bg-outline-variant/30"></div>
+<span class="material-symbols-outlined text-primary relative z-10 group-hover:scale-110 transition-transform">database</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface mt-3">PostgreSQL</h4>
+<span class="text-[10px] text-secondary mt-1 font-body">Primary Data Store</span>
+<div class="absolute -bottom-10 right-0 rotate-[-10deg]">
+<span class="font-handwriting text-primary text-sm">Always encrypt</span>
+</div>
+</div>
+<!-- Infra 2 -->
+<div class="flex flex-col items-center justify-center">
+<div class="w-24 h-16 bg-surface-container-lowest border border-outline-variant/30 rounded-xl flex items-center justify-center shadow-sm group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-tertiary transition-colors">dynamic_feed</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface mt-3">Kafka Event Bus</h4>
+<span class="text-[10px] text-secondary mt-1 font-body">Async Pub/Sub</span>
+</div>
+<!-- Infra 3 -->
+<div class="flex flex-col items-center justify-center">
+<div class="w-20 h-16 bg-surface-container-lowest border border-outline-variant/30 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden group">
+<div class="absolute top-1/3 left-0 right-0 h-[1px] bg-outline-variant/30"></div>
+<div class="absolute top-2/3 left-0 right-0 h-[1px] bg-outline-variant/30"></div>
+<span class="material-symbols-outlined text-on-surface-variant relative z-10 group-hover:scale-110 transition-transform">storage</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface mt-3">MongoDB</h4>
+<span class="text-[10px] text-secondary mt-1 font-body">Document Store</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

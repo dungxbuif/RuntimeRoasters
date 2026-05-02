@@ -20,8 +20,8 @@
 **Story 4 — API Gateway**
 > As a developer, I want an API Gateway in the local environment that routes external HTTP traffic to the correct internal service, so that the architecture reflects production from day one.
 
-**Story 5 — Swagger UI**
-> As a developer, I want a Swagger UI available in the local environment that loads the API contract from the running service, so that I can test endpoints without writing curl commands.
+**Story 5 — Swagger UI (Client App Integration)**
+> As a developer, I want the Swagger contract to be accessible through the Gateway, so that the Client App can load and display the API Explorer.
 
 ---
 
@@ -33,14 +33,14 @@
 - **Then:** Go stubs and a `swagger.json` file are generated with no errors.
 
 ### Scenario 2: Gateway routes to service
-- **Given:** The API Gateway and Farm Service are running.
-- **When:** I send `GET /v1/farms/demo` to the Gateway.
-- **Then:** The request reaches the Farm Service gRPC handler and returns a valid JSON response.
+- **Given:** The API Gateway and Demo Service are running.
+- **When:** I send `GET /v1/demo/ping` to the Gateway.
+- **Then:** The request reaches the Demo Service gRPC handler and returns a valid JSON response.
 
-### Scenario 3: Swagger UI reflects the contract
-- **Given:** Farm Service is running and exposing its `swagger.json`.
-- **When:** I open Swagger UI in the browser.
-- **Then:** The endpoint `GET /v1/farms/demo` is visible and executable.
+### Scenario 3: Swagger accessibility via Gateway
+- **Given:** Demo Service is running and exposing its `swagger.json`.
+- **When:** I call `GET localhost:8081/swagger/demo.swagger.json` via Gateway.
+- **Then:** I receive the valid OpenAPI JSON content.
 
 ### Scenario 4: Dependencies are injected automatically
 - **Given:** A new dependency is added to any layer (e.g. a repository).
@@ -50,18 +50,18 @@
 ---
 
 ## 🛠️ Technical Notes
-- Proto toolchain: `buf` (lint, breaking change detection, codegen).
+- Proto toolchain: `buf`.
 - HTTP-to-gRPC transcoding: `grpc-gateway`.
 - Dependency Injection: `google/wire`.
 - API Gateway: `KrakenD`.
-- Swagger UI: `swaggerapi/swagger-ui` Docker image.
+- Client App: Next.js + Swagger UI React.
 
 ## 📋 Sub-tickets
 
 | Ticket | Summary | Status |
 | :--- | :--- | :--- |
-| [RR-4-1](./RR-4-1/ticket.md) | Proto Toolchain — buf setup & farm.proto | 🕒 To Do |
-| [RR-4-2](./RR-4-2/ticket.md) | `pkg/base` — RegisterGateway & ServeSwagger | 🕒 To Do |
-| [RR-4-3](./RR-4-3/ticket.md) | Dependency Injection — Google Wire scaffold | 🕒 To Do |
-| [RR-4-4](./RR-4-4/ticket.md) | Infrastructure — KrakenD & Swagger UI | 🕒 To Do |
-| [RR-4-5](./RR-4-5/ticket.md) | Farm Service — GetDemoFarm handler | 🕒 To Do |
+| [RR-4-1](./RR-4-1/ticket.md) | Proto Toolchain — buf setup & demo.proto | ✅ Done |
+| [RR-4-2](./RR-4-2/ticket.md) | `pkg/base` — RegisterGateway & ServeSwagger | ✅ Done |
+| [RR-4-3](./RR-4-3/ticket.md) | Dependency Injection — Google Wire scaffold | ✅ Done |
+| [RR-4-4](./RR-4-4/ticket.md) | Infrastructure — KrakenD & Client App Shell | 🚧 In Progress |
+| [RR-4-5](./RR-4-5/ticket.md) | Demo Service — GetDemo handler | ✅ Done |

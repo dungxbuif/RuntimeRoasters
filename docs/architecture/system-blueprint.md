@@ -17,41 +17,24 @@ Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Ti
 
 ---
 
-## 2. Client App Architecture
+## 2. App Architecture
 
-### Một codebase, hai data patterns
+### Hai codebase riêng biệt
 
-```
-apps/client-app/ (Next.js 15 — App Router)
-│
-├── /control/*  [Admin Only — BFF Pattern]
-│   Browser → Next.js Route Handler → SigNoz API / internal service endpoints
-│   - /control/services     : Health monitoring cards
-│   - /control/api-explorer : Swagger UI (swagger-ui-react)
-│   - /control/observability: SigNoz UI (iframe proxy via /signoz/*)
-│
-└── /app/*  [Business UI — Direct Pattern]
-    Browser → KrakenD :8081 → Microservices
-    - /app/farms     : Farm management (Sprint 2)
-    - /app/batches   : Batch tracking (Sprint 2)
-    - /app/logistics : Delivery tracking (Sprint 3)
-```
+#### `apps/client-app/` (Next.js 15 — Business UI)
+- **Pattern:** Direct Pattern.
+- **Role:** Dành cho người dùng cuối (Nông dân, Nhà máy, Retailer).
+- **Flow:** Browser → KrakenD :8081 → Microservices.
+- **Routes:**
+    - `/app/farms`: Quản lý nông hộ (Sprint 2).
+    - `/app/batches`: Theo dõi mẻ hàng (Sprint 2).
+    - `/app/logistics`: Theo dõi vận chuyển (Sprint 3).
 
-### SigNoz Proxy (Admin-only)
-
-`client-app` hoạt động như transparent proxy cho SigNoz. Port 3301 **không expose** ra host — chỉ accessible qua `/signoz/*` proxy sau khi qua admin auth.
-
-```
-Browser → /control/observability
-  └─ iframe src="/signoz/"
-       └─ next.config.ts rewrite: /signoz/* → http://signoz:3301/*
-            └─ middleware.ts: admin auth enforced before proxy
-```
-
-Cùng pattern hoạt động trong mọi môi trường — chỉ đổi `SIGNOZ_INTERNAL_URL`:
-- Docker Compose: `http://signoz:3301`
-- Docker Swarm: `http://signoz:3301` (overlay DNS)
-- Kubernetes: `http://signoz.monitoring.svc.cluster.local:3301`
+#### `apps/control-app/` (Next.js 15 — Control Plane)
+- **Role:** Dành cho Admin hệ thống.
+- **Routes:**
+    - `/control/services`: Giám sát sức khỏe services.
+    - `/control/api-explorer`: Swagger UI.
 
 ---
 
@@ -63,10 +46,18 @@ graph TB
         Browser([Browser / Mobile])
     end
 
-    subgraph "Client App (Next.js 15)"
+    subgraph "Admin Portal"
+        CT[control-app :3001]
+    end
+
+    subgraph "Client App"
         CA[client-app :3000]
-        CA_BFF[BFF Route Handlers]
-        CA_UI[Business UI /app/*]
+    end
+
+    subgraph "Observability"
+        SZ[SigNoz :3301]
+        CH[(ClickHouse)]
+        SZ --- CH
     end
 
     subgraph "API Gateway"
@@ -77,12 +68,6 @@ graph TB
         DS[demo-service :8080/:50051]
         FS[farm-service Sprint 2+]
         WS[warehouse-service Sprint 3+]
-    end
-
-    subgraph "Observability (SigNoz)"
-        SZ[SigNoz :3301 internal]
-        CH[(ClickHouse)]
-        SZ --- CH
     end
 
     subgraph "Data Persistence"
@@ -98,11 +83,10 @@ graph TB
         RPC --- RP
     end
 
+    Browser -->|:3001| CT
     Browser -->|:3000| CA
-    CA --> CA_BFF
-    CA --> CA_UI
-    CA_BFF -->|proxy /signoz/*| SZ
-    CA_UI -->|REST :8081| GW
+    Browser -->|:3301| SZ
+    CA -->|REST :8081| GW
     GW -->|gRPC| DS
     GW -->|gRPC Sprint 2| FS
     DS --> PG
@@ -111,6 +95,7 @@ graph TB
     DS -->|OTLP :4317| SZ
     FS -->|OTLP :4317| SZ
     CA -->|OTLP :4318| SZ
+    CT -->|OTLP :4318| SZ
 ```
 
 ---
@@ -119,7 +104,8 @@ graph TB
 
 | Service | Port | Note |
 | :--- | :--- | :--- |
-| client-app | 3000 | Control Plane + Business UI |
+| client-app | 3000 | Business UI |
+| control-app | 3001 | Control Plane (Admin) |
 | KrakenD | 8081 | API Gateway |
 | demo-service HTTP | 8080 | grpc-gateway (Sprint 1) |
 | demo-service gRPC | 50051 | |
@@ -205,13 +191,14 @@ Auto-instrumentation qua `pkg/base.NewApp()`:
 
 ```text
 RuntimeRoasters/
-├── api/                    # Proto definitions + buf toolchain
-│   └── farm/v1/
+├── api/                    # Proto definitions + buf toolchain (Shared)
+│   └── runtime/
+│       └── farm/v1/
 ├── apps/
-│   ├── client-app/         # Next.js 15 (Control Plane + Business UI)
-│   ├── demo-service/       # Sprint 1: canonical boilerplate template
-│   ├── farm-service/       # Sprint 2+: business logic (copy from demo-service)
-│   └── warehouse-service/  # Sprint 3+
+│   ├── client-app/         # Business UI (port 3000)
+│   ├── control-app/        # Admin Dashboard (port 3001)
+│   ├── demo-service/       # Sprint 1: boilerplate template
+│   └── farm-service/       # Sprint 2+
 ├── src/
 │   └── pkg/                # Go Workspaces shared packages
 │       ├── base/
@@ -243,3 +230,4 @@ RuntimeRoasters/
 | **Sprint 4** | Security | mTLS, Ory Kratos, Casbin |
 
 **Nguyên tắc:** Sprint 1 hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.
+ hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.

@@ -1,0 +1,77 @@
+{
+  "version": 3,
+  "name": "RuntimeRoasters Gateway",
+  "port": 8081,
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "extra_config": {
+    "security/cors": {
+      "allow_origins": [
+        "http://localhost:3000"
+      ],
+      "allow_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ],
+      "allow_headers": [
+        "Origin",
+        "Authorization",
+        "Content-Type"
+      ],
+      "expose_headers": [
+        "Content-Length"
+      ],
+      "max_age": "12h"
+    },
+    "telemetry/opentelemetry": {
+      "service_name": "krakend",
+      "exporters": {
+        "otlp": [
+          {
+            "host": "jaeger",
+            "port": 4317
+          }
+        ]
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/v1/demo/ping",
+      "method": "GET",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/v1/demo/ping",
+          "encoding": "json",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8080"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/swagger/demo.swagger.json",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "backend": [
+        {
+          "url_pattern": "/swagger/demo.swagger.json",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8080"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 )
 
@@ -21,6 +22,7 @@ type BaseConfig struct {
 
 // LoadConfig loads configuration from a path into the provided out struct
 func LoadConfig(path string, name string, out any) error {
+	viper.Reset()
 	viper.AddConfigPath(path)
 	viper.SetConfigName(name)
 	viper.SetConfigType("env")
@@ -32,7 +34,16 @@ func LoadConfig(path string, name string, out any) error {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return err
 		}
+	} else {
+		fmt.Printf("Using config file: %s\n", viper.ConfigFileUsed())
 	}
 
-	return viper.Unmarshal(out)
+	err := viper.Unmarshal(out)
+	if err == nil {
+		// We can't easily print 'out' generically without reflection, but we can check a known field
+		if cfg, ok := out.(*BaseConfig); ok {
+			fmt.Printf("Loaded DATABASE_URL: %s\n", cfg.DatabaseURL)
+		}
+	}
+	return err
 }
