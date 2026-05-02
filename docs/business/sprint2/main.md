@@ -1,31 +1,44 @@
-# 📋 Sprint 2: The Distributed Pulse — Kafka, Trace Service & Traceability GraphQL Engine
+# Sprint 2: Security & Access Control — Kanban Board
 
-**Status:** `IN_PLANNING` | **Timeline:** `Scope-based` | **PO:** `User` | **Tech Lead:** `Gemini`
-
----
-
-## 🏗️ Kanban Board
-
-| 🕒 To Do | 🚧 In Progress | 🔍 Review | ✅ Done |
-| :--- | :--- | :--- | :--- |
-| [RR-9: Kafka & Outbox Setup](./RR-9.md) | | | |
-| [RR-10: Trace Service — Kafka Consumer](./RR-10.md) | | | |
-| [RR-11: Traceability GraphQL Engine](./RR-11.md) | | | |
-| [RR-12: QR Lifecycle UI](./RR-12.md) | | | |
+**Status:** `PLANNING` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện theo mô hình Decentralized Validation.
 
 ---
 
-## 📝 Sprint Goal
+## 🎯 Sprint Goal
 
-Thiết lập xương sống sự kiện bất đồng bộ (Kafka + Outbox), xây dựng Trace Service tiêu thụ sự kiện vào Elasticsearch, và triển khai **Traceability GraphQL Engine** — lớp truy vấn đồ thị vòng đời sản phẩm phục vụ tính năng quét mã QR.
-
-> **Ghi chú Kiến trúc:** Tham khảo [`docs/architecture/graphql-integration.md`](../../architecture/graphql-integration.md) để biết thiết kế đầy đủ của cả GraphQL BFF (Future Phase) và Traceability Engine (Sprint 2 này).
+> **Người dùng có thể đăng nhập qua Identity Server, nhận JWT và các Microservices có thể tự động xác thực/phân quyền (AuthN/AuthZ) độc lập bằng Casbin mà không làm tăng độ trễ hệ thống.**
 
 ---
 
-## 🎯 Sprint Objectives
+## 📋 Kanban Board
 
-1. **Kafka Backbone:** Cài đặt Transactional Outbox tại Farm Service. Event từ Farm được publish lên Kafka một cách đảm bảo.
-2. **Trace Service Consumer:** Trace Service tiêu thụ event từ Kafka, chuẩn hóa và lưu vào Elasticsearch.
-3. **Traceability GraphQL Engine:** Expose GraphQL endpoint `/trace/graphql` chuyên biệt cho truy vấn vòng đời sản phẩm theo cấu trúc đồ thị.
-4. **QR UI:** Giao diện quét mã QR hiển thị hành trình từ Ly cà phê ➔ Chuyến xe ➔ Mẻ rang ➔ Lô thu hoạch.
+| 🕒 To Do                                                    | 🚧 In Progress | ✅ Done |
+| :---------------------------------------------------------- | :------------- | :------ |
+| [RR-9: Identity Server Infrastructure](./RR-9.md)           |                |         |
+| [RR-10: Client-Side Auth & Login Flow](./RR-10.md)          |                |         |
+| [RR-11: Backend Security Core - JWT Validation](./RR-11.md) |                |         |
+| [RR-12: Fine-grained Authorization (Casbin)](./RR-12.md)    |                |         |
+| [RR-13: End-to-End Secure Integration](./RR-13.md)          |                |         |
+
+---
+
+## 🛤️ Dependency Flow
+
+```mermaid
+graph TD
+    RR9[RR-9: Identity Server] --> RR10[RR-10: Client Login]
+    RR9 --> RR11[RR-11: Backend JWT Middleware]
+    RR11 --> RR12[RR-12: Casbin Authorization]
+    RR10 --> RR13[RR-13: E2E Verification]
+    RR12 --> RR13
+```
+
+---
+
+## 🛠️ Technical Stack
+
+- **Identity Server:** Ory Kratos / Keycloak / Custom Identity (TBD).
+- **Format:** JSON Web Token (JWT).
+- **Validation:** In-memory signature verification via JWKS.
+- **Authorization:** Casbin (RBAC Model).
+- **Communication:** KrakenD headers propagation.

@@ -7,6 +7,12 @@ WIRE=$(shell go env GOPATH)/bin/wire
 proto:
 	cd ../api && $(BUF) dep update && $(BUF) generate
 
+proto-lint:
+	cd ../api && $(BUF) lint
+
+proto-breaking:
+	cd ../api && $(BUF) breaking --against '../.git#branch=main,subdir=api'
+
 wire:
 	cd apps/demo-service/internal/app && $(WIRE)
 
