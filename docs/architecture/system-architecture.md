@@ -21,31 +21,39 @@ graph TB
             Kratos[Ory Kratos Pod - Identity Server]
         end
 
-        subgraph NS_App [Namespace: production]
+    subgraph NS_App [Namespace: production]
             DemoSvc[Demo Service Pod - Go Clean Arch]
+            MonitorSvc[Monitor Service Pod - SSE/WS]
         end
 
         subgraph NS_Infra [Namespace: infra]
             Postgres[(PostgreSQL StatefulSet)]
             Redis[(Redis Cache)]
-            Jaeger[Jaeger Deployment - Tracing]
+            Jaeger[SigNoz/Jaeger - Tracing & Metrics]
+            Kafka[(Apache Kafka)]
         end
     end
 
     ClientApp -- HTTPS/JWT --> KrakenD
     KrakenD -- Auth Check --> Kratos
     KrakenD -- API Forwarding --> DemoSvc
+    MonitorSvc -- SSE/WebSocket --> ClientApp
+    MonitorSvc -- Listen --> Kafka
+    ClientApp -- Query API --> Jaeger
     DemoSvc -- Fetch JWKS --> Kratos
     DemoSvc -- Query/Persist --> Postgres
     DemoSvc -- Cache --> Redis
-    KrakenD -. OTLP .-> Jaeger
-    DemoSvc -. OTLP .-> Jaeger
+    DemoSvc -- Publish --> Kafka
 
     classDef cluster fill:#f8fafc,stroke:#334155,stroke-width:2px;
     classDef namespace fill:#ffffff,stroke:#94a3b8,stroke-dasharray: 5 5;
     class K8s_Cluster cluster;
     class NS_Gateway,NS_Auth,NS_App,NS_Infra namespace;
 ```
+
+> [!NOTE]
+> **Visual View (Excalidraw):** ![High-Level Infrastructure](./assets/system-infrastructure.png)
+
 
 ## 2. Sprint 2: Distributed Security Flow
 Quy trình xác thực JWT và phân quyền Casbin tại từng service.

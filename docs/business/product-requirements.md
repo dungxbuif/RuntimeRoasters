@@ -19,7 +19,7 @@
 Dự án **không** hướng tới việc giải quyết bài toán thương mại thực tế, mà tập trung vào:
 - Showcase các `Design Patterns` phức tạp (Saga, CQRS, Outbox, Event Sourcing).
 - Chứng minh khả năng xử lý hệ thống phân tán (`Distributed Systems`).
-- Trình diễn trực quan kiến trúc qua "God Mode" `Dashboard`.
+- Trình diễn trực quan kiến trúc qua "Control Plane Visualization" `Dashboard`.
 
 **Đối tượng đánh giá:** Nhà tuyển dụng, Technical Reviewer, TA (Technical Architect).
 
@@ -34,7 +34,7 @@ Dự án **không** hướng tới việc giải quyết bài toán thương m�
 | G2 | Triển khai thành công `Saga Pattern` (Choreography) với `Compensating Actions`          | Demo kịch bản Rollback khi `Warehouse` hết hàng + Auto-Refund via `Stripe` |
 | G3 | Triển khai `Transactional Outbox` + `Inbox` (Idempotency)                               | Demo ngắt `Kafka`, data vẫn nhất quán sau khi khôi phục |
 | G4 | Triển khai `CQRS` với `PostgreSQL` (Write) + `Elasticsearch` (Read)                     | Truy xuất nguồn gốc cà phê < 100ms                     |
-| G5 | Dashboard trực quan hóa kiến trúc (God Mode)                                            | Người xem thấy data flow real-time giữa các services   |
+| G5 | Dashboard trực quan hóa kiến trúc (Control Plane Visualization)                                            | Người xem thấy data flow real-time giữa các services   |
 | G6 | Thiết kế sẵn cho `High Availability` (HA-ready)                                        | Kiến trúc có thể scale horizontal mà không refactor     |
 | G7 | Tích hợp `Payment Gateway` (Stripe) với đầy đủ `Webhook Security` + `Idempotency`      | Demo thanh toán B2B, auto-refund khi Saga fail          |
 
@@ -443,7 +443,7 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 | OpenTelemetry + Jaeger integration              | `Distributed Tracing`             |
 | Prometheus + Grafana dashboards                 | `Observability Stack`             |
 
-### Phase 5: God Mode Dashboard (Frontend)
+### Phase 5: Control Plane Visualization Dashboard (Frontend)
 > **Mục tiêu:** ReactJS Dashboard kết hợp Operational UI + System Visualization.
 
 | Deliverable                                     | Tech showcase                    |
@@ -498,7 +498,7 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 | Identity                     | `Ory Kratos`                | Open-source, self-hosted identity management                       |
 | Authorization                | `Casbin` + `policy.csv`     | Embeddable RBAC, decentralized per-service, Gateway chỉ authn     |
 | Config management            | `viper` + `.env`            | Flexible, hot-reload, không hardcode secrets, Docker-friendly      |
-| Frontend                     | `ReactJS` (Vite)            | Kết hợp Operational UI + God Mode Dashboard                        |
+| Frontend                     | `ReactJS` (Vite)            | Kết hợp Operational UI + Control Plane Visualization Dashboard                        |
 | Visualization                | `React Flow`                | Node-based UI cho service mesh visualization                       |
 | Animation                    | `Framer Motion`             | Micro-animations, glow effects                                     |
 | State management             | `Zustand`                   | Lightweight state cho real-time WebSocket data                     |
@@ -516,7 +516,7 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 | Solo developer → scope creep                   | High   | Strict phased delivery, MVP-first mindset                |
 | Kafka learning curve                           | Medium | Start with single-partition, scale later                 |
 | Too many databases to manage                   | Medium | Docker Compose quản lý toàn bộ infra                     |
-| God Mode Dashboard quá phức tạp                | High   | Phase 5 — chỉ làm sau khi backend ổn định               |
+| Control Plane Visualization Dashboard quá phức tạp                | High   | Phase 5 — chỉ làm sau khi backend ổn định               |
 | HA design không thể verify trên single-node    | Low    | Ghi rõ HA strategy trong docs, verify bằng architecture review |
 | Stripe Webhook bị replay/giả mạo              | High   | HMAC validation + Inbox idempotency pattern              |
 | Tiền "treo" khi Saga fail sau thanh toán        | High   | Auto-refund compensation, Payment state machine nghiêm ngặt |
@@ -534,7 +534,7 @@ Dự án được coi là **thành công** khi:
 - [ ] Demo được `Inbox Pattern` (gửi Webhook trùng → hệ thống chỉ xử lý 1 lần).
 - [ ] Stripe thanh toán thành công (Test Mode) và tiền được refund khi Saga fail.
 - [ ] Quét QR trả về đầy đủ lịch sử Farm-to-Cup của một `Batch ID`.
-- [ ] God Mode Dashboard hiển thị data flow real-time giữa các services (bao gồm Payment flow).
+- [ ] Control Plane Visualization Dashboard hiển thị data flow real-time giữa các services (bao gồm Payment flow).
 - [ ] Reviewer/TA có thể đọc code và hiểu rõ từng `Pattern` được áp dụng.
 - [ ] Hệ thống có thể deploy lên Cloud VPS bằng `docker-compose up -d`.
 
@@ -552,7 +552,7 @@ Dự án được coi là **thành công** khi:
 | `Clean Architecture`   | Kiến trúc 3 lớp (Domain/UseCase/Infra) — framework-agnostic, testable               |
 | `Polyglot Persistence` | Dùng nhiều loại database khác nhau, mỗi loại phù hợp với đặc thù dữ liệu           |
 | `Hash Chaining`        | Mỗi record audit chứa hash của record trước đó, tạo chuỗi bất biến (trên Cassandra) |
-| `God Mode`             | Dashboard giám sát toàn bộ kiến trúc hệ thống theo thời gian thực                   |
+| `Control Plane Visualization`             | Dashboard giám sát toàn bộ kiến trúc hệ thống theo thời gian thực                   |
 | `PaymentIntent`        | Object Stripe đại diện cho một giao dịch thanh toán đang chờ xử lý                  |
 | `Webhook Service`      | Ingress Gateway chuyên biệt tiếp nhận và xác thực dữ liệu từ bên ngoài (Stripe, IoT) |
 | `HMAC`                 | Hash-based Message Authentication Code — chữ ký số xác thực tính toàn vẹn           |
@@ -571,7 +571,7 @@ Dự án được coi là **thành công** khi:
 | :------------------------------------------------------------------------ | :---------------------------------------------- |
 | System Architecture                                                       | `docs/architecture/system-architecture.md`       |
 | Database Schema Design                                                    | `docs/architecture/database-schema.md`           |
-| UI/UX Visual Ideas (God Mode Dashboard)                                   | `docs/ui-ux/visual-ideas.md`                     |
+| UI/UX Visual Ideas (Control Plane Visualization Dashboard)                                   | `docs/ui-ux/visual-ideas.md`                     |
 | REST API Specifications                                                   | `docs/api/rest-api.md`                           |
 | gRPC Contract Definitions                                                 | `docs/api/grpc-contracts.md`                     |
 | Deployment & Setup Guide                                                  | `docs/deployment/setup-guide.md`                 |

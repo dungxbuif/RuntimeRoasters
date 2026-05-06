@@ -1,6 +1,6 @@
 # Sprint 2: Security & Access Control — Kanban Board
 
-**Status:** `PLANNING` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện theo mô hình Decentralized Validation.
+**Status:** `PLANNING` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện. Mọi API call phải được bảo mật trước khi viết business logic.
 
 ---
 
@@ -35,10 +35,9 @@ graph TD
 
 ---
 
-## 🛠️ Technical Stack
+## 🛠️ Technical Stack & Prep
 
-- **Identity Server:** Ory Kratos / Keycloak / Custom Identity (TBD).
-- **Format:** JSON Web Token (JWT).
-- **Validation:** In-memory signature verification via JWKS.
-- **Authorization:** Casbin (RBAC Model).
-- **Communication:** KrakenD headers propagation.
+- **Identity Server:** Ory Kratos.
+- **Backend Core:** `pkg/base/auth` (JWT v5) + `pkg/base/casbin`.
+- **Visualization:** SigNoz API integration prep (ensuring `user.id` is in spans).
+- **Documentation:** [Security Architecture](../architecture/security.md), [Control Plane Visualization Strategy](../architecture/control-plane-visualization.md).

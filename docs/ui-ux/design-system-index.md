@@ -4,7 +4,7 @@ This document maps the **NEW** provided UI designs to their corresponding featur
 
 | Design Folder | Description | Target Route |
 | :--- | :--- | :--- |
-| `god_mode_system_diagram` | Visual System Diagram | `/control/diagram` |
+| `control_plane_visualization_system_diagram` | Visual System Diagram | `/control/diagram` |
 | `chaos_control_resiliency_logic`| Chaos Engineering Dashboard | `/control/chaos` |
 | `farm_origin_traceability` | Supply Chain Farm Overview | `/app/farms` |
 | `logistics_real_time_transit` | Real-time Logistics Tracking | `/app/logistics` |

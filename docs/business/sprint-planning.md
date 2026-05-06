@@ -31,29 +31,39 @@ Chi tiết: [`docs/business/sprint1/main.md`](./sprint1/main.md)
 
 ---
 
-## Sprint 2 — Farm Service Business Logic
+## Sprint 2 — Security & Access Control
 
-**Goal:** Farm Service đầy đủ CRUD. Copy boilerplate từ `apps/demo-service/`, chỉ viết business logic.
-
-**Giả định từ Sprint 1 (tất cả đã sẵn sàng):**
-- `apps/demo-service/` là template — copy structure, xóa demo logic, viết Farm domain
-- `pkg/telemetry`, `pkg/base` (OTel), `pkg/database` (otelsql), `pkg/redis` đã có
-- Wire DI pattern đã được chứng minh
-- docker-compose, KrakenD, SigNoz đang chạy
+**Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện. Mọi API call phải được bảo mật trước khi viết business logic.
 
 | Ticket | Summary |
 | :--- | :--- |
-| S2-1 | Farm Service — Bootstrap từ demo-service template |
-| S2-2 | Farm Domain — Entities & DB Schema |
-| S2-3 | Farm Repository — Full CRUD (sqlx) |
-| S2-4 | Farm UseCase — Business Rules |
-| S2-5 | Farm Delivery — gRPC + REST handlers |
-| S2-6 | Farm UI — List + Create Farm (`/app/farms`) |
-| S2-7 | Farm UI — Batch Management |
+| RR-9 | Identity Server Infrastructure (Ory Kratos) |
+| RR-10 | Client-Side Auth & Login Flow |
+| RR-11 | Backend Security Core - JWT Validation |
+| RR-12 | Fine-grained Authorization (Casbin) |
+| RR-13 | End-to-End Secure Integration |
+
+Chi tiết: [`docs/business/sprint2/main.md`](./sprint2/main.md)
 
 ---
 
-## Sprint 3 — Distributed Transactions (Saga)
+## Sprint 3 — Farm Service Business Logic
+
+**Goal:** Farm Service đầy đủ CRUD. Copy boilerplate từ `apps/demo-service/`, chỉ viết business logic.
+
+| Ticket | Summary |
+| :--- | :--- |
+| S3-1 | Farm Service — Bootstrap từ demo-service template |
+| S3-2 | Farm Domain — Entities & DB Schema |
+| S3-3 | Farm Repository — Full CRUD (sqlx) |
+| S3-4 | Farm UseCase — Business Rules |
+| S3-5 | Farm Delivery — gRPC + REST handlers |
+| S3-6 | Farm UI — List + Create Farm (`/app/farms`) |
+| S3-7 | Farm UI — Batch Management |
+
+---
+
+## Sprint 4 — Distributed Transactions (Saga)
 
 **Goal:** Retail Service + Warehouse Service + Saga Choreography.
 
