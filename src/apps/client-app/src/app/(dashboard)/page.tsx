@@ -182,7 +182,7 @@ function DashboardContent() {
               <div>
                 <p className="text-sm font-black leading-tight mb-1 uppercase italic tracking-tight">Trace Propagation Active</p>
                 <p className="text-xs font-medium text-on-surface-variant leading-relaxed">
-                  Every request generates a unique Trace-ID. View full Gantt charts in <a href="http://localhost:16686" target="_blank" className="underline font-bold hover:text-primary transition-colors">Jaeger UI</a>.
+                  Every request generates a unique Trace-ID. View full Gantt charts in <a href={ENV.JAEGER_URL} target="_blank" className="underline font-bold hover:text-primary transition-colors">Jaeger UI</a>.
                 </p>
               </div>
             </div>

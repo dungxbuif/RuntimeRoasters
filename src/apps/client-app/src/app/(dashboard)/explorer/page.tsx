@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import 'swagger-ui-react/swagger-ui.css';
+import { ENV } from '@/constants/env';
 
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
@@ -30,10 +31,10 @@ export default function ExplorerPage() {
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500/30"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30"></div>
            </div>
-           <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest italic">localhost:8081/swagger/demo.json</span>
+           <span className="font-mono text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{ENV.SWAGGER_JSON_URL.replace('http://', '').replace('https://', '')}</span>
         </div>
         <div className="min-h-[600px] relative z-10">
-          <SwaggerUI url="http://localhost:8081/swagger/demo.swagger.json" />
+          <SwaggerUI url={ENV.SWAGGER_JSON_URL} />
         </div>
       </div>
       

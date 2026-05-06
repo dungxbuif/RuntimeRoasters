@@ -35,13 +35,7 @@
 - **When:** The middleware validates the signature.
 - **Then:** It returns `401 Unauthorized` with a Problem Details JSON body (RFC 9457).
 
-### Scenario 5: Revoked Token Check
-- **Given:** A user has logged out or been locked.
-- **When:** Their (still-valid-signature) JWT arrives at a service.
-- **Then:** The middleware checks the token's `jti` against the Redis Distributed Blacklist.
-- **And:** If blacklisted, it returns `401 Unauthorized`.
-
-### Scenario 6: gRPC Internal — JWT in Metadata
+### Scenario 5: gRPC Internal — JWT in Metadata
 - **Given:** Service A calls Service B via gRPC.
 - **When:** Service A propagates the caller's JWT.
 - **Then:** Service B's gRPC Security Interceptor validates the JWT from the gRPC Metadata.
@@ -55,5 +49,4 @@
   - `pkg/base/identity` — Type-safe context key (private type), `FromContext(ctx)`, `InjectContext(ctx, id)`.
 - **JWKS Security:** Pass `X-Internal-Secret` header when fetching JWKS (Shared Secret, MVP).
 - **JWKS Caching Strategy:** stale-while-revalidate with background goroutine refresh.
-- **Redis Blacklist:** Integrate with Redis provisioned in RR-9. Key pattern: `blacklist:<jti>` with TTL matching token expiry.
 - **OTel:** Inject `user.id` into active span attributes in the middleware (required for SigNoz trace correlation in RR-13).

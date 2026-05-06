@@ -1,6 +1,6 @@
 # Sprint 2: Security & Access Control — Kanban Board
 
-**Status:** `PLANNING` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện. Mọi API call phải được bảo mật trước khi viết business logic.
+**Status:** `IN PROGRESS` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện. Mọi API call phải được bảo mật trước khi viết business logic.
 
 ---
 
@@ -14,11 +14,12 @@
 
 | 🕒 To Do                                                    | 🚧 In Progress | ✅ Done |
 | :---------------------------------------------------------- | :------------- | :------ |
-| [RR-9: Identity Server Infrastructure](./RR-9/RR-9.md)           |                |         |
-| [RR-10: Client-Side Auth & Login Flow](./RR-10.md)          |                |         |
+|                                                             |                | [RR-9: Identity Server Infrastructure](./RR-9/RR-9.md) |
+|                                                             |                | [RR-10: Client-Side Auth & Login Flow](./RR-10/ticket.md) |
 | [RR-11: Backend Security Core - JWT Validation](./RR-11.md) |                |         |
 | [RR-12: Fine-grained Authorization (Casbin)](./RR-12.md)    |                |         |
 | [RR-13: End-to-End Secure Integration](./RR-13.md)          |                |         |
+| [RR-14: Token Revocation & Global Logout](./RR-14.md)       |                |         |
 
 ---
 
@@ -31,6 +32,7 @@ graph TD
     RR11 --> RR12[RR-12: Casbin Authorization]
     RR10 --> RR13[RR-13: E2E Verification]
     RR12 --> RR13
+    RR13 --> RR14[RR-14: Token Revocation]
 ```
 
 ---
