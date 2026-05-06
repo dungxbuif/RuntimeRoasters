@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 export default function FarmOriginDashboard() {
   return (
@@ -32,9 +33,10 @@ export default function FarmOriginDashboard() {
             </div>
           </div>
           <div className="w-full h-[400px] rounded-xl bg-surface-container overflow-hidden relative border border-outline-variant/30 group">
-            <img 
+            <Image 
               alt="Plantation Map Location" 
-              className="w-full h-full object-cover mix-blend-overlay opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" 
+              fill
+              className="object-cover mix-blend-overlay opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvk3bKTKao-vImJYm7bEm8YMpNFkX2MF5WOooNn5QVU7uE2Do1cTC6f8Fvn6vG57xKZ85l1KnV46ObhJtMJX4m7FyFnris9IiYBnaywNwTNUXBO91imsBkrkE76t6ZH4mzYn0G0ClZpj7I6yE3AGYPn1Xioq9tVeMJ0xO30tq7r6OKHjMkMCbVCoBB6vP_fJrAND3_HI_iNwIL6biAk30fk0CdqLQaAasmesHpeIiPayTpftr0sZ_zcHoLt5VPjAb5ryG4FliYScM" 
             />
             {/* Map Annotations */}

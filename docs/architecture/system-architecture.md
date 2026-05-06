@@ -56,7 +56,6 @@ graph TB
 > [!NOTE]
 > **Visual View (Excalidraw):** ![High-Level Infrastructure](./assets/system-infrastructure.png)
 
-
 ## 2. Sprint 2: Distributed Security Flow
 Quy trình xác thực JWT và phân quyền Casbin tại từng service.
 
@@ -76,6 +75,11 @@ sequenceDiagram
     Kratos->>Client: Hiển thị Form Login
     Client->>Kratos: Submit Credentials
     Kratos-->>Hydra: Xác thực thành công (Identity)
+    
+    Note over Client, Hydra: Auto-Accept Consent (Server Component)
+    Hydra->>Client: Redirect tới /consent (Server-side Accept)
+    Client-->>Hydra: Hoàn tất cấp quyền (Behind the scenes)
+
     Hydra-->>Client: Trả về JWT (Access Token)
 
     Client->>Gateway: Request API + JWT

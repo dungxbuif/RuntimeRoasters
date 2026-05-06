@@ -48,8 +48,8 @@ Trong văn hóa Việt, cà phê không chỉ là thức uống mà là "sợi d
 - **Frontend:**
   - **client-app:** Next.js 15 App Router (Business UI).
   - **control-app:** Next.js 15 (Admin Dashboard + SigNoz Proxy). swagger-ui-react cho API Explorer.
-- **Security:** Ory Kratos (identity), Casbin (RBAC/ABAC), mTLS (gRPC), HMAC (webhooks).
-
+- **Security:** Ory Kratos (Identity Provider), Ory Hydra (OAuth2/OIDC Provider), Casbin (RBAC/ABAC).
+  - *Note:* Để xem chi tiết luồng đăng nhập SSO phân tán (Zero-Consent) và cấu hình Identity, tham khảo [Identity SSO Diagram](./identity-flow.md) và [Identity SSO Implementation Details](../engineering/identity-sso-implementation.md).
 ---
 
 ## Data Flow Patterns

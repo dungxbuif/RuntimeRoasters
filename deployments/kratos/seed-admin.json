@@ -1,0 +1,15 @@
+{
+  "schema_id": "default",
+  "traits": {
+    "email": "admin@runtimeroasters.com",
+    "name": "System Administrator",
+    "role": "ADMIN"
+  },
+  "credentials": {
+    "password": {
+      "config": {
+        "password": "AdminPassword123!"
+      }
+    }
+  }
+}

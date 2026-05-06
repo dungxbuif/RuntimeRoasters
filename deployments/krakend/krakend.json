@@ -24,6 +24,7 @@
       "expose_headers": [
         "Content-Length"
       ],
+      "allow_credentials": true,
       "max_age": "12h"
     },
     "telemetry/opentelemetry": {

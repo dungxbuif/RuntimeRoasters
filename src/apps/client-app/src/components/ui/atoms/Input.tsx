@@ -1,19 +1,19 @@
 import React from "react";
 import { cn } from "@/lib/utils/cn";
 
-export const FlatInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
     <input
       ref={ref}
       className={cn(
-        "bg-transparent border-none border-b-2 border-outline-variant/30 text-on-surface font-mono text-xs py-2 focus:ring-0 focus:border-primary transition-all placeholder:text-on-surface-variant/30",
+        "w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface font-headline text-sm px-5 py-4 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-on-surface-variant/30 outline-none",
         className
       )}
       {...props}
     />
   )
 );
-FlatInput.displayName = "FlatInput";
+Input.displayName = "Input";
 
 interface ToggleProps extends React.InputHTMLAttributes<HTMLInputElement> {
   activeVariant?: 'primary' | 'error';

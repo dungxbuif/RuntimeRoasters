@@ -62,40 +62,50 @@ services:
   # Apache Kafka (KRaft Mode — không cần Zookeeper)
   # Dùng cho: Token Revocation events, Distributed Blacklist (RR-11)
   # ---------------------------------------------------------------------------
-  kafka:
-    image: bitnami/kafka:3.7
-    container_name: rr-kafka
-    restart: unless-stopped
-    environment:
-      # KRaft mode
-      KAFKA_CFG_NODE_ID: "1"
-      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
-      # Listeners
-      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
-      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
-      # Auto create topics
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-    ports:
-      - "9094:9094" # External port cho Kafka client trên máy host
-    networks:
-      - rr-network
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server kafka:9092"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+#  kafka:
+#    image: apache/kafka:3.7.0
+#    container_name: rr-kafka
+#    restart: unless-stopped
+#    environment:
+#      KAFKA_NODE_ID: 1
+#      KAFKA_PROCESS_ROLES: broker,controller
+#      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+#      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+#      KAFKA_NUM_PARTITIONS: 3
+#    ports:
+#      - "9094:9094" # External port cho Kafka client trên máy host
+#    networks:
+#      - rr-network
+#    healthcheck:
+#      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server kafka:9092"]
+#      interval: 10s
+#      timeout: 10s
+#      retries: 5
+#      start_period: 30s
 
   # ---------------------------------------------------------------------------
   # Ory Kratos — Identity Management
   #
   # Vai trò: Quản lý người dùng, hồ sơ (identities) và đăng nhập (sessions).
   # ---------------------------------------------------------------------------
+  kratos-migrate:
+    image: oryd/kratos:v1.2.0
+    container_name: rr-kratos-migrate
+    environment:
+      DSN: postgres://user:password@postgres:5432/identity_db?sslmode=disable
+    volumes:
+      - ./kratos:/etc/config/kratos
+    command: migrate sql -e --yes
+    networks:
+      - rr-network
+
   kratos:
     image: oryd/kratos:v1.2.0
     container_name: rr-kratos
@@ -103,6 +113,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      kratos-migrate:
+        condition: service_completed_successfully
     environment:
       DSN: postgres://user:password@postgres:5432/identity_db?sslmode=disable&max_conns=20&max_idle_conns=4
     command: serve --config /etc/config/kratos/kratos.yaml --dev
@@ -151,8 +163,11 @@ services:
       - ./hydra:/etc/config/hydra
     networks:
       - rr-network
+    ports:
+      - "4444:4444"
+      - "4445:4445"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://hydra:4444/health/ready || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4445/health/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -178,8 +193,6 @@ services:
       - ./identity/nginx.conf:/etc/nginx/templates/default.conf.template
     ports:
       - "4434:4434" # Hydra Public Proxy (Bảo vệ JWKS)
-      - "4444:4444" # Hydra Public (OAuth2 flows)
-      - "4445:4445" # Hydra Admin
       - "4433:4433" # Kratos Public
     networks:
       - rr-network

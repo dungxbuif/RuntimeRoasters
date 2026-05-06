@@ -63,7 +63,7 @@ export default function TraceabilityJourneyPage() {
               <div className="relative">
                 <p className="font-marker text-3xl text-blue-600 -rotate-2 leading-relaxed max-w-xs drop-shadow-sm">
                   <span className="bg-primary-fixed/50 px-1 inline-block transform -skew-x-6 mb-1">Event Sourced:</span> <br/>
-                  Initial 'BeanHarvested' event appended to immutable ledger.
+                  Initial &apos;BeanHarvested&apos; event appended to immutable ledger.
                 </p>
               </div>
             </div>

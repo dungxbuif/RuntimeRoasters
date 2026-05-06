@@ -23,6 +23,11 @@ identity:
 # ===========================================================================
 selfservice:
   default_browser_return_url: http://localhost:3000/
+  allowed_return_urls:
+    - http://localhost:3000/login
+    - http://localhost:3000/consent
+    - http://localhost:3000/api/auth/callback
+    - http://localhost:3000/
 
   flows:
     login:
@@ -58,6 +63,13 @@ log:
   level: info
   format: json
   leak_sensitive_values: false
+
+# ===========================================================================
+# OAuth2 / OIDC Integration (Hydra)
+# Cấu hình để Kratos biết cách xử lý login_challenge từ Hydra
+# ===========================================================================
+oauth2_provider:
+  url: http://hydra:4445/
 
 # ===========================================================================
 # Serve
