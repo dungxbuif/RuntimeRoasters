@@ -62,8 +62,9 @@
 - **Key Rotation:** Áp dụng cơ chế **Stale-while-revalidate** khi cache JWKS để hệ thống không bị gián đoạn khi Identity Server xoay vòng Key.
 - **Security Interceptors:** Mọi cuộc gọi **gRPC Internal** phải được bảo vệ bằng Interceptors kiểm tra JWT trong Metadata.
 
-### Session 13: Kratos & Casbin-SQL Integration
-- **Ory Kratos Risks:** Bóc tách rủi ro về **Identity Schema** và bài toán **Token Exchange** (đổi từ Session/Cookie sang JWT). 
+### Session 13: Kratos & Hydra Integration (OIDC Compliance)
+- **Vấn đề:** Ory Kratos tập trung vào Identity Management nhưng cần **Ory Hydra** để xử lý các luồng OAuth2/OIDC chuẩn chỉ và phát hành JWT (Access Token).
+- **Giải pháp:** Sử dụng Kratos làm Identity Provider (IdP) và Hydra làm OAuth2 Provider. Client App sẽ handle Login/Consent UI.
 - **Casbin-SQL:** Chốt hướng "Dùng Casbin triệt để" bằng cách dịch Policy thành SQL `WHERE` clause thông qua một bộ Helper tập trung.
 
 ---
@@ -83,7 +84,7 @@
 
 ### 2. Quyết định về AuthN (Authentication)
 - **Tiêu chuẩn:** JWT (Asymmetric RS256).
-- **Phân phối Key:** Tự động qua **JWKS endpoint** từ Ory Kratos.
+- **Phân phối Key:** Tự động qua **JWKS endpoint** từ Ory Hydra.
 - **Xác thực:** Offline Validation tại từng service để tối ưu hiệu năng.
 
 ### 3. Quyết định về AuthZ (Authorization)
@@ -97,7 +98,7 @@
 - **Bảo mật:** Dùng Private Key cho context để ngăn chặn giả mạo dữ liệu User trong nội bộ code Go.
 
 ### 5. Quyết định về Infrastructure & Resilience
-- **Identity Server:** Ory Kratos (OIDC Provider mode).
+- **Identity Server:** Ory Kratos (Identity Management) + Ory Hydra (OAuth2/OIDC Provider).
 - **API Gateway:** KrakenD (Go-based, configuration-driven).
 - **Thu hồi Token:** Sử dụng **Distributed Blacklist** (Redis + Kafka).
 - **S2S Security:** Shared Secret Header (MVP) và lộ trình nâng cấp lên mTLS (Sprint 4).

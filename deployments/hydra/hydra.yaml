@@ -1,0 +1,34 @@
+version: v2.2.0
+
+serve:
+  public:
+    port: 4444
+    base_url: http://localhost:4444/
+  admin:
+    port: 4445
+    base_url: http://hydra:4445/
+
+strategies:
+  access_token: jwt
+
+ttl:
+  login_grant: 1h
+  consent_grant: 1h
+  access_token: 1h
+  refresh_token: 720h
+  id_token: 1h
+  auth_code: 10m
+
+secrets:
+  system:
+    - ${INTERNAL_SECRET}
+
+urls:
+  login: http://localhost:3000/login
+  consent: http://localhost:3000/consent
+  self:
+    issuer: http://localhost:4444/
+
+log:
+  level: info
+  format: json

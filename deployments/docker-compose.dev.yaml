@@ -1,0 +1,212 @@
+version: '3.8'
+
+# ===========================================================================
+# RuntimeRoasters — Development Compose File
+#
+# Mục đích: Dựng toàn bộ hạ tầng Dev trên máy local.
+# Tất cả services dùng CHUNG 1 Postgres instance (rr-postgres),
+# mỗi service có DB riêng (identity_db, demo_db, ...) được tạo bởi init-db.sql.
+#
+# Cách chạy:
+#   docker compose -f deployments/docker-compose.dev.yaml up -d
+#
+# Xem log một service:
+#   docker compose -f deployments/docker-compose.dev.yaml logs -f kratos
+# ===========================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — Shared DB server cho toàn bộ stack
+  # init-db.sql tự động tạo tất cả các DB cần thiết khi container khởi động lần đầu.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: rr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres # default db, các DB khác tạo qua init-db.sql
+    ports:
+      - "54321:5432"
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Redis — Dùng cho: Session Store, Token Blacklist (Distributed Blacklist)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: rr-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Apache Kafka (KRaft Mode — không cần Zookeeper)
+  # Dùng cho: Token Revocation events, Distributed Blacklist (RR-11)
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: rr-kafka
+    restart: unless-stopped
+    environment:
+      # KRaft mode
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      # Listeners
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      # Auto create topics
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9094:9094" # External port cho Kafka client trên máy host
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server kafka:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Ory Kratos — Identity Management
+  #
+  # Vai trò: Quản lý người dùng, hồ sơ (identities) và đăng nhập (sessions).
+  # ---------------------------------------------------------------------------
+  kratos:
+    image: oryd/kratos:v1.2.0
+    container_name: rr-kratos
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DSN: postgres://user:password@postgres:5432/identity_db?sslmode=disable&max_conns=20&max_idle_conns=4
+    command: serve --config /etc/config/kratos/kratos.yaml --dev
+    volumes:
+      - ./kratos:/etc/config/kratos
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://kratos:4433/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Ory Hydra — OAuth2 & OIDC Provider
+  #
+  # Vai trò: Phát hành JWT (Access Token) và ID Token chuẩn OAuth2/OIDC.
+  # ---------------------------------------------------------------------------
+  hydra-migrate:
+    image: oryd/hydra:v2.2.0
+    container_name: rr-hydra-migrate
+    environment:
+      DSN: postgres://user:password@postgres:5432/hydra_db?sslmode=disable
+    command: migrate sql -e --yes
+    networks:
+      - rr-network
+
+  hydra:
+    image: oryd/hydra:v2.2.0
+    container_name: rr-hydra
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      hydra-migrate:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://user:password@postgres:5432/hydra_db?sslmode=disable
+      URLS_SELF_ISSUER: http://localhost:4444/
+      URLS_CONSENT: http://localhost:3000/consent
+      URLS_LOGIN: http://localhost:3000/login
+      SECRETS_SYSTEM: ${INTERNAL_SECRET:-dev-secret-at-least-32-chars-long-!!!!}
+      STRATEGIES_ACCESS_TOKEN: jwt
+    command: serve all --config /etc/config/hydra/hydra.yaml --dev
+    volumes:
+      - ./hydra:/etc/config/hydra
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://hydra:4444/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Identity Proxy (Nginx) — JWKS Gatekeeper
+  #
+  # Vai trò: Bọc bên ngoài Hydra Public port (4444).
+  # Chặn endpoint /.well-known/jwks.json: chỉ cho qua nếu có header đúng.
+  # ---------------------------------------------------------------------------
+  identity:
+    image: nginx:1.27-alpine
+    container_name: rr-identity
+    restart: unless-stopped
+    depends_on:
+      hydra:
+        condition: service_healthy
+      kratos:
+        condition: service_healthy
+    environment:
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-dev-secret-change-in-production}
+    volumes:
+      - ./identity/nginx.conf:/etc/nginx/templates/default.conf.template
+    ports:
+      - "4434:4434" # Hydra Public Proxy (Bảo vệ JWKS)
+      - "4444:4444" # Hydra Public (OAuth2 flows)
+      - "4445:4445" # Hydra Admin
+      - "4433:4433" # Kratos Public
+    networks:
+      - rr-network
+
+  # ---------------------------------------------------------------------------
+  # KrakenD API Gateway
+  # ---------------------------------------------------------------------------
+  krakend:
+    image: devopsfaith/krakend:2
+    container_name: rr-krakend
+    restart: unless-stopped
+    volumes:
+      - ./krakend:/etc/krakend
+    ports:
+      - "8081:8081"
+    networks:
+      - rr-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# ===========================================================================
+# Networks & Volumes
+# ===========================================================================
+networks:
+  rr-network:
+    name: rr-network
+    driver: bridge
+
+volumes:
+  postgres_data:

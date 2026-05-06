@@ -14,7 +14,7 @@
 
 | 🕒 To Do                                                    | 🚧 In Progress | ✅ Done |
 | :---------------------------------------------------------- | :------------- | :------ |
-| [RR-9: Identity Server Infrastructure](./RR-9.md)           |                |         |
+| [RR-9: Identity Server Infrastructure](./RR-9/RR-9.md)           |                |         |
 | [RR-10: Client-Side Auth & Login Flow](./RR-10.md)          |                |         |
 | [RR-11: Backend Security Core - JWT Validation](./RR-11.md) |                |         |
 | [RR-12: Fine-grained Authorization (Casbin)](./RR-12.md)    |                |         |

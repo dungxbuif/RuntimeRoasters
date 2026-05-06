@@ -19,6 +19,7 @@ graph TB
 
         subgraph NS_Auth [Namespace: auth]
             Kratos[Ory Kratos Pod - Identity Server]
+            Hydra[Ory Hydra Pod - OAuth2/OIDC]
         end
 
     subgraph NS_App [Namespace: production]
@@ -35,12 +36,13 @@ graph TB
     end
 
     ClientApp -- HTTPS/JWT --> KrakenD
-    KrakenD -- Auth Check --> Kratos
+    KrakenD -- Auth Flow --> Hydra
+    Hydra -- Identity Check --> Kratos
     KrakenD -- API Forwarding --> DemoSvc
     MonitorSvc -- SSE/WebSocket --> ClientApp
     MonitorSvc -- Listen --> Kafka
     ClientApp -- Query API --> Jaeger
-    DemoSvc -- Fetch JWKS --> Kratos
+    DemoSvc -- Fetch JWKS --> Hydra
     DemoSvc -- Query/Persist --> Postgres
     DemoSvc -- Cache --> Redis
     DemoSvc -- Publish --> Kafka
@@ -63,13 +65,18 @@ sequenceDiagram
     autonumber
     participant Client as Client App
     participant Gateway as KrakenD Gateway
-    participant IDP as Identity Server (Kratos)
+    participant Hydra as OIDC Provider (Hydra)
+    participant Kratos as Identity Server (Kratos)
     participant Service as Demo Service (Go)
 
-    Note over Client, Service: Khởi tạo: Service tải Public Keys (JWKS) về bộ nhớ
+    Note over Client, Service: Khởi tạo: Service tải Public Keys (JWKS) từ Hydra về bộ nhớ
 
-    Client->>IDP: Đăng nhập (Username/Password)
-    IDP-->>Client: Trả về JWT (chứa sub, role, org_id)
+    Client->>Hydra: Yêu cầu Đăng nhập (OAuth2 Flow)
+    Hydra->>Kratos: Redirect tới Login UI (Browser)
+    Kratos->>Client: Hiển thị Form Login
+    Client->>Kratos: Submit Credentials
+    Kratos-->>Hydra: Xác thực thành công (Identity)
+    Hydra-->>Client: Trả về JWT (Access Token)
 
     Client->>Gateway: Request API + JWT
     Gateway->>Gateway: CORS & Tracing
@@ -77,7 +84,7 @@ sequenceDiagram
 
     rect rgb(240, 253, 244)
         Note right of Service: Backend Security Layer
-        Service->>Service: 1. Verify Signature (In-memory)
+        Service->>Service: 1. Verify Signature (JWKS offline)
         Service->>Service: 2. Casbin RBAC Check
     end
 

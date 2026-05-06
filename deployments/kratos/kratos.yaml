@@ -1,0 +1,90 @@
+version: v1.2.0
+
+# ===========================================================================
+# Database (DSN - Data Source Name)
+# Kratos dùng DB riêng `identity_db` trong cùng Postgres instance để lưu:
+# - Identities (Users), Sessions, Recovery codes, Verification tokens
+# ===========================================================================
+dsn: postgres://user:password@postgres:5432/identity_db?sslmode=disable&max_conns=20&max_idle_conns=4
+
+# ===========================================================================
+# Identity Schema
+# Định nghĩa cấu trúc traits (profile data) của người dùng.
+# `role` và `org_id` là các trường custom dùng cho JWT Claims mapping.
+# ===========================================================================
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+# ===========================================================================
+# Selfservice — Các luồng tự phục vụ (đăng ký, đăng nhập, đặt lại MK)
+# ===========================================================================
+selfservice:
+  default_browser_return_url: http://localhost:3000/
+
+  flows:
+    login:
+      ui_url: http://localhost:3000/login
+    registration:
+      ui_url: http://localhost:3000/registration
+    logout:
+      after:
+        default_browser_return_url: http://localhost:3000/login
+
+  methods:
+    password:
+      enabled: true
+
+# ===========================================================================
+# Session & Cookie
+# ===========================================================================
+session:
+  cookie:
+    same_site: Lax
+
+# ===========================================================================
+# Courier — Email gửi verification/recovery
+# ===========================================================================
+courier:
+  smtp:
+    connection_uri: smtps://test:test@mailslurper:1025/?skip_ssl_verify=true
+
+# ===========================================================================
+# Log
+# ===========================================================================
+log:
+  level: info
+  format: json
+  leak_sensitive_values: false
+
+# ===========================================================================
+# Serve
+# Kratos có 2 port:
+#   - Public  (4433): Dùng cho Selfservice flows từ Browser/App
+#   - Admin   (4434): Chỉ nội bộ — dùng cho Admin API và JWKS endpoint.
+#             Sẽ bị bọc bởi Nginx proxy để bảo vệ bằng X-Internal-Secret.
+# ===========================================================================
+serve:
+  public:
+    base_url: http://kratos:4433/
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Cookie
+        - Content-Type
+      exposed_headers:
+        - Content-Type
+        - Set-Cookie
+  admin:
+    base_url: http://kratos:4434/

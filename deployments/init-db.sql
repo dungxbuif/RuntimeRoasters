@@ -1,4 +1,6 @@
 -- Khởi tạo Database cho từng Microservice
+CREATE DATABASE identity_db; -- Ory Kratos: Users, Sessions, Identity Schemas
+CREATE DATABASE hydra_db;    -- Ory Hydra: OAuth2, OIDC, Tokens
 CREATE DATABASE demo_db;
 CREATE DATABASE process_db;
 CREATE DATABASE warehouse_db;

@@ -83,7 +83,7 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 
 #### Security & IAM
 
-- **Ory Kratos:** `Identity management`
+- **Ory Kratos & Hydra:** `Identity` and `OAuth2/OIDC` management
 - **Casbin:** Decentralized `policy-based authorization`
 - **mTLS:** `Mutual TLS` for secure `gRPC` service-to-service communication
 
@@ -101,7 +101,7 @@ Coordinating a supply chain request involves multiple services. If a store reque
 
 #### Zero Trust & High-Performance Auth (Centralized Identity & Distributed Validation)
 
-The system implements **Centralized Identity** but **Distributed Validation**. The Identity Provider (`Ory Kratos`) manages users and issues JWTs. To achieve maximum performance, the `API Gateway` acts purely as a proxy, forwarding requests with tokens directly to downstream services. Upon startup, internal services (e.g., Farm, Catalog) fetch Public Keys (JWKS) from the Identity Service. They perform **in-memory JWT validation** locally for every request without making external network calls to the IDT. After validating the token, each service executes its own decentralized authorization (via `Casbin`), ensuring a `Zero Trust` network with zero-latency authentication.
+The system implements **Centralized Identity** but **Distributed Validation**. **Ory Kratos** manages user identities, while **Ory Hydra** acts as the OIDC Provider to issue standard JWTs. To achieve maximum performance, the `API Gateway` acts purely as a proxy, forwarding requests with tokens directly to downstream services. Upon startup, internal services (e.g., Farm, Catalog) fetch Public Keys (JWKS) from the **Hydra JWKS endpoint**. They perform **in-memory JWT validation** locally for every request without making external network calls to the identity stack. After validating the token, each service executes its own decentralized authorization (via `Casbin`), ensuring a `Zero Trust` network with zero-latency authentication.
 
 #### Dual Idempotency
 
