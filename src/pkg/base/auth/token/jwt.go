@@ -53,4 +53,3 @@ func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {
 		JTI:     jti,
 	}
 }
-

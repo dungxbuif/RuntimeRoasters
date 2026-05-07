@@ -25,6 +25,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -151,14 +152,17 @@ func (c *JWKSCache) refresh() error {
 
 	newKeys := make(map[string]*rsa.PublicKey)
 	for _, key := range jwks.Keys {
-		if key.Kty != "RSA" {
-			continue
+		if key.Kty == "RSA" {
+			pubKey, err := decodeRSA(key.N, key.E)
+			if err != nil {
+				return fmt.Errorf("failed to decode RSA key %s: %w", key.Kid, err)
+			}
+			newKeys[key.Kid] = pubKey
 		}
-		pubKey, err := decodeRSA(key.N, key.E)
-		if err != nil {
-			continue // Skip malformed keys
-		}
-		newKeys[key.Kid] = pubKey
+	}
+
+	if len(newKeys) == 0 {
+		return errors.New("no valid RSA keys found in JWKS")
 	}
 
 	c.mu.Lock()
@@ -170,6 +174,9 @@ func (c *JWKSCache) refresh() error {
 }
 
 func decodeRSA(nStr, eStr string) (*rsa.PublicKey, error) {
+	if nStr == "" || eStr == "" {
+		return nil, errors.New("empty N or E in JWK")
+	}
 	nBytes, err := base64.RawURLEncoding.DecodeString(nStr)
 	if err != nil {
 		return nil, err
