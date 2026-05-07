@@ -7,6 +7,10 @@ import (
 
 type Config struct {
 	config.BaseConfig `mapstructure:",squash"`
+	InternalSecret    string `mapstructure:"INTERNAL_SECRET"`
+	JWKSURL           string `mapstructure:"JWKS_URL"`
+	JWKSCacheTTL      string `mapstructure:"JWKS_CACHE_TTL"`
+	ExpectedIssuer    string `mapstructure:"EXPECTED_ISSUER"`
 }
 
 // Load loads the demo-service configuration

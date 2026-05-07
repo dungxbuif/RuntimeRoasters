@@ -196,6 +196,12 @@ services:
       - "4433:4433" # Kratos Public
     networks:
       - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4433/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # KrakenD API Gateway

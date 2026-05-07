@@ -230,3 +230,19 @@ Không cần `jwx` — `golang-jwt/jwt/v5` với custom `Keyfunc` là đủ và 
 
 1. **`X-Internal-Secret` management:** Hiện tại hardcode trong compose. Prod strategy?
 2. **gRPC-to-gRPC call (Service A → Service B):** Service A có tự động forward token không? Hay dùng service account riêng? Cần xác nhận pattern trước khi viết gRPC interceptor.
+
+---
+
+## 9. Initialization & Deployment Strategy (Resilience)
+
+Vì hệ thống sử dụng cơ chế **Fail-Fast** tại thời điểm khởi động (Service sẽ Panic nếu không fetch được JWKS), chúng ta cần đảm bảo hạ tầng Identity sẵn sàng trước khi Microservices chạy.
+
+### 9.1. Phía Code (Application Level)
+- **Exponential Backoff Retry:** Hàm `NewJWKSCache` thực hiện thử lại (retry) 5 lần với thời gian chờ tăng dần (2s, 4s, 8s, 16s, 32s). Điều này giúp service tự phục hồi nếu hạ tầng Identity chỉ bị chậm trễ nhẹ.
+
+### 9.2. Phía Infrastructure (DevOps Level)
+- **Healthchecks:** Service `identity` (Nginx) được cấu hình `healthcheck` dựa trên endpoint `/health/ready` của Kratos.
+- **Dependency Orchestration:** 
+    - **Docker Compose:** Sử dụng `depends_on` với `condition: service_healthy`.
+    - **Kubernetes:** Khuyến nghị sử dụng **Init Containers** để thăm dò endpoint JWKS của Identity service trước khi khởi chạy container chính.
+

@@ -1,15 +1,16 @@
-package auth
+package token
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // VerifyAndParseJWT is a framework-agnostic helper to parse and validate JWTs.
-func VerifyAndParseJWT(rawToken string, keyProvider KeyProvider, expectedIssuer string) (*identity.Claims, error) {
+func VerifyAndParseJWT(rawToken string, keyProvider provider.KeyProvider, expectedIssuer string) (*identity.Claims, error) {
 	token, err := jwt.Parse(rawToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header[JWTHeaderAlg])

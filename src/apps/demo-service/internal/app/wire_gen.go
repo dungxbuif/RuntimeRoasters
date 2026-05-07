@@ -11,15 +11,24 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/redis"
+	grpc2 "google.golang.org/grpc"
+	"time"
 )
 
 // Injectors from wire.go:
 
 func InitializeApp() (*App, func(), error) {
 	configConfig := config.Load()
-	options := provideBaseOptions(configConfig)
+	keyProvider, err := provideKeyProvider(configConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	v := provideGRPCServerOptions(keyProvider, configConfig)
+	options := provideBaseOptions(configConfig, v)
 	app := base.NewApp(options)
 	config2 := provideConfigPtr(configConfig)
 	postgresConfig := providePostgresConfig(configConfig)
@@ -42,10 +51,20 @@ func provideConfigPtr(cfg config.Config) *config.Config {
 	return &cfg
 }
 
-func provideBaseOptions(cfg config.Config) base.Options {
+func provideKeyProvider(cfg config.Config) (provider.KeyProvider, error) {
+	ttl, _ := time.ParseDuration(cfg.JWKSCacheTTL)
+	return provider.NewJWKSCache(cfg.JWKSURL, cfg.InternalSecret, ttl)
+}
+
+func provideGRPCServerOptions(keyProvider provider.KeyProvider, cfg config.Config) []grpc2.ServerOption {
+	return []grpc2.ServerOption{grpc2.UnaryInterceptor(authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer))}
+}
+
+func provideBaseOptions(cfg config.Config, grpcOpts []grpc2.ServerOption) base.Options {
 	return base.Options{
-		Name:   "demo-service",
-		Config: cfg.BaseConfig,
+		Name:              "demo-service",
+		Config:            cfg.BaseConfig,
+		GRPCServerOptions: grpcOpts,
 	}
 }
 

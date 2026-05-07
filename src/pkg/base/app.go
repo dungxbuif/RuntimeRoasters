@@ -24,8 +24,9 @@ import (
 )
 
 type Options struct {
-	Name   string
-	Config config.BaseConfig
+	Name              string
+	Config            config.BaseConfig
+	GRPCServerOptions []grpc.ServerOption
 }
 
 type App struct {
@@ -73,7 +74,7 @@ func NewApp(opts Options) *App {
 		Name:       opts.Name,
 		ginEngine:  engine,
 		grpcServer: grpc.NewServer(
-			grpc.StatsHandler(otelgrpc.NewServerHandler()), // gRPC tracing
+			append(opts.GRPCServerOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))...,
 		),
 		gwMux:      gwMux,
 		logger:     log,

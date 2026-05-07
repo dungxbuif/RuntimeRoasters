@@ -1,8 +1,10 @@
-package auth
+package authhttp
 
 import (
 	"strings"
 
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/token"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +15,7 @@ import (
 */
 
 func extractTokenFromHeader(ctx *gin.Context) (string, bool) {
-	authHeader := ctx.GetHeader(HeaderAuthorization)
+	authHeader := ctx.GetHeader(token.HeaderAuthorization)
 	if len(authHeader) == 0 {
 		ctx.Error(errs.ErrUnauthorized).SetMeta("missing authorization header")
 		ctx.Abort()
@@ -21,7 +23,7 @@ func extractTokenFromHeader(ctx *gin.Context) (string, bool) {
 	}
 
 	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || strings.ToLower(parts[0]) != BearerPrefix {
+	if len(parts) != 2 || strings.ToLower(parts[0]) != token.BearerPrefix {
 		ctx.Error(errs.ErrUnauthorized).SetMeta("invalid authorization header format")
 		ctx.Abort()
 		return "", false
@@ -29,24 +31,24 @@ func extractTokenFromHeader(ctx *gin.Context) (string, bool) {
 	return parts[1], true
 }
 
-func GinMiddleware(keyProvider KeyProvider, expectedIssuer string) gin.HandlerFunc {
+func GinMiddleware(keyProvider provider.KeyProvider, expectedIssuer string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jwtToken, ok := extractTokenFromHeader(c)
 		if !ok {
 			return
 		}
 
-		token, err := VerifyAndParseJWT(jwtToken, keyProvider, expectedIssuer)
+		idToken, err := token.VerifyAndParseJWT(jwtToken, keyProvider, expectedIssuer)
 		if err != nil {
 			c.Error(errs.ErrUnauthorized).SetMeta(err.Error())
 			c.Abort()
 			return
 		}
 
-		ctx := SetIdentityInContext(c.Request.Context(), *token)
+		ctx := token.SetIdentityInContext(c.Request.Context(), *idToken)
 		c.Request = c.Request.WithContext(ctx)
 
-		RecordTracingData(ctx, token.Subject)
+		token.RecordTracingData(ctx, idToken.Subject)
 
 		c.Next()
 	}
