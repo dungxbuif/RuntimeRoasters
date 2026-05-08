@@ -4,7 +4,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 const problemContentType = "application/problem+json"
@@ -74,6 +77,16 @@ func GinErrorHandler() gin.HandlerFunc {
 
 		err := c.Errors.Last().Err
 		status := StatusCode(err)
+		
+		// Extract TraceID from OpenTelemetry
+		traceID := trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()
+
+		log := logger.FromContext(c.Request.Context())
+		if status >= 500 {
+			log.Error("internal server error", zap.Error(err), zap.String("path", c.Request.URL.Path))
+		} else {
+			log.Warn("client error", zap.Error(err), zap.Int("status", status), zap.String("path", c.Request.URL.Path))
+		}
 
 		p := Problem{
 			Type:     "about:blank",
@@ -81,7 +94,7 @@ func GinErrorHandler() gin.HandlerFunc {
 			Status:   status,
 			Detail:   err.Error(),
 			Instance: c.Request.URL.Path,
-			TraceID:  c.GetHeader("X-Trace-ID"),
+			TraceID:  traceID,
 		}
 
 		c.Render(status, problemRenderer{p})

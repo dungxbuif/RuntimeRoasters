@@ -40,7 +40,7 @@ func InitializeApp() (*App, func(), error) {
 	client := redis.NewClient(redisConfig)
 	demoUsecase := usecase.NewDemoUsecase()
 	demoHandler := grpc.NewDemoHandler(demoUsecase)
-	appApp := NewApp(app, config2, db, client, demoHandler)
+	appApp := NewApp(app, config2, db, client, keyProvider, demoHandler)
 	return appApp, func() {
 	}, nil
 }

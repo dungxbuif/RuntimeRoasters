@@ -31,10 +31,20 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
-type jwksResponse struct {
-	Keys []jwk `json:"keys"`
+type JWKSCache struct {
+	jwksURL        string
+	internalSecret string
+	cacheTTL       time.Duration
+	keys           map[string]*rsa.PublicKey
+	mu             sync.RWMutex
+	lastFetch      time.Time
+	sf             singleflight.Group
 }
 
 type jwk struct {
@@ -44,21 +54,15 @@ type jwk struct {
 	E   string `json:"e"`
 }
 
-type JWKSCache struct {
-	jwksURL        string
-	internalSecret string
-	cacheTTL       time.Duration
-
-	mu         sync.RWMutex
-	keys       map[string]*rsa.PublicKey
-	fetchedAt  time.Time
-	refreshing bool
+type jwksResponse struct {
+	Keys []jwk `json:"keys"`
 }
 
 // NewJWKSCache initializes a new JWKS cache and performs an initial fetch.
-// Nó thực hiện cơ chế Retry với Exponential Backoff để đảm bảo service có thể đợi
-// hạ tầng Identity sẵn sàng mà không bị sập ngay lập tức (Panic).
 func NewJWKSCache(jwksURL, internalSecret string, ttl time.Duration) (*JWKSCache, error) {
+	if jwksURL == "" {
+		return nil, errors.New("JWKS URL is required")
+	}
 	if ttl == 0 {
 		ttl = 5 * time.Minute
 	}
@@ -71,73 +75,76 @@ func NewJWKSCache(jwksURL, internalSecret string, ttl time.Duration) (*JWKSCache
 	}
 
 	// Cơ chế Retry khi khởi động (Bootstrapping Resilience)
-	maxRetries := 5
-	backoff := 2 * time.Second
-
+	log := logger.GetLogger()
 	var err error
-	for i := 0; i < maxRetries; i++ {
+	for i := 0; i < 5; i++ {
 		if err = cache.refresh(); err == nil {
-			return cache, nil
+			break
 		}
-		
-		fmt.Printf("Attempt %d: Failed to fetch JWKS from %s, retrying in %v... (error: %v)\n", i+1, jwksURL, backoff, err)
-		time.Sleep(backoff)
-		backoff *= 2 // Exponential backoff
+		log.Warn("Failed to fetch JWKS", zap.String("url", jwksURL), zap.Int("attempt", i+1), zap.Error(err))
+		time.Sleep(time.Duration(1<<i) * time.Second)
 	}
 
-	return nil, fmt.Errorf("initial jwks fetch failed after %d retries: %w", maxRetries, err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch JWKS after retries: %w", err)
+	}
+
+	return cache, nil
 }
 
 func (c *JWKSCache) GetPublicKey(kid string) (*rsa.PublicKey, error) {
 	c.mu.RLock()
 	key, ok := c.keys[kid]
-	fetchedAt := c.fetchedAt
-	refreshing := c.refreshing
+	lastFetch := c.lastFetch
 	c.mu.RUnlock()
 
-	if ok && time.Since(fetchedAt) < c.cacheTTL {
+	// Case 1: Key not found - Could be a Key Rotation.
+	// We MUST perform a synchronous refresh to check for new keys.
+	if !ok {
+		_, err, _ := c.sf.Do("refresh", func() (interface{}, error) {
+			return nil, c.refresh()
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to refresh JWKS for missing kid %s: %w", kid, err)
+		}
+
+		// Re-check cache after sync refresh
+		c.mu.RLock()
+		defer c.mu.RUnlock()
+		key, ok = c.keys[kid]
+		if !ok {
+			return nil, fmt.Errorf("kid %s not found in JWKS even after refresh", kid)
+		}
 		return key, nil
 	}
 
-	if !refreshing {
+	// Case 2: Key found but cache is stale (SWR).
+	// Trigger background refresh using singleflight to prevent Thundering Herd.
+	if time.Since(lastFetch) > c.cacheTTL {
 		go func() {
-			_ = c.refresh()
+			c.sf.Do("refresh", func() (interface{}, error) {
+				return nil, c.refresh()
+			})
 		}()
 	}
 
-	if ok {
-		return key, nil
-	}
-
-	return nil, fmt.Errorf("key id %s not found in jwks cache", kid)
+	return key, nil
 }
 
 func (c *JWKSCache) refresh() error {
-	c.mu.Lock()
-	if c.refreshing && time.Since(c.fetchedAt) < 10*time.Second {
-		c.mu.Unlock()
-		return nil
-	}
-	c.refreshing = true
-	c.mu.Unlock()
-
-	defer func() {
-		c.mu.Lock()
-		c.refreshing = false
-		c.mu.Unlock()
-	}()
-
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, c.jwksURL, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("X-Internal-Secret", c.internalSecret)
+	if c.internalSecret != "" {
+		req.Header.Set("X-Internal-Secret", c.internalSecret)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch JWKS: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -147,7 +154,7 @@ func (c *JWKSCache) refresh() error {
 
 	var jwks jwksResponse
 	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
-		return err
+		return fmt.Errorf("failed to decode JWKS response: %w", err)
 	}
 
 	newKeys := make(map[string]*rsa.PublicKey)
@@ -167,7 +174,7 @@ func (c *JWKSCache) refresh() error {
 
 	c.mu.Lock()
 	c.keys = newKeys
-	c.fetchedAt = time.Now()
+	c.lastFetch = time.Now()
 	c.mu.Unlock()
 
 	return nil

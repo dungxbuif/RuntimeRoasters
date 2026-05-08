@@ -43,11 +43,15 @@
     {
       "endpoint": "/v1/demo/ping",
       "method": "GET",
-      "output_encoding": "json",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/demo/ping",
-          "encoding": "json",
+          "encoding": "no-op",
           "sd": "static",
           "method": "GET",
           "host": [

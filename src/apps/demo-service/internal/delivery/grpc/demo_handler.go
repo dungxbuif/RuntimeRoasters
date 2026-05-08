@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
+	"go.uber.org/zap"
 )
 
 type DemoHandler struct {
@@ -19,6 +22,16 @@ func NewDemoHandler(u usecase.DemoUsecase) *DemoHandler {
 }
 
 func (h *DemoHandler) GetDemo(ctx context.Context, req *demov1.GetDemoRequest) (*demov1.GetDemoResponse, error) {
+	// Debug log: Check if identity is propagated
+	if id, ok := identity.FromContext(ctx); ok {
+		logger.GetLogger().Info("Request authenticated",
+			zap.String("user_id", id.Subject),
+			zap.String("role", id.Role),
+		)
+	} else {
+		logger.GetLogger().Warn("Request NOT authenticated (missing context identity)")
+	}
+
 	demo, err := h.usecase.GetDemo(ctx)
 	if err != nil {
 		return nil, err

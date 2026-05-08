@@ -68,8 +68,9 @@ SigNoz UI (port 3301) được expose trực tiếp ra host để admin truy c�
 
 1. **Auto-Instrumentation:** HTTP (Gin), gRPC, SQL (Postgres), Redis — tự động tạo spans mà không cần code thủ công trong business logic.
 2. **Context Propagation:** `Trace-ID` lan truyền liên tục qua HTTP Headers, gRPC Metadata, **và Kafka Headers** — không bị đứt gãy tại bất kỳ biên giới nào.
-3. **Log Correlation:** `logger.FromContext(ctx)` tự động đính `trace_id` + `span_id` vào mọi dòng log.
-4. **Centralized Hub:** Services gửi OTLP trực tiếp đến SigNoz — không cần OTel Collector riêng.
+3. **Log Correlation:** `logger.FromContext(ctx)` tự động đính `trace_id` + `span_id` từ OpenTelemetry vào mọi dòng log.
+4. **Structured & Automatic Logging:** Mọi request (HTTP/gRPC) và lỗi hệ thống đều được tự động ghi log dưới dạng JSON với schema thống nhất.
+5. **Centralized Hub:** Services gửi OTLP trực tiếp đến SigNoz — không cần OTel Collector riêng.
 
 ---
 
@@ -316,20 +317,94 @@ func (a *App) Run(httpPort, grpcPort int) {
 ```go
 import "go.opentelemetry.io/otel/trace"
 
-// FromContext returns a logger enriched with trace_id + span_id from the active OTel span.
+// FromContext extracts the TraceID and SpanID from OpenTelemetry context and attaches it to the logger.
+// Fallback to manual TraceIDKey if OpenTelemetry is not present.
 func FromContext(ctx context.Context) *zap.Logger {
-    log := GetLogger()
-    span := trace.SpanFromContext(ctx)
-    if !span.SpanContext().IsValid() {
-        return log
-    }
-    sc := span.SpanContext()
-    return log.With(
-        zap.String("trace_id", sc.TraceID().String()),
-        zap.String("span_id", sc.SpanID().String()),
-    )
+	logger := GetLogger()
+	
+	// OpenTelemetry integration
+	spanContext := trace.SpanContextFromContext(ctx)
+	if spanContext.HasTraceID() {
+		logger = logger.With(zap.String("trace_id", spanContext.TraceID().String()))
+	}
+	if spanContext.HasSpanID() {
+		logger = logger.With(zap.String("span_id", spanContext.SpanID().String()))
+	}
+
+	// Fallback to manual context key
+	if !spanContext.HasTraceID() {
+		if traceID, ok := ctx.Value(TraceIDKey).(string); ok && traceID != "" {
+			logger = logger.With(zap.String("trace_id", traceID))
+		}
+	}
+
+	return logger
 }
 ```
+
+#### 4.5 Tự động ghi log Requests (Middlewares)
+
+Hệ thống sử dụng các Middlewares để tự động ghi log mọi request kèm theo thông tin định danh và latency.
+
+##### HTTP (Gin Logger Middleware)
+Mọi request HTTP đều được ghi log với các trường: `status`, `method`, `path`, `ip`, `latency`, `trace_id`.
+
+```go
+// src/pkg/logger/gin_middleware.go
+func GinLoggerMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        start := time.Now()
+        // ... xử lý request ...
+        log := FromContext(c.Request.Context())
+        log.Info(path, 
+            zap.Int("status", status),
+            zap.Duration("latency", time.Since(start)),
+            zap.String("trace_id", traceID),
+        )
+    }
+}
+```
+
+##### gRPC (Logger Interceptor)
+Mọi cuộc gọi gRPC được ghi log kèm theo `grpc.method`, `grpc.code` và `latency`.
+
+#### 4.6 Ghi log trong Error Handler (RFC 9457)
+
+`GinErrorHandler` không chỉ trả về lỗi cho client mà còn thực hiện ghi log tập trung.
+
+```go
+// src/pkg/errs/problem.go
+func GinErrorHandler() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Next()
+        if len(c.Errors) > 0 {
+            err := c.Errors.Last().Err
+            log := logger.FromContext(c.Request.Context())
+            
+            // Tự động phân loại level log dựa trên HTTP Status
+            if status >= 500 {
+                log.Error("internal server error", zap.Error(err))
+            } else {
+                log.Warn("client request error", zap.Error(err))
+            }
+        }
+    }
+}
+```
+
+#### 4.7 Chuẩn hóa Định dạng Log (Log Schema)
+
+Để đảm bảo khả năng truy vấn hiệu quả, toàn bộ log phải tuân thủ schema sau:
+
+| Field | Type | Mô tả |
+| :--- | :--- | :--- |
+| `ts` | ISO8601 | Timestamp (Production) |
+| `level` | String | INFO, WARN, ERROR, DEBUG |
+| `msg` | String | Thông báo chính |
+| `trace_id` | String | OTel TraceID để liên kết Traces |
+| `span_id` | String | OTel SpanID |
+| `latency` | Duration | Thời gian xử lý request |
+| `error` | String | Chi tiết lỗi (nếu có) |
 
 ---
 

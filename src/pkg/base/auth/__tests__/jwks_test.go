@@ -145,6 +145,18 @@ func TestJWKSCache_Errors(t *testing.T) {
 		}
 	})
 
+	t.Run("default TTL if 0 provided", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			json.NewEncoder(w).Encode(generateJWKS("test-kid"))
+		}))
+		defer server.Close()
+		// Passing 0 should result in 5 minutes (default)
+		_, err := provider.NewJWKSCache(server.URL, "secret", 0)
+		if err != nil {
+			t.Fatalf("expected success with default TTL, got error: %v", err)
+		}
+	})
+
 	t.Run("malformed JSON", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("invalid json"))
@@ -217,6 +229,70 @@ func TestJWKSCache_Errors(t *testing.T) {
 		_, err := provider.NewJWKSCache(server.URL, "secret", 1*time.Minute)
 		if err == nil {
 			t.Error("expected error for invalid E field, got nil")
+		}
+	})
+
+	t.Run("Key Rotation - Sync refresh for missing KID", func(t *testing.T) {
+		var callCount int32
+		var currentKid atomic.Value
+		currentKid.Store("old-kid")
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&callCount, 1)
+			kid := currentKid.Load().(string)
+			json.NewEncoder(w).Encode(generateJWKS(kid))
+		}))
+		defer server.Close()
+
+		// Initial fetch gets "old-kid"
+		cache, _ := provider.NewJWKSCache(server.URL, "secret", 1*time.Minute)
+		initialCalls := atomic.LoadInt32(&callCount)
+
+		// Update server to return "new-kid"
+		currentKid.Store("new-kid")
+
+		// Requesting "new-kid" (missing from cache) should trigger sync refresh
+		key, err := cache.GetPublicKey("new-kid")
+		if err != nil {
+			t.Fatalf("expected success with sync refresh, got error: %v", err)
+		}
+		if key == nil {
+			t.Fatal("expected key, got nil")
+		}
+		if atomic.LoadInt32(&callCount) <= initialCalls {
+			t.Error("expected extra call for sync refresh")
+		}
+	})
+
+	t.Run("Thundering Herd - Singleflight prevents redundant calls", func(t *testing.T) {
+		var callCount int32
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&callCount, 1)
+			time.Sleep(100 * time.Millisecond) // Simulate slow fetch
+			json.NewEncoder(w).Encode(generateJWKS("test-kid"))
+		}))
+		defer server.Close()
+
+		cache, _ := provider.NewJWKSCache(server.URL, "secret", 10*time.Millisecond)
+		time.Sleep(20 * time.Millisecond) // Wait for TTL expiry
+
+		initialCalls := atomic.LoadInt32(&callCount)
+
+		// Launch multiple concurrent requests
+		done := make(chan bool)
+		for i := 0; i < 10; i++ {
+			go func() {
+				cache.GetPublicKey("test-kid")
+				done <- true
+			}()
+		}
+		for i := 0; i < 10; i++ {
+			<-done
+		}
+
+		// Only one refresh call should have been made via singleflight
+		if atomic.LoadInt32(&callCount) > initialCalls+1 {
+			t.Errorf("expected max 1 refresh call, got %d", atomic.LoadInt32(&callCount)-initialCalls)
 		}
 	})
 }

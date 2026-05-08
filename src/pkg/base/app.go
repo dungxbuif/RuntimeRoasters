@@ -57,6 +57,7 @@ func NewApp(opts Options) *App {
 	engine := gin.New()
 	engine.Use(gin.Recovery())
 	engine.Use(otelgin.Middleware(opts.Name)) // HTTP/Gin tracing
+	engine.Use(logger.GinLoggerMiddleware()) // Zap HTTP Logging
 	engine.Use(errs.GinErrorHandler())
 
 	engine.GET("/health/live", func(c *gin.Context) {
@@ -74,7 +75,10 @@ func NewApp(opts Options) *App {
 		Name:       opts.Name,
 		ginEngine:  engine,
 		grpcServer: grpc.NewServer(
-			append(opts.GRPCServerOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))...,
+			append(opts.GRPCServerOptions, 
+				grpc.StatsHandler(otelgrpc.NewServerHandler()),
+				grpc.ChainUnaryInterceptor(logger.GRPCLoggerInterceptor()),
+			)...,
 		),
 		gwMux:      gwMux,
 		logger:     log,

@@ -12,14 +12,14 @@
 
 ## 📋 Kanban Board
 
-| 🕒 To Do                                                    | 🚧 In Progress | ✅ Done |
-| :---------------------------------------------------------- | :------------- | :------ |
-|                                                             |                | [RR-9: Identity Server Infrastructure](./RR-9/RR-9.md) |
-|                                                             |                | [RR-10: Client-Side Auth & Login Flow](./RR-10/ticket.md) |
-| [RR-11: Backend Security Core - JWT Validation](./RR-11.md) |                |         |
-| [RR-12: Fine-grained Authorization (Casbin)](./RR-12.md)    |                |         |
-| [RR-13: End-to-End Secure Integration](./RR-13.md)          |                |         |
-| [RR-14: Token Revocation & Global Logout](./RR-14.md)       |                |         |
+| 🕒 To Do                                                 | 🚧 In Progress | ✅ Done |
+| :------------------------------------------------------- | :------------- | :------ |
+|                                                          |                | [RR-9: Identity Server Infrastructure](./RR-9/RR-9.md) |
+|                                                          |                | [RR-10: Client-Side Auth & Login Flow](./RR-10/ticket.md) |
+|                                                          |                | [RR-11: Backend Security Core - JWT Validation](./RR-11.md) |
+| [RR-12: Fine-grained Authorization (Casbin)](./RR-12.md) |                |         |
+| [RR-13: End-to-End Secure Integration](./RR-13.md)       |                |         |
+| [RR-14: Token Revocation & Global Logout](./RR-14.md)    |                |         |
 
 ---
 
