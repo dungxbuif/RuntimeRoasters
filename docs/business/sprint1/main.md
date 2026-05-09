@@ -8,11 +8,11 @@
 
 | 🕒 To Do | 🚧 In Progress | ✅ Done |
 | :--- | :--- | :--- |
-| [RR-4: Proto + Wire + KrakenD + Apps Shell](./RR-4.md) | [RR-4-1: buf toolchain](./RR-4/RR-4-1/ticket.md) | [RR-1: Infra Kick-off](./RR-1.md) |
-| [RR-5: Docker Complete — Jaeger](./RR-5.md) | | [RR-2: Config & Logger](./RR-2.md) |
-| [RR-6: Demo Service — Clean Arch + Full Slice](./RR-6.md) | | [RR-3: Base & Errs](./RR-3.md) |
-| [RR-7: Control App — Jaeger Tracing](./RR-7.md) | | |
-| [RR-8: Client App — Business UI + API Explorer](./RR-8.md) | | |
+| [RR-4: Proto + Wire + KrakenD + Apps Shell](./RR-4/ticket.md) | [RR-4-1: buf toolchain](./RR-4/subtickets/RR-4-1/ticket.md) | [RR-1: Infra Kick-off](./RR-1/ticket.md) |
+| [RR-5: Docker Complete — Jaeger](./RR-5/ticket.md) | | [RR-2: Config & Logger](./RR-2/ticket.md) |
+| [RR-6: Demo Service — Clean Arch + Full Slice](./RR-6/ticket.md) | | [RR-3: Base & Errs](./RR-3/ticket.md) |
+| [RR-7: Control App — Jaeger Tracing](./RR-7/ticket.md) | | |
+| [RR-8: Client App — Business UI + API Explorer](./RR-8/ticket.md) | | |
 
 ---
 

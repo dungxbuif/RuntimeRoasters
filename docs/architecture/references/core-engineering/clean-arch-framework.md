@@ -806,3 +806,21 @@ main.go      = The glue. Reads config, wires all layers, runs the app.
 4. **Không hardcode** — mọi cấu hình phải nạp qua `config/`.
 5. **Mọi state phải ra ngoài container** — không có global `map`, không cache thông qua memory array, không `os.WriteFile`.
 6. **`main.go` là nơi duy nhất** (Composition Root) biết concrete implementation nào đang được khởi tạo.
+7. **Tuyệt đối không check Role (`if role == "..."`) trong tầng UseCase.** Phân quyền theo vai trò là nhiệm vụ của Middleware/Interceptor (Casbin).
+8. **UseCase/Repository luôn phải thực hiện Scoping dữ liệu.** Mọi hàm truy vấn phải nhận `callerID`/`ownerID` để ép quyền sở hữu qua SQL `WHERE`.
+
+---
+
+## 8. Tiêu Chuẩn Phân Quyền (Authorization Standards)
+
+Hệ thống áp dụng mô hình **Two-Gate Hybrid AuthZ**:
+
+### Gate 1: RBAC (Boundary Check)
+- **Thực thi:** Casbin Middleware (HTTP) & Interceptor (gRPC) tại tầng `pkg/base/casbin`.
+- **Phạm vi:** Kiểm tra quyền gọi API dựa trên Role của User.
+- **Định danh Resource:** Sử dụng **gRPC Method Name** (ví dụ: `/farm.v1.FarmService/CreateFarm`) làm định danh Resource trong Casbin Policy để đồng nhất giữa gRPC và REST Gateway.
+
+### Gate 2: ABAC (Data Scoping)
+- **Thực thi:** SQL Clause trong Repository Layer.
+- **Phạm vi:** Kiểm tra quyền sở hữu dữ liệu (Data Ownership / Multi-tenancy).
+- **Cơ chế:** Ép thêm điều kiện `WHERE owner_id = $1` vào mọi câu lệnh SQL. Dữ liệu `owner_id` được trích xuất từ Identity Context (`pkg/base/identity`) đã được xác thực thành công ở Layer Authentication.

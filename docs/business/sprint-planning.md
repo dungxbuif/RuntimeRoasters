@@ -18,14 +18,14 @@
 
 | Ticket | Summary | Status |
 | :--- | :--- | :--- |
-| RR-1 | Infra Kick-off — Monorepo, Go Workspaces | ✅ Done |
-| RR-2 | Config & Logger — Viper, Zap, BaseConfig | ✅ Done |
-| RR-3 | Base & Errs — RFC 9457, app lifecycle | ✅ Done |
-| RR-4 | Proto + Wire + KrakenD + Client Shell | 🕒 To Do |
-| RR-5 | Docker Complete — SigNoz + Full Compose | 🕒 To Do |
-| RR-6 | Demo Service — Clean Arch + Full Stack Slice | 🕒 To Do |
-| RR-7 | Client App — Control Plane | 🕒 To Do |
-| RR-8 | Client App — Business UI Shell | 🕒 To Do |
+| [RR-1](./sprint1/RR-1/ticket.md) | Infra Kick-off — Monorepo, Go Workspaces | ✅ Done |
+| [RR-2](./sprint1/RR-2/ticket.md) | Config & Logger — Viper, Zap, BaseConfig | ✅ Done |
+| [RR-3](./sprint1/RR-3/ticket.md) | Base & Errs — RFC 9457, app lifecycle | ✅ Done |
+| [RR-4](./sprint1/RR-4/ticket.md) | Proto + Wire + KrakenD + Client Shell | 🕒 To Do |
+| [RR-5](./sprint1/RR-5/ticket.md) | Docker Complete — SigNoz + Full Compose | 🕒 To Do |
+| [RR-6](./sprint1/RR-6/ticket.md) | Demo Service — Clean Arch + Full Stack Slice | 🕒 To Do |
+| [RR-7](./sprint1/RR-7/ticket.md) | Client App — Control Plane | 🕒 To Do |
+| [RR-8](./sprint1/RR-8/ticket.md) | Client App — Business UI Shell | 🕒 To Do |
 
 Chi tiết: [`docs/business/sprint1/main.md`](./sprint1/main.md)
 
@@ -37,11 +37,12 @@ Chi tiết: [`docs/business/sprint1/main.md`](./sprint1/main.md)
 
 | Ticket | Summary |
 | :--- | :--- |
-| RR-9 | Identity Server Infrastructure (Ory Kratos) |
-| RR-10 | Client-Side Auth & Login Flow |
-| RR-11 | Backend Security Core - JWT Validation |
-| RR-12 | Fine-grained Authorization (Casbin) |
-| RR-13 | End-to-End Secure Integration |
+| [RR-9](./sprint2/RR-9/ticket.md) | Identity Server Infrastructure (Ory Kratos) |
+| [RR-10](./sprint2/RR-10/ticket.md) | Client-Side Auth & Login Flow |
+| [RR-11](./sprint2/RR-11/ticket.md) | Backend Security Core - JWT Validation |
+| [RR-12](./sprint2/RR-12/ticket.md) | Fine-grained Authorization (Casbin) |
+| [RR-13](./sprint2/RR-13/ticket.md) | End-to-End Secure Integration |
+| [RR-14](./sprint2/RR-14/ticket.md) | Token Revocation & Global Logout |
 
 Chi tiết: [`docs/business/sprint2/main.md`](./sprint2/main.md)
 
@@ -53,13 +54,12 @@ Chi tiết: [`docs/business/sprint2/main.md`](./sprint2/main.md)
 
 | Ticket | Summary |
 | :--- | :--- |
-| S3-1 | Farm Service — Bootstrap từ demo-service template |
-| S3-2 | Farm Domain — Entities & DB Schema |
-| S3-3 | Farm Repository — Full CRUD (sqlx) |
-| S3-4 | Farm UseCase — Business Rules |
-| S3-5 | Farm Delivery — gRPC + REST handlers |
-| S3-6 | Farm UI — List + Create Farm (`/app/farms`) |
-| S3-7 | Farm UI — Batch Management |
+| [RR-15](./sprint3/RR-15/ticket.md) | Farm Service Bootstrap & Domain |
+| [RR-16](./sprint3/RR-16/ticket.md) | Farm Repository & Database |
+| [RR-17](./sprint3/RR-17/ticket.md) | Farm UseCase & API (gRPC/REST) |
+| [RR-18](./sprint3/RR-18/ticket.md) | Farm Control Plane (UI) |
+
+Chi tiết: [`docs/business/sprint3/main.md`](./sprint3/main.md)
 
 ---
 
@@ -69,20 +69,9 @@ Chi tiết: [`docs/business/sprint2/main.md`](./sprint2/main.md)
 
 | Ticket | Summary |
 | :--- | :--- |
-| S3-1 | Retail Service — POST /orders, Outbox Pattern |
-| S3-2 | Warehouse Service — Reserve inventory, Saga participant |
-| S3-3 | Saga Rollback — Compensating actions |
-| S3-4 | Trace Service — Kafka consumer → Elasticsearch CQRS |
+| RR-19 | Retail Service & Outbox Pattern |
+| RR-20 | Warehouse Service & Saga Participant |
+| RR-21 | Saga Rollback & Compensations |
+| RR-22 | Trace Service & CQRS |
 
----
-
-## Sprint 4 — Security & Auth
-
-**Goal:** Production-grade security.
-
-| Ticket | Summary |
-| :--- | :--- |
-| S4-1 | Ory Kratos — Identity, JWT, JWKS |
-| S4-2 | In-service JWT validation (in-memory JWKS) |
-| S4-3 | Casbin — RBAC/ABAC per service |
-| S4-4 | mTLS — gRPC internal certificates |
+Chi tiết: [`docs/business/sprint4/main.md`](./sprint4/main.md)

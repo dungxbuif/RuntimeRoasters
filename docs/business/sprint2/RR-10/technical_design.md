@@ -1,8 +1,15 @@
-# RR-10: Technical Design & Implementation Plan
-**Feature:** Client-Side Auth & Login Flow
+# Dev Notes - [RR-10] Client-Side Auth & Login Flow
 
-## 1. Architectural Approach
-The Frontend (`client-app`) will act as the Login Provider for Ory Hydra, utilizing Ory Kratos to handle the actual identity verification. This establishes a "Zero-Consent" OIDC SSO flow.
+## 🛠️ Technical Implementation Details
+- **Identity Flow:** Ory Kratos login → session token → Token Exchange to JWT (native Kratos OIDC Token Exchange).
+- **Token Storage:** HttpOnly Cookie (prevents XSS token theft).
+- **Gateway Role:** KrakenD acts as Traffic Coordinator — checks App **Scopes** (Gate 1) via Native Validator JSON config. No LUA scripts or Go Plugins.
+- **State Management:** Zustand or simple Context to store User profile (decoded from JWT: `sub`, `role`, `org_id`).
+- **Route Protection:** Next.js Middleware at edge; check cookie presence.
+- **KrakenD Config:** `scopes` claim validation is declarative JSON — no custom auth plugin.
+
+## 🏗️ Architectural Approach
+The Frontend (`client-app`) acts as the Login Provider for Ory Hydra, utilizing Ory Kratos to handle the actual identity verification. This establishes a "Zero-Consent" OIDC SSO flow.
 
 ### Flow Breakdown:
 1. **Unauthenticated Access:** User attempts to access a protected route (e.g., Dashboard).
@@ -12,12 +19,7 @@ The Frontend (`client-app`) will act as the Login Provider for Ory Hydra, utiliz
 5. **Accept Challenge:** Upon successful Kratos authentication, the App fetches the user identity and accepts the Hydra challenge.
 6. **Token Exchange:** Hydra redirects to the App's callback, where the App exchanges the authorization code for an Access Token (JWT).
 
-## 2. Frontend Infrastructure
-- **Framework:** Next.js 15 (App Router).
-- **Libraries:** `@ory/client`, `axios`, `framer-motion`, `lucide-react`.
-- **Styling:** Tailwind CSS 4 with a custom "Industrial Premium" aesthetic (Dark/Light hybrid, gradients, glassmorphism).
-
-## 3. Directory Structure
+## 📂 Directory Structure
 ```text
 src/app/
 ├── (auth)/
@@ -32,11 +34,23 @@ src/app/
 │   └── consent/accept/route.ts
 ```
 
-## 4. UI/UX Specifications
+## 🎨 UI/UX Specifications
 - **LoginCard:** Centered glassmorphic card without harsh borders.
 - **KratosForm:** Dynamically parses `ui.nodes` from Kratos.
 - **Loading State:** Themed spinner with "Initializing Terminal UI..." matching the primary brand color (`primary/20`).
 
-## 5. Security Measures
+## 🛡️ Security Measures
 - Tokens are temporarily stored in LocalStorage for demo purposes (can be upgraded to HttpOnly cookies later).
 - Cross-Site Request Forgery (CSRF) protection provided natively by Kratos.
+
+## 📝 Implementation Review & Troubleshooting
+
+### Issues Encountered & Solutions
+- **Kratos 500 Error:** Resolved by adding `oauth2_provider` config to `kratos.yaml` pointing to Hydra's Admin API.
+- **Logout Loop:** Fixed by using `kratos.createBrowserLogoutFlow()` instead of just clearing LocalStorage.
+- **Token Exchange 404:** Switched from Hydra Admin URL (4445) to Public URL (4444) for token exchange.
+- **Invalid Client:** Ensured client-app was seeded in Hydra using `hydra import clients`.
+
+## ⚠️ Technical Debt
+- **Token Storage:** Migrate JWTs from LocalStorage to HttpOnly secure cookies.
+- **Token Refresh:** Implement `refresh_token` flow with a background refresh interceptor.
