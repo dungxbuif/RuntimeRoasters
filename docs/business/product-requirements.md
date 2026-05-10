@@ -309,6 +309,7 @@ Triển khai 100% qua `Docker Compose`. Môi trường host là máy chủ `Prox
 
 | Topic                              | Producer(s)      | Consumer(s)                         |
 | :--------------------------------- | :--------------- | :---------------------------------- |
+| `auth.user.events`                 | Auth             | Farm, Audit, Gateway (Cache)        |
 | `farm.harvest.created`             | Farm             | Processing, Trace, Audit            |
 | `process.batch.completed`          | Processing       | Warehouse, Trace, Audit             |
 | `retail.order.created`             | Retail           | Payment, Trace, Audit               |
@@ -571,6 +572,11 @@ Dự án được coi là **thành công** khi:
 | :------------------------------------------------------------------------ | :---------------------------------------------- |
 | System Architecture                                                       | `docs/architecture/system-architecture.md`       |
 | Database Schema Design                                                    | `docs/architecture/database-schema.md`           |
+| UI/UX Visual Ideas (Control Plane Visualization Dashboard)                                   | `docs/ui-ux/visual-ideas.md`                     |
+| REST API Specifications                                                   | `docs/api/rest-api.md`                           |
+| gRPC Contract Definitions                                                 | `docs/api/grpc-contracts.md`                     |
+| Deployment & Setup Guide                                                  | `docs/deployment/setup-guide.md`                 |
+s/architecture/database-schema.md`           |
 | UI/UX Visual Ideas (Control Plane Visualization Dashboard)                                   | `docs/ui-ux/visual-ideas.md`                     |
 | REST API Specifications                                                   | `docs/api/rest-api.md`                           |
 | gRPC Contract Definitions                                                 | `docs/api/grpc-contracts.md`                     |

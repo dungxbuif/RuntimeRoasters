@@ -21,6 +21,11 @@ export default function Sidebar() {
     { href: "/app/retail", label: "Retail Saga", icon: "store" },
   ];
 
+  const adminLinks = [
+    { href: "/admin/farms", label: "Manage Farms", icon: "admin_panel_settings" },
+    { href: "/admin/users", label: "Manage Users", icon: "group_add" },
+  ];
+
   return (
     <aside className="flex flex-col h-full p-4 space-y-2 fixed left-0 top-16 z-40 bg-[#f2f4f6] w-64 border-r border-outline-variant/10">
       <div className="flex items-center gap-3 px-4 py-6 mb-2">
@@ -37,6 +42,16 @@ export default function Sidebar() {
         {mainLinks.map((link) => (
           <SidebarLink key={link.href} {...link} active={pathname === link.href} />
         ))}
+
+        {/* Admin Section - Only for FARM_ADMIN role */}
+        <div className="px-4 py-6 border-t border-outline-variant/10 mt-6 bg-slate-200/50 rounded-2xl mx-1">
+          <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 italic opacity-70">Administrative Control</p>
+          <div className="space-y-1">
+            {adminLinks.map((link) => (
+              <SidebarLink key={link.href} {...link} active={pathname === link.href} small />
+            ))}
+          </div>
+        </div>
         
         <div className="px-4 py-6 border-t border-outline-variant/10 mt-6">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 italic opacity-70">Supply Chain Ops</p>

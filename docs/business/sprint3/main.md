@@ -25,6 +25,11 @@ Sprint này tập trung vào 3 luồng dữ liệu chính:
 - Thiết kế quan hệ Aggregate Root giữa Farm và Batch.
 - Chuẩn bị sẵn cấu trúc cho Outbox Pattern.
 
+### 4. Flow 4: Roles & Permissions (RBAC)
+- **FARM_ADMIN**: Quản lý tài khoản Manager và Nông trại thông qua Admin Portal.
+- **FARM_MANAGER**: Quản lý Nông trại được chỉ định.
+- **Patterns**: Distributed CASBIN, Local Identity Scoping.
+
 ---
 
 ## 🎫 Tickets

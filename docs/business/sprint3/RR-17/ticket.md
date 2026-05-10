@@ -1,48 +1,32 @@
-# [RR-17] Flow 2: View, Update, Delete Farm
+# [RR-17] Duy trì Tính Chính xác của Dữ liệu Nông trại (Maintaining Farm Accuracy)
 
-- **Summary:** Triển khai các tính năng quản lý chi tiết, cập nhật và xóa Nông trại.
-- **Priority:** `MEDIUM`
-- **Type:** Feature
-
----
-
-## 🔍 Acceptance Criteria
-
-### Scenario 1: Cập nhật thông tin Nông trại
-- **Given:** Tôi đang ở trang chi tiết nông trại.
-- **When:** Tôi thay đổi thông tin và nhấn "Cập nhật".
-- **Then:** Thông tin mới được lưu lại và phiên bản (version) của bản ghi được tăng lên.
-
-### Scenario 2: Xử lý xung đột khi cập nhật (Optimistic Locking)
-- **Given:** Hai người dùng cùng mở trang chỉnh sửa một nông trại.
-- **When:** Người thứ nhất lưu thành công, sau đó người thứ hai nhấn lưu.
-- **Then:** Người thứ hai phải nhận được thông báo lỗi "Dữ liệu đã bị thay đổi bởi người khác" (ErrOptimisticLock).
-
-### Scenario 3: Xóa Nông trại
-- **Given:** Tôi muốn ngừng quản lý một nông trại.
-- **When:** Tôi nhấn "Xóa" và xác nhận.
-- **Then:** Nông trại bị xóa khỏi danh sách (hoặc đánh dấu Soft Delete).
+- **Tóm tắt (Summary):** Triển khai các tính năng cập nhật thông tin và xóa bỏ các nông trại không còn hoạt động.
+- **Độ ưu tiên (Priority):** `MEDIUM`
+- **Loại (Type):** Feature
 
 ---
 
-### 1. Repository Technique
-- **Update Function:**
-```go
-// postgres/farm_repo.go
-func (r *farmRepo) Update(ctx, farm *domain.Farm) error {
-    return r.db.WithContext(ctx).Save(farm).Error
-}
-```
+## 📖 Câu chuyện người dùng (User Story)
+> Là một **Người nông dân (Farmer)**, tôi muốn có thể thay đổi thông tin nông trại (như đổi tên hoặc cập nhật lại diện tích thực tế) hoặc xóa bỏ nông trại nếu tôi không còn canh tác ở đó nữa, để đảm bảo hồ sơ của tôi trên hệ thống luôn đúng với thực tế.
 
+## 💰 Giá trị nghiệp vụ (Business Value)
+Đảm bảo tính chính xác cho các báo cáo sản lượng. Việc người dùng có thể tự quản lý dữ liệu giúp giảm tải cho bộ phận hỗ trợ kỹ thuật.
 
-### 2. UseCase Logic (Data Scope Enforcement)
-- **`UpdateFarm` Logic:**
-  1. Gọi Repo `GetByID(ctx, id)`.
-  2. KIỂM TRA: `farm.OwnerID == identity.FromContext(ctx).Subject`.
-  3. NẾU SAI: Return `errs.ErrForbidden`. (Cấm sửa hàng của người khác).
-  4. NẾU ĐÚNG: Cập nhật các trường và gọi Repo `Update`.
+---
 
-### 3. Error Handling
-- Map `errs.ErrConflict` sang gRPC status `codes.Aborted`.
-- Map `errs.ErrForbidden` sang gRPC status `codes.PermissionDenied`.
-- Sử dụng helper tại `pkg/errs` để chuẩn hóa lỗi RFC 9457.
+## 🔍 Điều kiện nghiệm thu (Acceptance Criteria)
+
+### Kịch bản 1: Cập nhật thông tin thành công
+- **Giả sử:** Tôi đang ở trang chỉnh sửa nông trại "Đồi Chè A".
+- **Khi:** Tôi đổi tên thành "Đồi Cà Phê A" và nhấn "Cập nhật".
+- **Thì:** Tên mới phải được lưu lại và hiển thị chính xác ở mọi nơi.
+
+### Kịch bản 2: Bảo vệ quyền sở hữu khi cập nhật/xóa
+- **Giả sử:** Có một nông trại ID là `X` thuộc về Farmer A.
+- **Khi:** Farmer B cố tình gửi lệnh cập nhật hoặc xóa cho nông trại `X`.
+- **Thì:** Hệ thống phải từ chối và thông báo "Bạn không có quyền thực hiện hành động này".
+
+### Kịch bản 3: Xóa nông trại
+- **Giả sử:** Tôi muốn xóa nông trại của mình.
+- **Khi:** Tôi xác nhận xóa.
+- **Thì:** Nông trại đó không còn xuất hiện trong danh sách của tôi nữa.

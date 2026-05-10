@@ -10,6 +10,15 @@ type Config struct {
 	// Kafka Config
 	KafkaBrokers []string `mapstructure:"KAFKA_BROKERS"`
 	KafkaTopic   string   `mapstructure:"KAFKA_AUTH_TOPIC"`
+
+	// Ory Kratos Admin
+	KratosAdminURL string `mapstructure:"KRATOS_ADMIN_URL"`
+
+	// Security
+	InternalSecret string `mapstructure:"INTERNAL_SECRET"`
+	JWKSURL        string `mapstructure:"JWKS_URL"`
+	JWKSCacheTTL   string `mapstructure:"JWKS_CACHE_TTL"`
+	ExpectedIssuer string `mapstructure:"EXPECTED_ISSUER"`
 }
 
 // Load loads the auth-service configuration

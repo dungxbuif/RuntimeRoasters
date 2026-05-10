@@ -6,12 +6,69 @@ option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1;farmv1
 
 import "google/api/annotations.proto";
 
+// FarmService defines the management of coffee farms.
 service FarmService {
+  // CreateFarm creates a new farm record.
+  rpc CreateFarm(CreateFarmRequest) returns (CreateFarmResponse) {
+    option (google.api.http) = {
+      post: "/v1/farms"
+      body: "*"
+    };
+  }
+
+  // GetFarm retrieves a single farm by ID.
   rpc GetFarm(GetFarmRequest) returns (GetFarmResponse) {
     option (google.api.http) = {
       get: "/v1/farms/{id}"
     };
   }
+
+  // ListFarms returns all farms owned by the authenticated user.
+  rpc ListFarms(ListFarmsRequest) returns (ListFarmsResponse) {
+    option (google.api.http) = {
+      get: "/v1/farms"
+    };
+  }
+
+  // UpdateFarm updates an existing farm's details.
+  rpc UpdateFarm(UpdateFarmRequest) returns (UpdateFarmResponse) {
+    option (google.api.http) = {
+      put: "/v1/farms/{id}"
+      body: "*"
+    };
+  }
+
+  // DeleteFarm removes a farm record.
+  rpc DeleteFarm(DeleteFarmRequest) returns (DeleteFarmResponse) {
+    option (google.api.http) = {
+      delete: "/v1/farms/{id}"
+    };
+  }
+}
+
+// --- Messages ---
+
+message Farm {
+  string id = 1;
+  string name = 2;
+  string location = 3;
+  double area = 4;
+  string farm_type = 5;
+  string owner_id = 6;
+  int64 created_at = 7;
+  int64 updated_at = 8;
+}
+
+message CreateFarmRequest {
+  string name = 1;
+  string location = 2;
+  double area = 3;
+  string farm_type = 4;
+  string owner_id = 5;
+}
+
+message CreateFarmResponse {
+  Farm farm = 1;
 }
 
 message GetFarmRequest {
@@ -19,6 +76,31 @@ message GetFarmRequest {
 }
 
 message GetFarmResponse {
+  Farm farm = 1;
+}
+
+message ListFarmsRequest {}
+
+message ListFarmsResponse {
+  repeated Farm farms = 1;
+}
+
+message UpdateFarmRequest {
   string id = 1;
-  string message = 2;
+  string name = 2;
+  string location = 3;
+  double area = 4;
+  string farm_type = 5;
+}
+
+message UpdateFarmResponse {
+  Farm farm = 1;
+}
+
+message DeleteFarmRequest {
+  string id = 1;
+}
+
+message DeleteFarmResponse {
+  bool success = 1;
 }

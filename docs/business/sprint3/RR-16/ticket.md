@@ -1,43 +1,32 @@
-# [RR-16] Flow 1: Create & List Farm
+# [RR-16] Số hóa Tài sản Nông trại (Digitizing Farm Assets)
 
-- **Summary:** Triển khai luồng tính năng tạo mới và hiển thị danh sách Nông trại (Farm).
-- **Priority:** `HIGH`
-- **Type:** Feature
-
----
-
-## 🔍 Acceptance Criteria
-
-### Scenario 1: Tạo mới Nông trại thành công
-- **Given:** Tôi là một Farmer đã đăng nhập và đang ở trang "Thêm Nông Trại".
-- **When:** Tôi nhập đầy đủ thông tin (Tên, Địa chỉ, Diện tích) và nhấn "Lưu".
-- **Then:** Hệ thống lưu dữ liệu vào Postgres và hiển thị thông báo thành công.
-
-### Scenario 2: Hiển thị danh sách Nông trại
-- **Given:** Tôi đã có một số nông trại trong hệ thống.
-- **When:** Tôi truy cập trang danh sách nông trại.
-- **Then:** Tôi phải thấy danh sách các nông trại của mình với đầy đủ thông tin cơ bản.
+- **Tóm tắt (Summary):** Triển khai tính năng đăng ký mới và quản lý danh sách các nông trại trong hệ thống.
+- **Độ ưu tiên (Priority):** `HIGH`
+- **Loại (Type):** Feature
 
 ---
 
-## 👨‍💻 Developer Implementation Guide
+## 📖 Câu chuyện người dùng (User Story)
+> Là một **Người nông dân (Farmer)**, tôi muốn có thể đăng ký các khu vực canh tác của mình lên hệ thống, kèm theo thông tin về vị trí và giống cà phê, để tôi có thể bắt đầu ghi nhật ký thu hoạch cho từng lô hàng sau này.
 
-### 1. Domain Model (`internal/domain/farm.go`)
-- **Entity:** `Farm` struct với các trường: `ID` (UUID), `Name`, `Location`, `Area` (float64), `OwnerID` (string).
-- **Technique:** `OwnerID` là khóa quan trọng để thực hiện Data Scoping (ABAC).
+## 💰 Giá trị nghiệp vụ (Business Value)
+Việc số hóa thông tin nông trại là tiền đề cho tính năng **Truy xuất nguồn gốc (Traceability)**. Nó giúp minh bạch hóa xuất xứ hạt cà phê cho người tiêu dùng cuối cùng.
 
-### 2. Repository (`internal/infrastructure/postgres/farm_repo.go`)
-- **Functions:**
-  - `Create(ctx, *Farm) error`: Chèn record vào Postgres.
-  - `ListByOwner(ctx, ownerID string) ([]*Farm, error)`: TRUY VẤN bắt buộc kèm `WHERE owner_id = $1`.
+---
 
-### 3. UseCase (`internal/usecase/farm_usecase.go`)
-- **Input/Output:** Nhận DTO (Request struct), trả về DTO (Response struct) hoặc Domain Entity.
-- **`CreateFarm` Logic:**
-  1. Lấy `CurrentUserID` từ `identity.FromContext(ctx)`.
-  2. Validate: `Area > 0`.
-  3. Gán `OwnerID = CurrentUserID`.
-  4. Gọi Repo `Create`.
+## 🔍 Điều kiện nghiệm thu (Acceptance Criteria)
 
-### 4. gRPC Handler (`internal/delivery/grpc/handler.go`)
-- **Technique:** Gọi UseCase và map kết quả sang Protobuf messages. Phải log trace ID bằng `logger.FromContext(ctx)`.
+### Kịch bản 1: Đăng ký nông trại thành công
+- **Giả sử:** Tôi là một Farmer đã đăng nhập.
+- **Khi:** Tôi gửi thông tin nông trại (Tên, Địa chỉ, Diện tích, Giống cà phê).
+- **Thì:** Hệ thống phải lưu trữ thông tin này và gán quyền sở hữu nông trại đó cho tài khoản của tôi.
+
+### Kịch bản 2: Hiển thị danh sách nông trại cá nhân
+- **Giả sử:** Tôi đã đăng ký 2 nông trại khác nhau.
+- **Khi:** Tôi truy cập trang danh sách nông trại của mình.
+- **Thì:** Tôi phải thấy chính xác 2 nông trại đó và **không thấy** bất kỳ nông trại nào của người khác.
+
+### Kịch bản 3: Ràng buộc dữ liệu
+- **Giả sử:** Tôi nhập diện tích nông trại bằng 0 hoặc số âm.
+- **Khi:** Tôi nhấn "Lưu".
+- **Thì:** Hệ thống phải từ chối và hiển thị thông báo lỗi "Diện tích phải lớn hơn 0".

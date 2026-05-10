@@ -126,7 +126,13 @@ graph TB
    - Read: Elasticsearch (full-text search).
    - Sync: Trace Service consume Kafka → upsert Elasticsearch.
 
-4. **Standardized API Response (RFC 9457):**
+6. **User Management & Admin-only Creation**:
+   - Chỉ `farm_admin` có quyền tạo User mới thông qua Admin Portal.
+   - `auth-service` đóng vai trò Proxy cho Ory Kratos Admin API.
+   - Sử dụng Kafka để phát tán sự kiện `user.created` đảm bảo tính nhất quán quyền hạn (Casbin) và thông tin người dùng trên toàn hệ thống.
+
+7. **Standardized API Response (RFC 9457)**:
+
    - `type`, `title`, `status`, `detail`, `instance`, `trace_id`, `errors[]`.
    - `application/problem+json` Content-Type.
 

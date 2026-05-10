@@ -3,3 +3,4 @@ CREATE DATABASE identity_db; -- Ory Kratos: Users, Sessions, Identity Schemas
 CREATE DATABASE hydra_db;    -- Ory Hydra: OAuth2, OIDC, Tokens
 CREATE DATABASE demo_db;     -- Demo Service
 CREATE DATABASE auth_db;     -- Centralized Auth Service (RR-12)
+CREATE DATABASE farm_db;     -- Farm Service (Sprint 3)

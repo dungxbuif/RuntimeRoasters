@@ -19,14 +19,29 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FarmService_GetFarm_FullMethodName = "/runtime.farm.v1.FarmService/GetFarm"
+	FarmService_CreateFarm_FullMethodName = "/runtime.farm.v1.FarmService/CreateFarm"
+	FarmService_GetFarm_FullMethodName    = "/runtime.farm.v1.FarmService/GetFarm"
+	FarmService_ListFarms_FullMethodName  = "/runtime.farm.v1.FarmService/ListFarms"
+	FarmService_UpdateFarm_FullMethodName = "/runtime.farm.v1.FarmService/UpdateFarm"
+	FarmService_DeleteFarm_FullMethodName = "/runtime.farm.v1.FarmService/DeleteFarm"
 )
 
 // FarmServiceClient is the client API for FarmService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// FarmService defines the management of coffee farms.
 type FarmServiceClient interface {
+	// CreateFarm creates a new farm record.
+	CreateFarm(ctx context.Context, in *CreateFarmRequest, opts ...grpc.CallOption) (*CreateFarmResponse, error)
+	// GetFarm retrieves a single farm by ID.
 	GetFarm(ctx context.Context, in *GetFarmRequest, opts ...grpc.CallOption) (*GetFarmResponse, error)
+	// ListFarms returns all farms owned by the authenticated user.
+	ListFarms(ctx context.Context, in *ListFarmsRequest, opts ...grpc.CallOption) (*ListFarmsResponse, error)
+	// UpdateFarm updates an existing farm's details.
+	UpdateFarm(ctx context.Context, in *UpdateFarmRequest, opts ...grpc.CallOption) (*UpdateFarmResponse, error)
+	// DeleteFarm removes a farm record.
+	DeleteFarm(ctx context.Context, in *DeleteFarmRequest, opts ...grpc.CallOption) (*DeleteFarmResponse, error)
 }
 
 type farmServiceClient struct {
@@ -35,6 +50,16 @@ type farmServiceClient struct {
 
 func NewFarmServiceClient(cc grpc.ClientConnInterface) FarmServiceClient {
 	return &farmServiceClient{cc}
+}
+
+func (c *farmServiceClient) CreateFarm(ctx context.Context, in *CreateFarmRequest, opts ...grpc.CallOption) (*CreateFarmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateFarmResponse)
+	err := c.cc.Invoke(ctx, FarmService_CreateFarm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *farmServiceClient) GetFarm(ctx context.Context, in *GetFarmRequest, opts ...grpc.CallOption) (*GetFarmResponse, error) {
@@ -47,11 +72,52 @@ func (c *farmServiceClient) GetFarm(ctx context.Context, in *GetFarmRequest, opt
 	return out, nil
 }
 
+func (c *farmServiceClient) ListFarms(ctx context.Context, in *ListFarmsRequest, opts ...grpc.CallOption) (*ListFarmsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListFarmsResponse)
+	err := c.cc.Invoke(ctx, FarmService_ListFarms_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) UpdateFarm(ctx context.Context, in *UpdateFarmRequest, opts ...grpc.CallOption) (*UpdateFarmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateFarmResponse)
+	err := c.cc.Invoke(ctx, FarmService_UpdateFarm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) DeleteFarm(ctx context.Context, in *DeleteFarmRequest, opts ...grpc.CallOption) (*DeleteFarmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteFarmResponse)
+	err := c.cc.Invoke(ctx, FarmService_DeleteFarm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FarmServiceServer is the server API for FarmService service.
 // All implementations must embed UnimplementedFarmServiceServer
 // for forward compatibility.
+//
+// FarmService defines the management of coffee farms.
 type FarmServiceServer interface {
+	// CreateFarm creates a new farm record.
+	CreateFarm(context.Context, *CreateFarmRequest) (*CreateFarmResponse, error)
+	// GetFarm retrieves a single farm by ID.
 	GetFarm(context.Context, *GetFarmRequest) (*GetFarmResponse, error)
+	// ListFarms returns all farms owned by the authenticated user.
+	ListFarms(context.Context, *ListFarmsRequest) (*ListFarmsResponse, error)
+	// UpdateFarm updates an existing farm's details.
+	UpdateFarm(context.Context, *UpdateFarmRequest) (*UpdateFarmResponse, error)
+	// DeleteFarm removes a farm record.
+	DeleteFarm(context.Context, *DeleteFarmRequest) (*DeleteFarmResponse, error)
 	mustEmbedUnimplementedFarmServiceServer()
 }
 
@@ -62,8 +128,20 @@ type FarmServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedFarmServiceServer struct{}
 
+func (UnimplementedFarmServiceServer) CreateFarm(context.Context, *CreateFarmRequest) (*CreateFarmResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateFarm not implemented")
+}
 func (UnimplementedFarmServiceServer) GetFarm(context.Context, *GetFarmRequest) (*GetFarmResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFarm not implemented")
+}
+func (UnimplementedFarmServiceServer) ListFarms(context.Context, *ListFarmsRequest) (*ListFarmsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListFarms not implemented")
+}
+func (UnimplementedFarmServiceServer) UpdateFarm(context.Context, *UpdateFarmRequest) (*UpdateFarmResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFarm not implemented")
+}
+func (UnimplementedFarmServiceServer) DeleteFarm(context.Context, *DeleteFarmRequest) (*DeleteFarmResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteFarm not implemented")
 }
 func (UnimplementedFarmServiceServer) mustEmbedUnimplementedFarmServiceServer() {}
 func (UnimplementedFarmServiceServer) testEmbeddedByValue()                     {}
@@ -86,6 +164,24 @@ func RegisterFarmServiceServer(s grpc.ServiceRegistrar, srv FarmServiceServer) {
 	s.RegisterService(&FarmService_ServiceDesc, srv)
 }
 
+func _FarmService_CreateFarm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFarmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).CreateFarm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_CreateFarm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).CreateFarm(ctx, req.(*CreateFarmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _FarmService_GetFarm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetFarmRequest)
 	if err := dec(in); err != nil {
@@ -104,6 +200,60 @@ func _FarmService_GetFarm_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FarmService_ListFarms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFarmsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).ListFarms(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_ListFarms_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).ListFarms(ctx, req.(*ListFarmsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_UpdateFarm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateFarmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).UpdateFarm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_UpdateFarm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).UpdateFarm(ctx, req.(*UpdateFarmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_DeleteFarm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteFarmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).DeleteFarm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_DeleteFarm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).DeleteFarm(ctx, req.(*DeleteFarmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FarmService_ServiceDesc is the grpc.ServiceDesc for FarmService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -112,8 +262,24 @@ var FarmService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FarmServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "CreateFarm",
+			Handler:    _FarmService_CreateFarm_Handler,
+		},
+		{
 			MethodName: "GetFarm",
 			Handler:    _FarmService_GetFarm_Handler,
+		},
+		{
+			MethodName: "ListFarms",
+			Handler:    _FarmService_ListFarms_Handler,
+		},
+		{
+			MethodName: "UpdateFarm",
+			Handler:    _FarmService_UpdateFarm_Handler,
+		},
+		{
+			MethodName: "DeleteFarm",
+			Handler:    _FarmService_DeleteFarm_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

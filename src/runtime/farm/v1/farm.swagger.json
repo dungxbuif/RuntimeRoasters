@@ -16,8 +16,63 @@
     "application/json"
   ],
   "paths": {
+    "/v1/farms": {
+      "get": {
+        "summary": "ListFarms returns all farms owned by the authenticated user.",
+        "operationId": "FarmService_ListFarms",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListFarmsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "FarmService"
+        ]
+      },
+      "post": {
+        "summary": "CreateFarm creates a new farm record.",
+        "operationId": "FarmService_CreateFarm",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateFarmResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateFarmRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
+      }
+    },
     "/v1/farms/{id}": {
       "get": {
+        "summary": "GetFarm retrieves a single farm by ID.",
         "operationId": "FarmService_GetFarm",
         "responses": {
           "200": {
@@ -44,10 +99,94 @@
         "tags": [
           "FarmService"
         ]
+      },
+      "delete": {
+        "summary": "DeleteFarm removes a farm record.",
+        "operationId": "FarmService_DeleteFarm",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteFarmResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
+      },
+      "put": {
+        "summary": "UpdateFarm updates an existing farm's details.",
+        "operationId": "FarmService_UpdateFarm",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateFarmResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FarmServiceUpdateFarmBody"
+            }
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
       }
     }
   },
   "definitions": {
+    "FarmServiceUpdateFarmBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "area": {
+          "type": "number",
+          "format": "double"
+        },
+        "farmType": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -76,14 +215,100 @@
         }
       }
     },
-    "v1GetFarmResponse": {
+    "v1CreateFarmRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "area": {
+          "type": "number",
+          "format": "double"
+        },
+        "farmType": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateFarmResponse": {
+      "type": "object",
+      "properties": {
+        "farm": {
+          "$ref": "#/definitions/v1Farm"
+        }
+      }
+    },
+    "v1DeleteFarmResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1Farm": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string"
         },
-        "message": {
+        "name": {
           "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "area": {
+          "type": "number",
+          "format": "double"
+        },
+        "farmType": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1GetFarmResponse": {
+      "type": "object",
+      "properties": {
+        "farm": {
+          "$ref": "#/definitions/v1Farm"
+        }
+      }
+    },
+    "v1ListFarmsResponse": {
+      "type": "object",
+      "properties": {
+        "farms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Farm"
+          }
+        }
+      }
+    },
+    "v1UpdateFarmResponse": {
+      "type": "object",
+      "properties": {
+        "farm": {
+          "$ref": "#/definitions/v1Farm"
         }
       }
     }

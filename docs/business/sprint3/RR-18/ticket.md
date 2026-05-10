@@ -1,42 +1,32 @@
-# [RR-18] Flow 3: Batch Management
+# [RR-18] Ghi nhật ký Thu hoạch (Harvest Logging)
 
-- **Summary:** Quản lý các lô hàng (Batch) gắn liền với từng Nông trại.
-- **Priority:** `MEDIUM`
-- **Type:** Feature
-
----
-
-## 🔍 Acceptance Criteria
-
-### Scenario 1: Tạo Lô hàng mới cho Nông trại
-- **Given:** Tôi đang xem chi tiết một Nông trại.
-- **When:** Tôi tạo một Lô hàng (Batch) mới cho nông trại đó.
-- **Then:** Lô hàng được lưu trữ với tham chiếu `farm_id` chính xác.
-
-### Scenario 2: Kiểm tra ràng buộc Nông trại tồn tại
-- **Given:** Tôi cố gắng tạo lô hàng cho một `farm_id` không tồn tại.
-- **When:** Hệ thống thực hiện lưu trữ.
-- **Then:** Hệ thống trả về lỗi "Nông trại không tồn tại".
+- **Tóm tắt (Summary):** Triển khai tính năng khai báo sản lượng thu hoạch thực tế cho từng nông trại, tạo nguồn dữ liệu gốc cho chuỗi cung ứng.
+- **Độ ưu tiên (Priority):** `HIGH`
+- **Loại (Type):** Feature
 
 ---
 
-## 👨‍💻 Developer Implementation Guide
+## 📖 Câu chuyện người dùng (User Story)
+> Là một **Người nông dân (Farmer)**, tôi muốn có thể ghi lại khối lượng cà phê vừa thu hoạch được tại một nông trại cụ thể, để tôi có bằng chứng về sản lượng và sẵn sàng gửi hàng tới nhà máy chế biến.
 
-### 1. Aggregate Root Pattern
-- **Technique:** `Farm` là Aggregate Root cho `Batch`.
-- **Constraint:** `Batch` không thể tồn tại độc lập. `farm_id` phải là `NOT NULL` và có Foreign Key tới bảng `farms`.
+## 💰 Giá trị nghiệp vụ (Business Value)
+Đây là hành động **kích hoạt** chuỗi cung ứng. Dữ liệu thu hoạch là cơ sở để tính toán hiệu suất nông trại và là thông tin quan trọng nhất mà người tiêu dùng muốn xem khi quét mã QR.
 
-### 2. Transactional Outbox (Preparation)
-- **Technique:** Sử dụng `database.WithTx` (Unit of Work) nếu có sẵn hoặc GORM `db.Transaction`.
-- **Logic:** Khi lưu `Batch`, hãy thực hiện chèn record vào bảng `batches` VÀ `outbox` trong cùng 1 Transaction để đảm bảo tính nguyên tử.
+---
 
-### 3. Repository (`internal/infrastructure/postgres/batch_repo.go`)
-- **Functions:**
-  - `Create(ctx, *Batch) error`
-  - `ListByFarm(ctx, farmID string) ([]*Batch, error)`
+## 🔍 Điều kiện nghiệm thu (Acceptance Criteria)
 
-### 4. UseCase Logic
-- **`CreateBatch`:**
-  1. Kiểm tra sự tồn tại của `Farm` qua `FarmRepository`.
-  2. Kiểm tra `Farm.OwnerID` để đảm bảo user có quyền tạo batch cho farm này.
-  3. Lưu `Batch`.
+### Kịch bản 1: Khai báo thu hoạch hợp lệ
+- **Giả sử:** Tôi là chủ sở hữu của "Nông trại Sơn La".
+- **Khi:** Tôi gửi thông tin thu hoạch (Ngày hái, Khối lượng: 500kg).
+- **Thì:** Hệ thống phải lưu bản ghi này và liên kết chính xác với "Nông trại Sơn La".
+
+### Kịch bản 2: Ngăn chặn khai báo cho nông trại không thuộc sở hữu
+- **Giả sử:** Tôi cố tình gửi lệnh thu hoạch cho nông trại của người khác.
+- **Khi:** Hệ thống xử lý.
+- **Thì:** Hệ thống phải từ chối và thông báo lỗi.
+
+### Kịch bản 3: Thông tin bắt buộc
+- **Giả sử:** Tôi để trống ngày thu hoạch hoặc khối lượng.
+- **Khi:** Tôi nhấn "Lưu".
+- **Thì:** Hệ thống phải báo lỗi "Thông tin thu hoạch không đầy đủ".

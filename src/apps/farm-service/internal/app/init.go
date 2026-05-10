@@ -5,6 +5,7 @@ import (
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
 	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
@@ -79,7 +80,9 @@ m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatc
 	})
 
 	// 4. App-specific Components
-	farmUsecase := usecase.NewFarmUsecase()
+	farmRepo := repository.NewFarmRepository(db)
+
+	farmUsecase := usecase.NewFarmUsecase(farmRepo)
 	farmHandler := farmgrpc.NewFarmHandler(farmUsecase)
 
 	// 5. Build App
