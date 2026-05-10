@@ -1,29 +1,71 @@
-# RR-12.2: gRPC Authorization Interceptor
+# RR-12.2: Auth Service gRPC Snapshot API Design
 
 ## 1. Mục tiêu (Goal)
-Xây dựng một gRPC Interceptor để tự động kiểm tra quyền truy cập (Authorization) cho mọi request gRPC dựa trên thông tin định danh (Identity) trong context.
+Thiết lập gRPC endpoint để phân phối bản snapshot của toàn bộ chính sách (Policies) cho các service khác trong hệ thống.
 
-## 2. Ngữ cảnh (Context)
-- **Package:** `src/pkg/base/casbin`
-- **File cần tạo:** `src/pkg/base/casbin/interceptor_grpc.go`
-- **Phụ thuộc:** `pkg/base/identity` (để lấy thông tin User), `casbin.Enforcer`.
+## 2. API Definition (Proto)
+Vị trí: `api/runtime/auth/v1/auth.proto`
 
-## 3. Các bước triển khai (Step-by-Step Implementation)
-1. **Định nghĩa Interceptor:** Tạo hàm `UnaryServerInterceptor` nhận `casbin.Enforcer` làm tham số đầu vào.
-2. **Trích xuất thông tin định danh:** Sử dụng `identity.FromContext(ctx)` để lấy `Claims` (đã được nạp từ Interceptor Authentication ở RR-11).
-3. **Xác định Resource (obj):** Sử dụng `info.FullMethod` (ví dụ: `/farm.v1.FarmService/CreateFarm`) làm Resource ID.
-4. **Xác định Hành động (act):** 
-   - Phân tích `info.FullMethod`. Nếu chứa tiền tố `Get` hoặc `List` -> hành động là `read`.
-   - Các trường hợp khác mặc định là `write` hoặc `delete`.
-5. **Kiểm tra quyền:** Gọi `enforcer.Enforce(claims.Role, fullMethod, action)`.
-6. **Xử lý kết quả:**
-   - Nếu trả về `true`: Cho phép tiếp tục (`handler(ctx, req)`).
-   - Nếu trả về `false`: Trả về lỗi `codes.PermissionDenied` (gRPC error code).
+```proto
+syntax = "proto3";
+package runtime.auth.v1;
 
-## 4. Quy chuẩn tuân thủ (Patterns to Follow)
-- **Resource ID:** Phải sử dụng `info.FullMethod` để đồng bộ với định nghĩa trong `policy.csv`.
-- **Error Handling:** Trả về lỗi gRPC chuẩn để các client/gateway có thể xử lý đúng.
+message PolicyRule {
+  string p_type = 1; // "p" hoặc "g"
+  string v0 = 2;     // sub / role
+  string v1 = 3;     // obj / parent_role
+  string v2 = 4;     // act
+  string v3 = 5;
+  string v4 = 6;
+  string v5 = 7;
+}
+
+message GetPoliciesRequest {}
+
+message GetPoliciesResponse {
+  repeated PolicyRule rules = 1;
+}
+
+service AuthService {
+  rpc GetPolicies(GetPoliciesRequest) returns (GetPoliciesResponse);
+}
+```
+
+## 3. Implementation Logic
+
+### 3.1 Data Access
+- Auth Service sử dụng `enforcer.GetAdapter().(*gormadapter.Adapter)` để truy cập trực tiếp vào DB hoặc gọi `enforcer.GetPolicy()` và `enforcer.GetGroupingPolicy()`.
+- **Ưu tiên:** Sử dụng `enforcer.GetModel().GetPolicy("p", "p")` và `enforcer.GetModel().GetPolicy("g", "g")` để lấy dữ liệu từ memory đã load.
+
+### 3.2 Mapping Logic
+Chuyển đổi từ định dạng Casbin sang gRPC Message:
+```go
+func (s *AuthServer) GetPolicies(ctx context.Context, req *pb.GetPoliciesRequest) (*pb.GetPoliciesResponse, error) {
+    rules := [][]string{}
+    // Lấy policy định nghĩa quyền (p)
+    rules = append(rules, s.enforcer.GetPolicy()...)
+    // Lấy policy định nghĩa group/role (g)
+    rules = append(rules, s.enforcer.GetGroupingPolicy()...)
+    
+    resp := &pb.GetPoliciesResponse{}
+    for _, r := range rules {
+        resp.Rules = append(resp.Rules, &pb.PolicyRule{
+            PType: r[0], // Lưu ý: Cần logic map PType phù hợp
+            V0: r[0], V1: r[1], V2: r[2], ...
+        })
+    }
+    return resp, nil
+}
+```
+*Lưu ý: Casbin v3 trả về slice không bao gồm p_type ở phần tử đầu, cần cẩn thận khi mapping.*
+
+## 4. Resilience Loop cho gRPC Server
+- Đảm bảo gRPC server khởi động sau khi Database đã sẵn sàng.
+- Sử dụng `pkg/logger` để ghi lại các request bootstrapping từ các service khác nhằm mục đích auditing.
 
 ## 5. Xác minh (Verification)
-- **Unit Test:** Sử dụng mock context chứa Identity và mock Enforcer để kiểm tra logic interceptor.
-- **Manual Test:** Kiểm tra log của service khi gọi một hàm mà role hiện tại không có quyền.
+Sử dụng `grpcurl`:
+```bash
+grpcurl -plaintext localhost:50051 runtime.auth.v1.AuthService/GetPolicies
+```
+Kết quả mong đợi: Một danh sách JSON chứa toàn bộ các rules hiện có trong Postgres.

@@ -6,7 +6,7 @@
 ---
 
 ## 1. Context & Goal
-Thiết kế Schema và triển khai `FarmRepository` sử dụng `sqlx` để tương tác với PostgreSQL.
+Thiết kế Schema và triển khai `FarmRepository` sử dụng `GORM` để tương tác với PostgreSQL.
 
 ---
 
@@ -41,9 +41,10 @@ CREATE INDEX idx_farms_location ON farms(location);
     - `Update(ctx context.Context, farm *Farm) error`
     - `Delete(ctx context.Context, id uuid.UUID) error`
 
-### 3.2 SQLX Implementation
-- Sử dụng `NamedExec` cho Create/Update.
-- Sử dụng `Select` với dynamic WHERE clause cho List (hỗ trợ filtering).
+### 3.2 GORM Implementation
+- Sử dụng `db.Create()` cho Create.
+- Sử dụng `db.Where().Find()` với dynamic filter cho List.
+- Sử dụng `db.Save()` hoặc `db.Updates()` cho Update.
 
 ### 3.3 Data Ownership (ABAC)
 - Mọi câu lệnh `SELECT`, `UPDATE`, `DELETE` phải luôn kèm theo `WHERE owner_id = $1` để đảm bảo an toàn dữ liệu.

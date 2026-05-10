@@ -1,9 +1,16 @@
-# [RR-12.2] Kiểm soát quyền truy cập cho giao thức gRPC
+# [RR-12.2] Auth Service: gRPC Snapshot API
 
-- **Mục tiêu:** Tự động hóa việc kiểm tra quyền cho tất cả các cuộc gọi dịch vụ nội bộ thực hiện qua giao thức gRPC.
-- **Mô tả:** Triển khai cơ chế chặn và kiểm tra quyền tại tầng giao tiếp gRPC, đảm bảo mọi yêu cầu đều được xác thực quyền hạn trước khi xử lý.
+- **Mục tiêu:** Cung cấp cơ chế cho phép các dịch vụ khác (Readers) tải toàn bộ chính sách phân quyền khi khởi động (Bootstrapping).
+- **Mô tả:** Triển khai gRPC endpoint `GetPolicies` tại Auth Service. Đây là "Trụ cột 1" trong chiến lược Resilience, giúp Reader có đủ dữ liệu để hoạt động ngay cả khi Kafka chưa sẵn sàng.
 
 ## ✅ Tiêu chí chấp nhận (Acceptance Criteria)
-1. Mọi yêu cầu gRPC đều đi qua bộ lọc kiểm tra quyền (Interceptor).
-2. Hệ thống nhận diện được hành động và tài nguyên đang được yêu cầu dựa trên tên phương thức gRPC.
-3. Trả về lỗi "Từ chối truy cập" (Permission Denied) nếu người dùng không đủ quyền hạn.
+1. File proto được định nghĩa tại `api/runtime/auth/v1/auth.proto` với phương thức `GetPolicies`.
+2. Response trả về danh sách đầy đủ các bản ghi chính sách (`p`) và phân cấp role (`g`).
+3. Logic xử lý tại `auth-service` truy vấn trực tiếp từ cơ sở dữ liệu (thông qua adapter) để đảm bảo snapshot mới nhất.
+4. Tích hợp gRPC server vào `auth-service` và lắng nghe trên port cấu hình (mặc định 50051).
+
+## 🛠 Task list cho Developer
+- [ ] Định nghĩa `AuthService.GetPolicies` trong file proto.
+- [ ] Generate code gRPC (sử dụng Buf hoặc protoc).
+- [ ] Triển khai Handler `GetPolicies` trong `internal/service/auth.go`.
+- [ ] Viết script test nhanh bằng `grpcurl` để kiểm tra kết quả trả về.

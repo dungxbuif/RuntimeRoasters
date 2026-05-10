@@ -4,23 +4,34 @@ import (
 	"context"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type PostgresConfig struct {
 	URL          string
 	MaxOpenConns int // default: 20
 	MaxIdleConns int // default: 5
+	LogLevel     string // silent, error, warn, info
 }
 
 type DB struct {
-	*sqlx.DB
+	*gorm.DB
 }
 
-// NewPostgres initializes and returns a wrapped sqlx.DB instance connected to Postgres
+// NewPostgres initializes and returns a wrapped gorm.DB instance connected to Postgres
 func NewPostgres(cfg PostgresConfig) (*DB, error) {
-	db, err := sqlx.Connect("pgx", cfg.URL)
+	gormCfg := &gorm.Config{
+		Logger: logger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+	}
+
+	db, err := gorm.Open(postgres.Open(cfg.URL), gormCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
 	}
@@ -32,29 +43,40 @@ func NewPostgres(cfg PostgresConfig) (*DB, error) {
 		cfg.MaxIdleConns = 5
 	}
 
-	db.SetMaxOpenConns(cfg.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.MaxIdleConns)
-	db.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	return &DB{db}, nil
 }
 
-// WithTx helps manage transactions, particularly for the Outbox Pattern
-func (db *DB) WithTx(ctx context.Context, fn func(*sqlx.Tx) error) error {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	if err := fn(tx); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
+// WithTx helps manage transactions in a GORM-idiomatic way
+func (db *DB) WithTx(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(tx)
+	})
 }
 
 // Ping checks database availability
 func (db *DB) Ping(ctx context.Context) error {
-	return db.PingContext(ctx)
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.PingContext(ctx)
+}
+
+func parseLogLevel(level string) logger.LogLevel {
+	switch level {
+	case "silent":
+		return logger.Silent
+	case "error":
+		return logger.Error
+	case "warn":
+		return logger.Warn
+	case "info":
+		return logger.Info
+	default:
+		return logger.Info
+	}
 }

@@ -1,29 +1,58 @@
-# RR-12.3: Gin Authorization Middleware
+# RR-12.3: Auth Service Event-Driven Publishing Design
 
 ## 1. Mục tiêu (Goal)
-Triển khai Middleware cho Gin framework để kiểm tra quyền truy cập cho các RESTful API endpoint.
+Triển khai cơ chế "Single Writer" phát tín hiệu thay đổi chính sách thông qua Kafka để đồng bộ hóa trạng thái với các "Distributed Readers".
 
-## 2. Ngữ cảnh (Context)
-- **Package:** `src/pkg/base/casbin`
-- **File cần tạo:** `src/pkg/base/casbin/middleware_gin.go`
-- **Phụ thuộc:** `pkg/base/identity`, `casbin.Enforcer`, Gin Gonic.
+## 2. Kafka Configuration
+- **Topic Name:** `auth.policy.changed`
+- **Partitions:** 1 (để đảm bảo thứ tự các lệnh thay đổi nếu cần mở rộng sau này).
+- **Format:** JSON.
+- **Payload mẫu:** `{"action": "RELOAD", "timestamp": 123456789}`.
 
-## 3. Các bước triển khai (Step-by-Step Implementation)
-1. **Định nghĩa Middleware:** Tạo hàm `NewGinMiddleware` nhận `casbin.Enforcer` làm tham số.
-2. **Lấy Identity:** Trích xuất `Claims` từ context của Gin (thường được lưu bởi một Auth Middleware trước đó).
-3. **Xác định Hành động (act):** Gọi hàm helper `MapHTTPMethodToAction(c.Request.Method)` đã tạo ở bước RR-12.1.
-4. **Xác định Resource (obj):** 
-   - Sử dụng `c.FullPath()` hoặc `c.Request.URL.Path` làm Resource ID.
-   - *Lưu ý:* Nếu có thể, hãy ánh xạ URL path sang gRPC Method tương đương để sử dụng chung chính sách trong `policy.csv`.
-5. **Thực thi phân quyền:** Gọi `enforcer.Enforce(claims.Role, resource, action)`.
-6. **Xử lý phản hồi:**
-   - Nếu `false`: Sử dụng `c.AbortWithStatusJSON(403, ...)` để trả về lỗi Forbidden.
-   - Nếu `true`: Gọi `c.Next()`.
+## 3. Implementation Logic
 
-## 4. Quy chuẩn tuân thủ (Patterns to Follow)
-- **Surgical Update:** Middleware phải nhẹ và không gây block request quá lâu.
-- **Consistency:** Đảm bảo cách ánh xạ Action giữa Gin và gRPC là thống nhất.
+### 3.1 Kafka Writer Wrapper
+Tại `internal/repository/kafka/publisher.go`:
+```go
+type PolicyPublisher struct {
+    writer *kafka.Writer
+}
+
+func (p *PolicyPublisher) PublishReloadSignal(ctx context.Context) error {
+    msg := kafka.Message{
+        Value: []byte(`{"action": "RELOAD"}`),
+    }
+    return p.writer.WriteMessages(ctx, msg)
+}
+```
+
+### 3.2 Intercepting Write Operations
+Vì Auth Service là nơi duy nhất thực hiện thay đổi, chúng ta cần đảm bảo mọi thay đổi đều đi kèm với một tín hiệu Kafka.
+
+Cách thực hiện tốt nhất: Tạo một `AuthService` struct bao bọc `casbin.Enforcer`:
+```go
+type AuthServiceImpl struct {
+    enforcer  *casbin.Enforcer
+    publisher *kafka.PolicyPublisher
+}
+
+func (s *AuthServiceImpl) AddPolicy(sub, obj, act string) error {
+    // 1. Lưu vào DB (qua Enforcer)
+    ok, err := s.enforcer.AddPolicy(sub, obj, act)
+    if err != nil || !ok {
+        return err
+    }
+    
+    // 2. Phát tín hiệu qua Kafka
+    return s.publisher.PublishReloadSignal(context.Background())
+}
+```
+
+## 4. Resilience & Error Handling
+- **Tách biệt lỗi:** Nếu `AddPolicy` vào DB thành công nhưng Kafka thất bại, hàm vẫn nên trả về thành công hoặc log warning. Reader sẽ dựa vào "Trụ cột 3" (Polling) để tự chữa lành dữ liệu sau vài phút.
+- **Async Publishing:** Để không làm chậm API write, có thể gửi message Kafka vào một channel nội bộ để background worker xử lý.
 
 ## 5. Xác minh (Verification)
-- **Manual Test:** Sử dụng `curl` hoặc Postman gọi tới một endpoint REST với các token có role khác nhau (ví dụ: `farmer` vs `guest`).
-- **Log:** Kiểm tra log để đảm bảo middleware được kích hoạt và đưa ra quyết định đúng.
+1. Sử dụng Kafka CLI tool (như `kcat` hoặc `kafka-console-consumer`) để lắng nghe topic `auth.policy.changed`.
+2. Thực hiện gọi API thêm policy tại Auth Service.
+3. Kiểm tra xem message "RELOAD" có xuất hiện trong Kafka hay không.

@@ -1,9 +1,17 @@
-# [RR-12.1] Thiết lập nền tảng phân quyền Casbin (Foundation Setup)
+# [RR-12.1] Auth Service: Bootstrap & Persistence
 
-- **Mục tiêu:** Xây dựng bộ khung kỹ thuật để hỗ trợ việc kiểm soát quyền truy cập tập trung cho toàn bộ hệ thống.
-- **Mô tả:** Thiết lập Casbin Enforcer và các công cụ hỗ trợ để hệ thống có thể hiểu và thực thi các quy tắc phân quyền.
+- **Mục tiêu:** Khởi tạo dịch vụ `auth-service` và thiết lập hệ thống lưu trữ chính sách (Policy) sử dụng Postgres và Casbin Gorm Adapter.
+- **Mô tả:** Đây là bước nền tảng để biến `auth-service` thành "Single Writer" duy nhất, quản lý toàn bộ Database phân quyền của hệ thống.
 
 ## ✅ Tiêu chí chấp nhận (Acceptance Criteria)
-1. Hệ thống có khả năng nạp cấu hình phân quyền từ file (Model và Policy).
-2. Các hành động cơ bản (xem, ghi, xóa) được ánh xạ chính xác từ các yêu cầu kỹ thuật.
-3. Đảm bảo nền tảng hoạt động ổn định và sẵn sàng cho việc tích hợp vào các giao thức giao tiếp (gRPC, REST).
+1. Thư mục `src/apps/auth-service` được khởi tạo với cấu trúc Clean Architecture chuẩn của dự án.
+2. Kết nối Postgres thành công, sử dụng `pkg/database/postgres.go`.
+3. Tích hợp `github.com/casbin/gorm-adapter/v3` để quản lý bảng `casbin_rule`.
+4. Định nghĩa file `model.conf` hỗ trợ RBAC Hierarchy và Wildcard matching.
+5. `auth-service` khởi chạy không lỗi và tự động thực hiện migration cho các bảng cần thiết.
+
+## 🛠 Task list cho Developer
+- [ ] Khởi tạo project `auth-service` (main.go, config, internal folders).
+- [ ] Cấu hình Gorm Adapter v3 kết nối tới Postgres.
+- [ ] Nhúng file `model.conf` vào binary bằng `go:embed`.
+- [ ] Triển khai hàm khởi tạo Enforcer tại Auth Service để sẵn sàng cho các thao tác Write.

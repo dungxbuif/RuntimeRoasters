@@ -1,45 +1,66 @@
-# RR-12: Technical Design — Fine-grained Authorization (Casbin)
+# RR-12: Technical Design — Resilient Centralized Authorization
 
 **Branch:** `feat/RR-12`
 **Status:** `DRAFT`
 **Author:** Tech Lead
-**Date:** 2026-05-09
+**Date:** 2026-05-15
 
 ---
 
 ## 1. Context & Goal
 
-Sau khi **RR-11** hoàn thiện việc xác thực danh tính (Authentication), hệ thống đã biết "Ai đang gọi". Nhiệm vụ của **RR-12** là xác định "Họ được làm gì" (Authorization).
+Sau khi **RR-11** hoàn thiện việc xác thực danh tính (Authentication), hệ thống cần một cơ chế phân quyền (Authorization) mạnh mẽ. Thay vì mỗi service tự quản lý policy riêng lẻ (Decentralized), chúng ta chuyển sang mô hình **Centralized Authorization** nhưng đảm bảo tính **Resilient** (Khả năng chịu lỗi cao).
 
 Mục tiêu cốt lõi:
-- Xây dựng cơ chế phân quyền tập trung tại tầng `pkg/base`.
-- Áp dụng mô hình **Hybrid RBAC+ABAC**: RBAC tại biên (Gateway/Middleware) và ABAC (Data Ownership) tại tầng Repository.
-- Đảm bảo tính mở rộng cao, không bị thắt cổ chai khi số lượng resource tăng lên hàng triệu.
+- **Centralized Management:** Mọi chính sách phân quyền được quản lý tập trung tại `auth-service`.
+- **Distributed Enforcement:** Các service (Readers) thực thi quyền tại chỗ với hiệu năng cực cao (Local Memory).
+- **High Availability:** Hệ thống phân quyền vẫn hoạt động ngay cả khi `auth-service` hoặc Kafka gặp sự cố.
 
 ---
 
-## 2. Architecture: The Two-Gate Model
+## 2. Architecture: Centralized Writer & Distributed Readers
 
-Chúng ta chia quyền truy cập thành 2 cửa khẩu kiểm soát:
+Hệ thống được thiết kế theo mô hình **Single Writer - Multiple Readers**:
 
-### Gate 1: RBAC (Role-Based Access Control)
-- **Công cụ:** Casbin Enforcer.
-- **Vị trí:** `Gin Middleware` & `gRPC Interceptor`.
-- **Logic:** Kiểm tra `(User.Role, API_Method, Action)`. 
-- **Mục đích:** Chặn các truy cập sai vai trò ngay từ vòng gửi xe (ví dụ: `driver` không được phép gọi hàm `CreateFarm`).
+### 2.1 Centralized Writer (Auth Service)
+- **Vai trò:** Chủ sở hữu (Owner) duy nhất của cơ sở dữ liệu chính sách (Postgres).
+- **Trách nhiệm:** 
+    - Cung cấp API để CRUD các chính sách (Policies).
+    - Lưu trữ chính sách vào Postgres sử dụng `gorm-adapter/v3`.
+    - Phát tín hiệu thay đổi (Change Signals) qua Kafka.
+    - Cung cấp gRPC endpoint `GetPolicies` để các service khác lấy bản snapshot.
 
-### Gate 2: Data Scoping (ABAC / Ownership)
-- **Công cụ:** SQL `WHERE` clauses.
-- **Vị trí:** `Repository Layer`.
-- **Logic:** Ép thêm điều kiện `owner_id = caller_id` vào mọi câu lệnh Query/Command.
-- **Mục đích:** Đảm bảo dù `farmer` có quyền gọi hàm `ListFarms`, họ cũng chỉ thấy được Nông trại của chính mình.
+### 2.2 Distributed Readers (Business Services)
+- **Vai trò:** Thực thi kiểm tra quyền (Enforcement).
+- **Trách nhiệm:**
+    - Duy trì một bản sao chính sách trong bộ nhớ (Local Memory Enforcer) bằng `casbin/v3`.
+    - Tự động đồng bộ hóa với `auth-service` thông qua chiến lược 3 trụ cột.
 
 ---
 
-## 3. Casbin Configuration
+## 3. Chiến lược Resilience 3 trụ cột (The 3-Pillar Strategy)
 
-### 3.1 Model Definition (`model.conf`)
-Sử dụng mô hình RBAC có phân cấp (Hierarchy).
+Để đảm bảo các Reader luôn có dữ liệu chính sách mới nhất và không bao giờ bị "chết đứng", chúng ta áp dụng 3 cơ chế đồng bộ song song:
+
+### Trụ cột 1: gRPC Snapshot (Bootstrapping & Self-healing)
+- **Khi khởi động:** Reader gọi gRPC `GetPolicies` tới `auth-service` để tải toàn bộ chính sách hiện có. Nếu `auth-service` không khả dụng, Reader sẽ thử lại với cơ chế **Exponential Backoff**.
+- **Vai trò:** Đảm bảo Reader có dữ liệu nền tảng để bắt đầu phục vụ.
+
+### Trụ cột 2: Kafka Live (Real-time Updates)
+- **Khi có thay đổi:** `auth-service` publish một message vào Kafka topic `auth.policy.changed`.
+- **Tại Reader:** Một `Watcher` (sử dụng `casbin-go-cloud-watcher`) lắng nghe Kafka. Khi nhận tín hiệu, Reader lập tức gọi `LoadPolicy()` để cập nhật bản sao trong memory.
+- **Vai trò:** Đảm bảo độ trễ cập nhật chính sách ở mức mili giây (Near real-time).
+
+### Trụ cột 3: Polling Fallback (Safety Net)
+- **Định kỳ:** Reader tự động chạy một Background Ticker (ví dụ: mỗi 5-10 phút) để gọi lại gRPC `GetPolicies`.
+- **Vai trò:** "Lưới an toàn" để bù đắp cho các message Kafka bị mất hoặc các lỗi đồng bộ tiềm tàng, đảm bảo tính nhất quán cuối cùng (Eventual Consistency).
+
+---
+
+## 4. Casbin Configuration
+
+### 4.1 Model Definition (`model.conf`)
+Sử dụng mô hình RBAC với Hierarchy và Matcher thông minh.
 
 ```ini
 [request_definition]
@@ -55,86 +76,40 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-# Admin có toàn quyền, các role khác check theo chính sách và phân cấp role
+# 1. Admin bypass
+# 2. Check role hierarchy & object match (support glob) & action match
 m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act))
-```
-
-### 3.2 Policy Format (`policy.csv`)
-Sử dụng gRPC Method Name làm định danh Resource (`obj`) để thống nhất cho cả gRPC và Gateway.
-
-```csv
-# Roles Hierarchy
-g, admin, farmer
-g, admin, processor
-
-# Permissions
-p, farmer, /farm.v1.FarmService/CreateFarm, write
-p, farmer, /farm.v1.FarmService/ListFarms, read
-p, processor, /farm.v1.FarmService/ListFarms, read
 ```
 
 ---
 
-## 4. Package Structure (`pkg/base/casbin`)
+## 5. Package Structure (`pkg/base/casbin`)
+
+Gói dùng chung này sẽ được các Reader import để triển khai Resilience Engine:
 
 ```text
 src/pkg/base/casbin/
-├── config.go           # Cấu hình đường dẫn model/policy hoặc Adapter DB
-├── enforcer.go         # Khởi tạo Casbin Enforcer (Singleton-ish)
+├── engine.go           # Resilience Engine (gRPC + Kafka + Polling)
+├── watcher_kafka.go    # Tích hợp Kafka Watcher
+├── enforcer_v3.go      # Wrapper cho Casbin v3 Enforcer
 ├── middleware_gin.go   # Gin AuthZ Middleware
 └── interceptor_grpc.go # gRPC AuthZ Interceptor
 ```
 
 ---
 
-## 5. Integration Workflow
+## 6. Guidelines cho Developer
 
-1. **Extraction:** Middleware lấy `identity.Claims` từ context (đã được RR-11 inject).
-2. **Evaluation:** Gọi `enforcer.Enforce(claims.Role, fullMethod, action)`.
-3. **Action mapping:**
-    - `GET` -> `read`
-    - `POST` / `PUT` / `PATCH` -> `write`
-    - `DELETE` -> `delete`
-4. **Decision:** 
-    - `true` -> `context.Next()`
-    - `false` -> Return `errs.ErrForbidden` (403 Forbidden).
+1. **Phân quyền tại Service biên:** Mọi service phải sử dụng `interceptor_grpc.go` để bảo vệ các hàm API.
+2. **Quyền mặc định:** Các quyền hệ thống cốt lõi phải được định nghĩa trong `default_policies.csv` tại `auth-service`.
+3. **Giám sát:** Cần theo dõi các metric về thời gian đồng bộ chính sách và trạng thái kết nối tới Kafka/gRPC của `auth-service`.
 
 ---
 
-## 6. Data Scoping & ABAC Implementation
-
-### 6.1 Scoping Claims Helper
-- **Package:** `pkg/base/casbin`
-- **Logic:** Một helper tập trung chuyển đổi kết quả từ Casbin policy (ví dụ: `region: dak_lak`) thành các typed SQL filter structs.
-- **Mục đích:** Tránh việc viết SQL raw rải rác trong các handler, đảm bảo tính nhất quán khi áp dụng bộ lọc dữ liệu tại tầng Repository.
-
-### 6.2 Two-Gate Context
-Hệ thống sử dụng cơ chế bảo mật 2 lớp độc lập:
-- **Gate 1 (App Scopes):** Được đảm nhiệm bởi KrakenD API Gateway (RR-10). Kiểm tra các scope ứng dụng trên JWT.
-- **Gate 2 (User Roles):** Được đảm nhiệm bởi Casbin (RR-12) tại mức service. Kiểm tra vai trò của người dùng trên từng resource cụ thể.
-
----
-
-## 7. Guidelines cho Developer
-
-1. **Tầng UseCase:** Tuyệt đối không viết `if role == "..."`. Hãy giả định rằng khi request vào đến đây, user đã có quyền thực hiện hành động đó.
-2. **Tầng Repository:** Luôn nhận `callerID` làm tham số bắt buộc cho các hàm Query.
-3. **Thêm quyền mới:** Chỉ cần cập nhật file `policy.csv` (Dev) hoặc bảng `casbin_rule` (Prod), không cần sửa code service.
-
----
-
-## 8. Implementation Tips
-
-- **Testing:** Sử dụng [Casbin Online Editor](https://casbin.org/editor/) để debug model và matchers cực nhanh trước khi cập nhật vào code.
-- **Admin Bypass:** Luôn đặt điều kiện kiểm tra `admin` (`g(r.sub, "admin")`) ở đầu matcher để đảm bảo quản trị viên không bị khóa quyền do lỗi cấu hình chính sách.
-- **Middleware Ordering:** Đảm bảo Casbin Middleware được đăng ký chạy **SAU** JWT Validation Middleware để đảm bảo thông tin định danh (Identity) đã sẵn sàng trong context.
-
----
-
-## 9. Risks & Mitigation
+## 7. Risks & Mitigation
 
 | Rủi ro | Giải pháp |
 |---|---|
-| **Performance:** Enforce mỗi request làm tăng latency. | Casbin Enforcer giữ policy trong memory, check cực nhanh. Với số lượng role nhỏ, latency < 1ms. |
-| **Stale Policy:** Khi đổi quyền trong DB, service không nhận được ngay. | Sử dụng cơ chế `Watcher` của Casbin (Redis Pub/Sub) để notify các pod refresh cache khi policy thay đổi. |
-| **Ambiguous Actions:** Không biết map API nào vào `read` hay `write`. | Thống nhất chuẩn đặt tên Method và mapping tại mức Middleware. |
+| **Kafka Down:** Reader không nhận được update tức thì. | Polling Fallback (Trụ cột 3) sẽ tự động đồng bộ sau một khoảng thời gian ngắn. |
+| **Auth Service Down:** Reader mới khởi động không lấy được snapshot. | Sử dụng Retry với Backoff. Nếu vẫn lỗi, Reader có thể nạp một bộ chính sách "hardcoded" tối thiểu để duy trì các chức năng khẩn cấp. |
+| **Data Inconsistency:** Dữ liệu memory khác với DB. | Cơ chế Polling đảm bảo hệ thống tự chữa lành (Self-healing). |

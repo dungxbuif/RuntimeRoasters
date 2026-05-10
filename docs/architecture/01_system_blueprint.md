@@ -1,6 +1,6 @@
 # RuntimeRoasters — System Architecture & Development Blueprint
 
-Tài liệu này định nghĩa kiến trúc tổng thể, các tiêu chuẩn kỹ thuật và lộ trình thực thi cho dự án **RuntimeRoasters**. Đây là bản cam kết về chất lượng kỹ thuật (Production-grade) và tư duy hệ thống phân tán.
+Tài liệu này định nghĩa kiến trúc tổng thể, các tiêu chuẩn kỹ thuật và lộ trình thực thi cho dự án **RuntimeRoasters**.
 
 ---
 
@@ -19,22 +19,17 @@ Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Ti
 
 ## 2. App Architecture
 
-### Hai codebase riêng biệt
+## 2. App Architecture
 
-#### `apps/client-app/` (Next.js 15 — Business UI)
+#### `apps/client-app/` (Next.js 15 — Unified UI)
 - **Pattern:** Direct Pattern.
-- **Role:** Dành cho người dùng cuối (Nông dân, Nhà máy, Retailer).
+- **Role:** Dành cho tất cả người dùng (Nông dân, Nhà máy, Retailer) và Admin.
 - **Flow:** Browser → KrakenD :8081 → Microservices.
-- **Routes:**
+- **Main Modules:**
     - `/app/farms`: Quản lý nông hộ (Sprint 2).
     - `/app/batches`: Theo dõi mẻ hàng (Sprint 2).
     - `/app/logistics`: Theo dõi vận chuyển (Sprint 3).
-
-#### `apps/control-app/` (Next.js 15 — Control Plane)
-- **Role:** Dành cho Admin hệ thống.
-- **Routes:**
-    - `/control/services`: Giám sát sức khỏe services.
-    - `/control/api-explorer`: Swagger UI.
+    - `/admin/*`: Các tính năng quản trị hệ thống.
 
 ---
 
@@ -44,10 +39,6 @@ Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Ti
 graph TB
     subgraph "External World"
         Browser([Browser / Mobile])
-    end
-
-    subgraph "Admin Portal"
-        CT[control-app :3001]
     end
 
     subgraph "Client App"
@@ -83,7 +74,6 @@ graph TB
         RPC --- RP
     end
 
-    Browser -->|:3001| CT
     Browser -->|:3000| CA
     Browser -->|:3301| SZ
     CA -->|REST :8081| GW
@@ -95,7 +85,6 @@ graph TB
     DS -->|OTLP :4317| SZ
     FS -->|OTLP :4317| SZ
     CA -->|OTLP :4318| SZ
-    CT -->|OTLP :4318| SZ
 ```
 
 ---
@@ -104,8 +93,7 @@ graph TB
 
 | Service | Port | Note |
 | :--- | :--- | :--- |
-| client-app | 3000 | Business UI |
-| control-app | 3001 | Control Plane (Admin) |
+| client-app | 3000 | Unified UI (Business + Admin) |
 | KrakenD | 8081 | API Gateway |
 | demo-service HTTP | 8080 | grpc-gateway (Sprint 1) |
 | demo-service gRPC | 50051 | |
@@ -131,7 +119,7 @@ graph TB
 | `pkg/logger` | Zap: JSON cho prod, console cho dev. `FromContext(ctx)` tự inject trace_id. |
 | `pkg/base` | Application lifecycle: gRPC/HTTP server, health checks, graceful shutdown, OTel init. |
 | `pkg/errs` | RFC 9457 Problem Details. `GinErrorHandler()` middleware. `SubProblem[]` support. |
-| `pkg/database` | sqlx wrapper: connection pool, otelsql auto-instrumentation, migration scaffold. |
+| `pkg/database` | GORM wrapper: connection pool, otelsql auto-instrumentation, migration scaffold. |
 | `pkg/redis` | go-redis wrapper: redisotel tracing + metrics. |
 | `pkg/telemetry` | OTel TracerProvider + MeterProvider + W3C propagator. `InjectKafkaHeaders` / `ExtractKafkaHeaders`. |
 
@@ -183,7 +171,7 @@ Auto-instrumentation qua `pkg/base.NewApp()`:
 - **In-service auth:** Services load JWKS khi startup, verify JWT không cần network call.
 - **mTLS:** gRPC nội bộ bắt buộc mutual TLS.
 - **Webhook:** HMAC signature verify tại Webhook Ingress Service.
-- **Control Plane:** `middleware.ts` trong client-app gate tất cả `/control/*` và `/signoz/*`.
+- **Control Plane:** `middleware.ts` trong client-app gate tất cả `/admin/*` và `/signoz/*`.
 
 ---
 
@@ -195,8 +183,7 @@ RuntimeRoasters/
 │   └── runtime/
 │       └── farm/v1/
 ├── apps/
-│   ├── client-app/         # Business UI (port 3000)
-│   ├── control-app/        # Admin Dashboard (port 3001)
+│   ├── client-app/         # Unified UI (port 3000)
 │   ├── demo-service/       # Sprint 1: boilerplate template
 │   └── farm-service/       # Sprint 2+
 ├── src/

@@ -1,30 +1,50 @@
-# RR-12.4: Cấu hình Chính sách (Policy) & Triển khai
+# RR-12.4: Resilient Reader Engine Design (pkg/base/casbin)
 
 ## 1. Mục tiêu (Goal)
-Định nghĩa mô hình phân quyền (Model) và các chính sách (Policies) thực tế cho hệ thống, đồng thời đảm bảo chúng được nạp đúng vào môi trường chạy (Docker).
+Xây dựng một "siêu Enforcer" có khả năng tự đồng bộ và duy trì hoạt động trong môi trường phân tán nhiều biến động, đảm bảo tính sẵn sàng cao (High Availability).
 
-## 2. Ngữ cảnh (Context)
-- **Thư mục:** `deployments/casbin/`
-- **File cần tạo:** `model.conf`, `policy.csv`
-- **File cần sửa:** `deployments/docker-compose.dev.yaml`
+## 2. Thiết kế chi tiết 3 trụ cột (3-Pillar Strategy)
 
-## 3. Các bước triển khai (Step-by-Step Implementation)
-1. **Tạo `model.conf`:**
-   - Sử dụng mô hình RBAC với phân cấp (`role_definition` dùng `g = _, _`).
-   - Định nghĩa `matchers` hỗ trợ `g(r.sub, p.sub)` và kiểm tra `obj`, `act`.
-2. **Tạo `policy.csv`:**
-   - Định nghĩa phân cấp: `g, admin, farmer` (Admin kế thừa mọi quyền của Farmer).
-   - Định nghĩa quyền cơ bản cho `farmer`:
-     - `p, farmer, /farm.v1.FarmService/CreateFarm, write`
-     - `p, farmer, /farm.v1.FarmService/ListFarms, read`
-3. **Cập nhật Docker Compose:**
-   - Mount thư mục `deployments/casbin/` vào một đường dẫn cố định trong container (ví dụ: `/app/config/casbin/`).
-   - Đảm bảo các service như `demo-service` có biến môi trường trỏ tới các file này.
+### 2.1 Trụ cột 1: Bootstrapping (gRPC Snapshot)
+- **Hành động:** Khi khởi tạo `NewResilientEngine`, engine sẽ thực hiện một cuộc gọi gRPC đồng bộ tới `AuthService.GetPolicies`.
+- **Resilience:** Sử dụng thư viện `github.com/cenkalti/backoff/v4` để retry. Nếu sau 5 phút vẫn không thể kết nối tới Auth Service, Engine có thể nạp một bộ chính sách mặc định (fail-safe) để tránh làm chết service Reader.
 
-## 4. Quy chuẩn tuân thủ (Patterns to Follow)
-- **RBAC Hierarchy:** Luôn sử dụng kế thừa để giảm thiểu việc lặp lại các dòng chính sách (DRY - Don't Repeat Yourself).
-- **Security:** File `policy.csv` trong môi trường Dev có thể commit, nhưng trong Production cần được thay thế bằng DB Adapter (Postgres).
+### 2.2 Trụ cột 2: Real-time Update (Kafka Watcher)
+- **Hành động:** Engine chạy một goroutine lắng nghe topic `auth.policy.changed`.
+- **Logic:** Khi nhận được message "RELOAD", engine không parse dữ liệu từ Kafka (để tránh message quá lớn) mà đơn giản là kích hoạt hàm `syncFromGRPC()` để làm mới dữ liệu.
+
+### 2.3 Trụ cột 3: Safety Net (Polling)
+- **Hành động:** Sử dụng `time.Ticker` chạy định kỳ mỗi 5 phút.
+- **Logic:** Gọi `syncFromGRPC()` để đảm bảo nếu Kafka bị mất tin nhắn hoặc có lỗi không quán, dữ liệu sẽ được sửa chữa (Self-healing).
+
+## 3. Cấu trúc Source Code
+Vị trí: `src/pkg/base/casbin/`
+```text
+.
+├── engine.go           # Logic điều phối 3 trụ cột
+├── adapter_memory.go   # Custom Casbin adapter để load/store policy trong RAM
+├── watcher_kafka.go    # Tích hợp Kafka consumer
+└── config.go           # Định nghĩa các tham số (AuthService URL, Kafka Brokers)
+```
+
+## 4. Implementation Snippet (Pseudo-code)
+```go
+func (e *ResilientEngine) syncFromGRPC() {
+    resp, err := e.grpcClient.GetPolicies(ctx, &pb.GetPoliciesRequest{})
+    if err != nil {
+        log.Error("Failed to sync policies", err)
+        return
+    }
+    
+    // Clear old policies and load new ones into Memory Adapter
+    e.adapter.Clear()
+    for _, rule := range resp.Rules {
+        e.adapter.AddRule(rule)
+    }
+    e.enforcer.LoadPolicy()
+}
+```
 
 ## 5. Xác minh (Verification)
-- **Container Check:** Chạy `docker exec -it <container_id> ls /app/config/casbin/` để kiểm tra file đã tồn tại.
-- **Casbin Editor:** Dùng [Casbin Online Editor](https://casbin.org/editor/) để dán nội dung file model và policy vào kiểm tra logic matcher trước khi deploy.
+- **Unit Test:** Mock gRPC server và Kafka để kiểm tra Engine có gọi đúng hàm sync khi có sự kiện hay không.
+- **Integration Test:** Chạy Auth Service và một Reader, thay đổi quyền ở Auth Service và kiểm tra log của Reader xem có nhận được update trong < 1s hay không.

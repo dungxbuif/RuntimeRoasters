@@ -1,45 +1,16 @@
-# Sprint 2: Security & Access Control — Kanban Board
+# Sprint 2: Security & Access Control
 
-**Status:** `IN PROGRESS` | **Goal:** Thiết lập nền tảng AuthN/AuthZ toàn diện. Mọi API call phải được bảo mật trước khi viết business logic.
-
----
-
-## 🎯 Sprint Goal
-
-> **Người dùng có thể đăng nhập qua Identity Server, nhận JWT và các Microservices có thể tự động xác thực/phân quyền (AuthN/AuthZ) độc lập bằng Casbin mà không làm tăng độ trễ hệ thống.**
-
----
+**Status:** IN PROGRESS
 
 ## 📋 Kanban Board
 
 | 🕒 To Do | 🚧 In Progress | ✅ Done |
 | :--- | :--- | :--- |
-| | | [RR-9: Identity Server Infrastructure](./RR-9/ticket.md) |
-| | | [RR-10: Client-Side Auth & Login Flow](./RR-10/ticket.md) |
-| | | [RR-11: Backend Security Core - JWT Validation](./RR-11/ticket.md) |
-| [RR-12: Fine-grained Authorization (Casbin)](./RR-12/ticket.md) | | |
-| [RR-13: End-to-End Secure Integration](./RR-13/ticket.md) | | |
-| [RR-14: Token Revocation & Global Logout](./RR-14/ticket.md) | | |
+| [RR-12: Casbin AuthZ](./RR-12/ticket.md) | | [RR-9: Identity Infrastructure](./RR-9/ticket.md) |
+| [RR-13: E2E Integration](./RR-13/ticket.md) | | [RR-10: Client Auth Flow](./RR-10/ticket.md) |
+| [RR-14: Revocation](./RR-14/ticket.md) | | [RR-11: JWT Validation](./RR-11/ticket.md) |
 
 ---
 
-## 🛤️ Dependency Flow
-
-```mermaid
-graph TD
-    RR9[RR-9: Identity Server] --> RR10[RR-10: Client Login]
-    RR9 --> RR11[RR-11: Backend JWT Middleware]
-    RR11 --> RR12[RR-12: Casbin Authorization]
-    RR10 --> RR13[RR-13: E2E Verification]
-    RR12 --> RR13
-    RR13 --> RR14[RR-14: Token Revocation]
-```
-
----
-
-## 🛠️ Technical Stack & Prep
-
-- **Identity Server:** Ory Kratos.
-- **Backend Core:** `pkg/base/auth` (JWT v5) + `pkg/base/casbin`.
-- **Visualization:** SigNoz API integration prep (ensuring `user.id` is in spans).
-- **Documentation:** [Security Architecture](../architecture/security.md), [Control Plane Visualization Strategy](../architecture/control-plane-visualization.md).
+## 🛤️ RR-12 Roadmap (Dependency Flow)
+12.1 (Rules) -> 12.2 (Engine) -> 12.3/12.4 (Interceptors) -> 12.5 (E2E)
