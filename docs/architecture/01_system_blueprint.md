@@ -8,26 +8,23 @@ Tài liệu này định nghĩa kiến trúc tổng thể, các tiêu chuẩn k�
 
 Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Tin cậy - Quan sát được"**. Hệ thống không chỉ giải quyết bài toán nghiệp vụ Chuỗi cung ứng cà phê mà còn là một bản showcase về các mẫu thiết kế (Design Patterns) hiện đại nhất trong hệ sinh thái Go.
 
-### Nguyên tắc cốt lõi (Core Principles):
-- **Abstraction First:** Không phụ thuộc vào framework. Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
-- **No Hardcoding:** Tuyệt đối không hardcode. Sử dụng cấu hình đa môi trường qua Viper & Environment Variables.
-- **Database per Service:** Đảm bảo tính độc lập và khả năng mở rộng riêng biệt cho từng service.
-- **Standardization:** Thống nhất format Log, Error (RFC 9457), và cách khởi tạo Service thông qua bộ khung `pkg/` dùng chung.
-- **Sprint Discipline:** Sprint 1 = infrastructure only. Sprint 2+ = business logic only. Không setup infra trong sprint nghiệp vụ.
+### Nguyên tắc cốt lõi (Constitution):
+- **Abstraction First:** Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
+- **Calculated Consistency:** Sử dụng **Transactional Outbox** để gửi tin và **Inbox Pattern** để nhận tin, triệt tiêu rủi ro mất dữ liệu.
+- **Dual Idempotency:** Bảo vệ 2 lớp: `Idempotency-Key` (API Level) và `Transactional Inbox` (Consumer Level).
+- **Observability by Design:** Mọi request mang dấu vết W3C Tracing xuyên suốt Gateway -> gRPC -> Kafka.
+- **Fail-Closed Security:** Ưu tiên an ninh hơn tính khả dụng trong các trường hợp kiểm tra quyền (VD: Redis Blacklist).
 
 ---
 
-## 2. App Architecture
+## 2. Thiết kế High Availability (HA)
 
-#### `apps/client-app/` (Next.js 15 — Unified UI)
-- **Pattern:** Direct Pattern.
-- **Role:** Dành cho tất cả người dùng (Nông dân, Nhà máy, Retailer) và Admin.
-- **Flow:** Browser → KrakenD :8081 → Microservices.
-- **Main Modules:**
-    - `/app/farms`: Quản lý nông hộ (Sprint 2).
-    - `/app/batches`: Theo dõi mẻ hàng (Sprint 2).
-    - `/app/logistics`: Theo dõi vận chuyển (Sprint 3).
-    - `/admin/*`: Các tính năng quản trị hệ thống.
+Hệ thống được thiết kế để không có điểm yếu chí tử (No Single Point of Failure).
+
+- **Database HA**: PostgreSQL Master-Slave Replication với PgBouncer làm cổng kết nối tập trung.
+- **Messaging HA**: Cụm Kafka tối thiểu 3 Brokers, Replication Factor = 3.
+- **Gateway HA**: KrakenD chạy đa instance (stateless) phía sau External Load Balancer.
+- **Identity HA**: Ory Kratos/Hydra chạy đa instance với shared session store (Redis).
 
 ---
 
@@ -43,152 +40,96 @@ graph TB
         CA[client-app :3000]
     end
 
-    subgraph "API Gateway"
+    subgraph "API Gateway (HA)"
         GW[KrakenD :8081]
     end
 
-    subgraph "Microservices"
-        DS[demo-service :8080/:50051]
-        AS[auth-service :8082/:50052]
-        WS[warehouse-service Sprint 3+]
+    subgraph "Microservices (Stateless)"
+        DS[demo-service]
+        AS[auth-service]
+        FS[farm-service]
+        RS[retail-service]
+        WS[warehouse-service]
     end
 
-    subgraph "Data Persistence"
+    subgraph "Data Persistence (HA)"
+        PB[PgBouncer :6432]
         PG[(PostgreSQL :54321)]
-        RD[(Redis :6379)]
+        RD[(Redis Sentinel :6379)]
+        PB --> PG
     end
 
-    subgraph "Message Broker"
-        KF[Kafka :9092/:9094]
-        ZK[Zookeeper :2181]
+    subgraph "Message Broker (HA)"
+        KF[Kafka Cluster :9094]
         KUI[Kafka UI :8082]
         KUI --- KF
-        KF --- ZK
     end
 
     Browser -->|:3000| CA
     CA -->|REST :8081| GW
-    GW -->|gRPC| DS
-    GW -->|gRPC| AS
-    DS --> PG
-    DS --> RD
-    AS --> PG
-    DS -.->|Kafka| KF
-    AS -.->|Kafka| KF
+    GW -->|gRPC+JWT| DS
+    GW -->|gRPC+JWT| AS
+    DS --> PB
+    AS --> PB
+    FS --> PB
+    RS --> PB
+    WS --> PB
+    DS -.->|Outbox/Inbox| KF
+    RS -.->|Outbox/Inbox| KF
 ```
 
 ---
 
-## 4. Port Map (Final — no conflicts)
+## 4. Chiến lược Kafka (Topic-per-Domain)
 
-| Service | Port | Note |
+| Nhóm Domain | Topic Kafka | Producer | Consumer |
+| :--- | :--- | :--- | :--- |
+| Identity | `auth.user.events` | Auth | Farm, Audit |
+| Commercial | `retail.order.events` | Retail | Warehouse, Trace |
+| Inventory | `warehouse.stock.events` | Warehouse | Retail, Logistics |
+| Logistics | `logistics.gps.events` | Logistics | Frontend (SSE) |
+
+- **Scaling**: Sử dụng **Consumer Groups** để chia tải cho nhiều instance của cùng một service.
+- **Ordering**: Dùng Business Key (VD: `order_id`) làm **Kafka Key** để bảo đảm thứ tự xử lý trên cùng 1 partition.
+
+---
+
+## 5. Mô hình Bảo mật 3 Tầng (Three-Gate Security)
+
+Hệ thống áp dụng mô hình Zero Trust nội bộ:
+
+1.  **Gate 1 (Gateway)**: KrakenD verify chữ ký JWT và kiểm tra `scope` claim (VD: `retail:app`).
+2.  **Gate 2 (Service)**: Casbin Enforcer tại từng Microservice kiểm tra `role` người dùng trên RAM (In-memory).
+3.  **Gate 3 (Internal)**: gRPC Interceptor tự động chuyển tiếp (propagate) JWT metadata giữa các service. System-to-system call dùng `Internal-Secret`.
+
+---
+
+## 6. Port Map (Final)
+
+| Service | Port | Ghi chú |
 | :--- | :--- | :--- |
-| client-app | 3000 | Unified UI (Business + Admin) |
+| client-app | 3000 | Unified UI |
 | KrakenD | 8081 | API Gateway |
-| demo-service HTTP | 8080 | |
-| demo-service gRPC | 50051 | |
-| auth-service HTTP | 8082 | (RR-12) |
-| auth-service gRPC | 50052 | |
-| PostgreSQL | 54321 | (Mapped from 5432) |
-| Redis | 6379 | |
-| Kafka | 9094 | (External) |
-| Kafka UI | 8082 | |
-| Zookeeper | 2181 | |
+| auth-service | 8082 / 50052 | Identity Proxy |
+| farm-service | 8083 / 50053 | Farm Management |
+| PostgreSQL | 54321 | Direct access (Dev only) |
+| PgBouncer | 6432 | Connection Pooler (Primary) |
+| Kafka Cluster | 9094 | Broker network |
+| Valkey/Redis | 6379 | Idempotency & Cache |
 
 ---
 
-## 5. Thiết kế Framework nội bộ (`pkg/`)
+## 10. Sprint Roadmap (Epic-based)
 
-| Package | Vai trò |
-| :--- | :--- |
-| `pkg/config` | Viper: load từ `.env`, YAML, env vars. `BaseConfig` embed vào mọi service config. |
-| `pkg/logger` | Zap: JSON cho prod, console cho dev. `FromContext(ctx)` tự inject trace_id. |
-| `pkg/base` | Application lifecycle: gRPC/HTTP server, health checks, graceful shutdown, OTel init. |
-| `pkg/errs` | RFC 9457 Problem Details. `GinErrorHandler()` middleware. `SubProblem[]` support. |
-| `pkg/database` | GORM wrapper: connection pool, otelsql auto-instrumentation, migration scaffold. |
-| `pkg/redis` | go-redis wrapper: redisotel tracing + metrics. |
-| `pkg/telemetry` | OTel TracerProvider + MeterProvider + W3C propagator. |
-
----
-
-## 6. Các Mẫu Thiết kế Kỹ thuật Nâng cao
-
-1. **Saga Pattern & Distributed Transactions:**
-   - Phase 1 (Choreography): Outbox Pattern + Kafka. Compensating Actions tự động.
-   - Phase 2 (Orchestration): Temporal.io.
-
-2. **Transactional Outbox & Inbox:**
-   - Outbox: Atomicity giữa DB write và event publish.
-   - Inbox: Idempotency bằng `Message_ID`.
-
-3. **CQRS & Real-time Traceability:**
-   - Write: PostgreSQL (ACID transactions).
-   - Read: Elasticsearch (full-text search).
-   - Sync: Trace Service consume Kafka → upsert Elasticsearch.
-
-6. **User Management & Admin-only Creation**:
-   - Chỉ `farm_admin` có quyền tạo User mới thông qua Admin Portal.
-   - `auth-service` đóng vai trò Proxy cho Ory Kratos Admin API.
-   - Sử dụng Kafka để phát tán sự kiện `user.created` đảm bảo tính nhất quán quyền hạn (Casbin) và thông tin người dùng trên toàn hệ thống.
-
-7. **Standardized API Response (RFC 9457)**:
-
-   - `type`, `title`, `status`, `detail`, `instance`, `trace_id`, `errors[]`.
-   - `application/problem+json` Content-Type.
-
-5. **Resilient Centralized Authorization:** Một `auth-service` quản lý tập trung (Writer), các service khác thực thi in-memory (Reader) qua **Casbin v3** với cơ chế đồng bộ 3 trụ cột (gRPC Snapshot + Kafka Live + Polling).
-
-6. **Hash Chaining (Cassandra):** Audit log chống gian lận nội bộ.
-
----
-
-## 8. Bảo mật & Xác thực
-
-- **Identity:** Ory Kratos (JWT cấp phát + JWKS).
-- **Gateway:** KrakenD forward JWT và đính kèm Authorization header.
-- **In-service auth:** Services tự validate JWT offline bằng JWKS cache.
-- **Fine-grained AuthZ:** Sử dụng **Centralized Auth Service** và **Casbin v3**. Các service kéo quyền về RAM qua gRPC lúc khởi động và cập nhật thời gian thực qua Kafka.
-
----
-
-## 9. Cấu trúc Monorepo
-
-```text
-RuntimeRoasters/
-├── api/                    # Proto definitions + buf toolchain (Shared)
-│   └── runtime/
-│       └── farm/v1/
-├── apps/
-│   ├── demo-service/       # Primary service & boilerplate template
-│   └── auth-service/       # Policy Manager (RR-12)
-├── src/
-│   └── pkg/                # Go Workspaces shared packages
-│       ├── base/
-│       ├── config/
-│       ├── database/
-│       ├── errs/
-│       ├── logger/
-│       ├── redis/
-│       └── telemetry/
-├── deployments/
-│   ├── docker-compose.yaml
-│   ├── krakend/
-│   │   └── krakend.json
-│   └── init-db.sql
-└── docs/
-    ├── architecture/
-    └── business/
-```
-
----
-
-## 10. Sprint Roadmap
-
-| Sprint | Goal | Key Deliverable (RR-x) |
+| Sprint | Epic Goal | Key Deliverables |
 | :--- | :--- | :--- |
-| **Sprint 1** | Foundation & Identity | Identity Infra, Client Auth Flow (RR-1 to RR-10) |
-| **Sprint 2** | Security Core | JWT Validation, Centralized AuthZ (RR-11 to RR-14) |
-| **Sprint 3** | Farm Service Logic | Vertical Slice CRUD, DDD, Repository (RR-15 to RR-18) |
-| **Sprint 4** | Distributed Systems | Saga Pattern, Retail, Warehouse (RR-19 to RR-22) |
+| **S1-3** | Foundation | Completed Infrastructure & Farm Core |
+| **S4** | Security Base | E2E Auth, Token Revocation |
+| **S5-6** | Saga & Consistency | Outbox/Inbox, Order Flow, Stock Reservation |
+| **S7-8** | Logistics | Real-time Tracking, Redis Geo |
+| **S9-10** | Transparency | CQRS, Elasticsearch, OTel, Cassandra Audit |
+| **S11** | Commerce | Real Stripe Payment & Saga Phase 2 |
+| **S12** | Grand Finale | System Mesh Visualization, Chaos, mTLS |
 
-**Nguyên tắc:** Sprint 1 hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.
+---
+*Cập nhật lần cuối: 2026-05-10 bởi TechLead*
