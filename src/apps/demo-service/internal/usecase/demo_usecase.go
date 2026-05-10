@@ -16,8 +16,14 @@ func NewDemoUsecase() DemoUsecase {
 }
 
 func (u *demoUsecase) GetDemo(ctx context.Context) (*domain.Demo, error) {
-	return &domain.Demo{
+	d := &domain.Demo{
 		ID:      "demo-1",
 		Message: "Pong! Demo Service is alive.",
-	}, nil
+	}
+
+	if err := d.Validate(); err != nil {
+		return nil, err
+	}
+
+	return d, nil
 }

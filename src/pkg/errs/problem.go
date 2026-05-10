@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const problemContentType = "application/problem+json"
@@ -49,12 +51,43 @@ var HTTPStatusMap = map[error]int{
 	ErrInternal:     http.StatusInternalServerError,
 }
 
+// GRPCStatusMap mapping sentinel errors to gRPC codes
+var GRPCStatusMap = map[error]codes.Code{
+	ErrNotFound:     codes.NotFound,
+	ErrConflict:     codes.Aborted,
+	ErrUnauthorized: codes.Unauthenticated,
+	ErrValidation:   codes.InvalidArgument,
+	ErrForbidden:    codes.PermissionDenied,
+	ErrInternal:     codes.Internal,
+}
+
 // StatusCode returns the HTTP status code for a given error
 func StatusCode(err error) int {
-	if s, ok := HTTPStatusMap[err]; ok {
-		return s
+	// Check if it's a wrapped error
+	for sentinel, code := range HTTPStatusMap {
+		if errors.Is(err, sentinel) {
+			return code
+		}
 	}
 	return http.StatusInternalServerError
+}
+
+// GRPCCode returns the gRPC code for a given error
+func GRPCCode(err error) codes.Code {
+	for sentinel, code := range GRPCStatusMap {
+		if errors.Is(err, sentinel) {
+			return code
+		}
+	}
+	return codes.Internal
+}
+
+// ToGRPCError converts a sentinel error to a gRPC status error
+func ToGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return status.Error(GRPCCode(err), err.Error())
 }
 
 // New builds a Problem with type defaulting to "about:blank" per RFC 9457

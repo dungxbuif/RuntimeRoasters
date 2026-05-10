@@ -1,6 +1,7 @@
 # Technical Design - [RR-15] Farm Service Bootstrapping
 
 Mục tiêu: Thiết lập hạ tầng code và nối dây (wiring) cho Farm Service.
+Tiêu chuẩn áp dụng: [Canonical Template Standards](../../../architecture/reference/canonical-template-standards.md)
 
 ## 📂 1. Cấu trúc thư mục (Folder Structure)
 - `src/apps/farm-service/cmd/main.go`
