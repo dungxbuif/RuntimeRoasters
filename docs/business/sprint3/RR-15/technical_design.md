@@ -1,36 +1,42 @@
-# Technical Design: Farm Service Bootstrapping (RR-15)
+# Technical Design - [RR-15] Farm Service Bootstrapping
 
-## 1. Overview
-Farm Service là service nghiệp vụ đầu tiên của hệ thống sau khi đã hoàn thiện hạ tầng bảo mật. Service này sẽ quản lý thông tin các nông hộ và vùng trồng cà phê.
+Mục tiêu: Thiết lập hạ tầng code và nối dây (wiring) cho Farm Service.
 
-## 2. Component Design
+## 📂 1. Cấu trúc thư mục (Folder Structure)
+- `src/apps/farm-service/cmd/main.go`
+- `src/apps/farm-service/config/config.go`
+- `src/apps/farm-service/internal/app/app.go`
+- `src/apps/farm-service/internal/app/wire.go`
+- `src/apps/farm-service/internal/delivery/grpc/`
+- `src/apps/farm-service/internal/usecase/`
+- `src/apps/farm-service/internal/infrastructure/postgres/`
 
-### 2.1 Project Structure
-Tiếp tục sử dụng Clean Architecture và copy boilerplate từ `demo-service` để đảm bảo tính nhất quán:
-- `cmd/main.go`: Entrypoint.
-- `internal/domain`: Entity và Repository interfaces.
-- `internal/usecase`: Business logic.
-- `internal/delivery`: gRPC Handlers.
-- `internal/infrastructure`: Repo implementation, DB migrations.
+## ⚙️ 2. Cấu hình (Config)
+- **File:** `config/config.go`
+- **Struct:** `Config` nhúng `config.BaseConfig`.
+- **Fields cần thêm:** 
+    - `AuthServiceAddr string` (Cổng gRPC của auth-service)
+    - `JWKSURL string` (URL tới identity proxy)
+    - `ExpectedIssuer string`
 
-### 2.2 Security Model
-- **AuthN:** Sử dụng `pkg/base/auth` (JWKS Validation).
-- **AuthZ:** Sử dụng `pkg/base/casbin` (Resilient Reader).
-- **Policies:** Sẽ được khai báo trong `auth-service` và sync về Farm Service.
+## 🔗 3. Dependency Injection (Wire)
+- **File:** `internal/app/wire.go`
+- **Providers yêu cầu:**
+    - `provideKeyProvider`: Khởi tạo `provider.NewJWKSCache`.
+    - `provideCasbinClient`: Khởi tạo `casbingrpc.NewAuthSnapshotClient`.
+    - `provideCasbinEngine`: Khởi tạo `casbin.NewResilientReader` (ModelText sử dụng RBAC đơn giản).
+    - `provideGRPCServerOptions`: Inject 2 interceptors:
+        1. `authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer)`
+        2. `casbingrpc.GRPCUnaryInterceptor(casbinEngine)`
 
-### 2.3 Data Model
-- Table `farms`:
-    - `id`: UUID (Primary Key)
-    - `name`: String
-    - `location`: String (Geo-coordinates or address)
-    - `owner_id`: UUID (Reference to Identity Server `sub`)
-    - `created_at/updated_at`: Timestamps
+## 🚀 4. App Lifecycle
+- **File:** `internal/app/app.go`
+- **Hàm `Run()`:**
+    - Phải gọi `reader.StartBackgroundSync(ctx)` để đồng bộ quyền từ auth-service.
+    - Đăng ký gRPC service và Gateway mux.
 
-## 3. Integration
-- **KrakenD:** Mở port :8083 (gRPC 50053) nội bộ cho Farm Service.
-- **Database:** Sử dụng `farm_db` trong cụm Postgres chung.
-- **OTel:** Export trace về SigNoz qua OTLP.
-
-## 4. Verification Plan
-- Unit tests cho Usecase và Repository.
-- Integration test cho gRPC handler với mock auth.
+## 📋 Sub-tasks
+- [ ] Copy boilerplate từ `demo-service`.
+- [ ] Đổi toàn bộ chuỗi "demo-service" và "Demo" thành "farm-service" và "Farm" (bao gồm import paths).
+- [ ] Chạy `wire` tại thư mục `internal/app`.
+- [ ] Đăng ký port `8083` (HTTP) và `50053` (gRPC) trong `.env`.

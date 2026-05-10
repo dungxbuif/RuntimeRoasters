@@ -55,9 +55,10 @@ Chi tiết: [`docs/business/sprint2/main.md`](./sprint2/main.md)
 | Ticket | Summary |
 | :--- | :--- |
 | [RR-15](./sprint3/RR-15/ticket.md) | Farm Service Bootstrap & Domain |
-| [RR-16](./sprint3/RR-16/ticket.md) | Farm Repository & Database |
-| [RR-17](./sprint3/RR-17/ticket.md) | Farm UseCase & API (gRPC/REST) |
-| [RR-18](./sprint3/RR-18/ticket.md) | Farm Control Plane (UI) |
+| [RR-16](./sprint3/RR-16/ticket.md) | Flow 1: Create & List Farm |
+| [RR-17](./sprint3/RR-17/ticket.md) | Flow 2: View, Update, Delete Farm |
+| [RR-18](./sprint3/RR-18/ticket.md) | Flow 3: Batch Management |
+
 
 Chi tiết: [`docs/business/sprint3/main.md`](./sprint3/main.md)
 

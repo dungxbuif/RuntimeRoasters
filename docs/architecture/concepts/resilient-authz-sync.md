@@ -22,3 +22,13 @@ Hệ thống dựa trên 3 trụ cột để đảm bảo tính nhất quán (Co
 - **Bootstrapping (gRPC Snapshot):** Khi một service khởi động, hành động đầu tiên của nó là gọi gRPC tới Auth Service để tải về toàn bộ "Snapshot" quyền hiện tại. Việc này giúp service sẵn sàng nhận traffic. Nếu gọi gRPC thất bại, service sẽ áp dụng **Exponential Backoff** để thử lại thay vì crash.
 - **Live Update (Kafka):** Trong suốt quá trình hoạt động, service lắng nghe các thay đổi thời gian thực qua Kafka watcher để cập nhật RAM ngay lập tức, đảm bảo độ trễ cập nhật quyền gần như tức thời.
 - **Self-Healing (Polling/Re-sync):** Để phòng trường hợp service lỡ mất một Event từ Kafka (do network split, Kafka downtime), cứ mỗi 10-15 phút, service tự động chạy background job đồng bộ lại toàn bộ dữ liệu từ Auth Service qua gRPC. Cơ chế này đóng vai trò "chữa lành" những sai lệch dữ liệu.
+
+## 4. Advanced: Query-Level Authorization (ABAC to SQL)
+
+Đối với các bài toán phân quyền dữ liệu phức tạp (vd: Warehouse, Retail), hệ thống hỗ trợ cơ chế chuyển đổi Casbin Policies thành câu lệnh SQL `WHERE`.
+
+- **Cơ chế:** Sử dụng `e.GetAllowedObjectConditions` để trích xuất logic từ ABAC policies.
+- **Pattern ứng dụng:** **GORM Scopes**. Tích hợp bộ lọc Casbin trực tiếp vào câu lệnh truy vấn của Repository để đảm bảo hiệu năng và tính bảo mật ở mức bản ghi.
+- **Chiến lược áp dụng:**
+    - **Simple Ownership (KISS):** Dùng Native GORM `WHERE` (vd: Farm Service).
+    - **Dynamic Filtering:** Dùng Casbin Query Level (vd: Warehouse Service - Regional Isolation).

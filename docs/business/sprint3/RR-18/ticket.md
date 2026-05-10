@@ -1,37 +1,42 @@
-# [RR-18] Farm Control Plane (UI)
+# [RR-18] Flow 3: Batch Management
 
-- **Summary:** Xây dựng giao diện quản trị Nông trại trên ứng dụng Web (Client App).
+- **Summary:** Quản lý các lô hàng (Batch) gắn liền với từng Nông trại.
 - **Priority:** `MEDIUM`
 - **Type:** Feature
 
 ---
 
-## 📖 User Story
-> As a farm manager, I want a user-friendly dashboard to view and manage my farms visually so that I can easily keep track of my assets without using technical tools.
-
-## 💰 Business Value
-Cải thiện trải nghiệm người dùng (UX) và giảm rào cản kỹ thuật cho nhân viên vận hành. Tăng khả năng quan sát (visibility) toàn bộ hệ thống nông trại.
-
 ## 🔍 Acceptance Criteria
 
-### Scenario 1: Farm Listing View
-- **Given:** A logged-in farm manager.
-- **When:** Navigating to the "Farms" menu.
-- **Then:** The system displays a table/list of all farms they own.
-- **And:** Each row shows Name, Location, and Area.
+### Scenario 1: Tạo Lô hàng mới cho Nông trại
+- **Given:** Tôi đang xem chi tiết một Nông trại.
+- **When:** Tôi tạo một Lô hàng (Batch) mới cho nông trại đó.
+- **Then:** Lô hàng được lưu trữ với tham chiếu `farm_id` chính xác.
 
-### Scenario 2: Farm Creation Form
-- **Given:** The Farm Listing page.
-- **When:** Clicking "Create New Farm".
-- **Then:** A form appears with fields for Name, Location, Area, and Type.
-- **And:** Submitting the form with valid data adds the farm to the list.
+### Scenario 2: Kiểm tra ràng buộc Nông trại tồn tại
+- **Given:** Tôi cố gắng tạo lô hàng cho một `farm_id` không tồn tại.
+- **When:** Hệ thống thực hiện lưu trữ.
+- **Then:** Hệ thống trả về lỗi "Nông trại không tồn tại".
 
-### Scenario 3: Real-time Feedback
-- **Given:** A form submission.
-- **When:** The API returns success or failure.
-- **Then:** The UI shows a clear notification (Toast) to the user.
+---
 
-### Scenario 4: Access Control in UI
-- **Given:** A user with `guest` role.
-- **When:** Attempting to access the Farm management page.
-- **Then:** The UI redirects them to a "Permission Denied" page or hides the menu.
+## 👨‍💻 Developer Implementation Guide
+
+### 1. Aggregate Root Pattern
+- **Technique:** `Farm` là Aggregate Root cho `Batch`.
+- **Constraint:** `Batch` không thể tồn tại độc lập. `farm_id` phải là `NOT NULL` và có Foreign Key tới bảng `farms`.
+
+### 2. Transactional Outbox (Preparation)
+- **Technique:** Sử dụng `database.WithTx` (Unit of Work) nếu có sẵn hoặc GORM `db.Transaction`.
+- **Logic:** Khi lưu `Batch`, hãy thực hiện chèn record vào bảng `batches` VÀ `outbox` trong cùng 1 Transaction để đảm bảo tính nguyên tử.
+
+### 3. Repository (`internal/infrastructure/postgres/batch_repo.go`)
+- **Functions:**
+  - `Create(ctx, *Batch) error`
+  - `ListByFarm(ctx, farmID string) ([]*Batch, error)`
+
+### 4. UseCase Logic
+- **`CreateBatch`:**
+  1. Kiểm tra sự tồn tại của `Farm` qua `FarmRepository`.
+  2. Kiểm tra `Farm.OwnerID` để đảm bảo user có quyền tạo batch cho farm này.
+  3. Lưu `Batch`.

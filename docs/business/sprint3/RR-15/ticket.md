@@ -1,30 +1,53 @@
-# [RR-15] Farm Service Bootstrap & Domain
+# [RR-15] Farm Service Bootstrapping
 
-- **Summary:** Thiết lập dịch vụ Farm mới và định nghĩa các thực thể cốt lõi cho việc quản lý nông trại.
+- **Summary:** Khởi tạo khung sườn (skeleton) cho Farm Service dựa trên kiến trúc chuẩn của dự án.
 - **Priority:** `HIGH`
 - **Type:** Feature
 
 ---
 
-## 📖 User Story
-> As a farm owner, I want a dedicated system to manage my farm data so that I can track production and resources effectively across multiple locations.
-
-## 💰 Business Value
-Cung cấp khả năng quản lý tập trung thông tin nông trại, tạo tiền đề cho việc truy xuất nguồn gốc (traceability) và tối ưu hóa vận hành trong các giai đoạn sau.
-
 ## 🔍 Acceptance Criteria
 
-### Scenario 1: Farm Entity Definition
-- **Given:** A need to store farm information.
-- **When:** A farm record is created or viewed.
-- **Then:** It must contain: Name, Location (Province/Region), Total Area (Hectares), and Farm Type (e.g., Arabica, Robusta).
+### Scenario 1: Khởi tạo Project Structure
+- **Given:** Tôi có mã nguồn của `demo-service`.
+- **When:** Tôi tạo thư mục `src/apps/farm-service` và copy cấu trúc từ `demo-service`.
+- **Then:** Thư mục mới phải có đầy đủ `cmd/`, `internal/`, `config/` và `Makefile`.
 
-### Scenario 2: Service Isolation
-- **Given:** The system architecture.
-- **When:** Farm management actions are performed.
-- **Then:** They must be handled by a dedicated "Farm Service" to ensure scalability and independent deployment.
+### Scenario 2: Cấu hình Môi trường & Connectivity
+- **Given:** Farm Service đã được khởi tạo.
+- **When:** Tôi cấu hình `.env` và chạy service qua Docker Compose.
+- **Then:** Service phải kết nối thành công tới Postgres (database `farm_db`) và Jaeger.
 
-### Scenario 3: Initial Data Seed
-- **Given:** A new installation of the Farm Service.
-- **When:** The service starts for the first time.
-- **Then:** It should optionally support loading initial reference data for regions and farm types.
+### Scenario 3: Gateway Integration
+- **Given:** Farm Service đang chạy tại port nội bộ.
+- **When:** Tôi cấu hình KrakenD để forward request tới Farm Service.
+- **Then:** Request qua Gateway (`/api/v1/farms/...`) phải nhận được phản hồi từ Farm Service.
+
+---
+
+## 👨‍💻 Developer Implementation Guide
+
+### 1. Folder Structure & Roles
+- `src/apps/farm-service/cmd/main.go`: Entrypoint duy nhất. Gọi `InitializeApp`.
+- `src/apps/farm-service/internal/app/`: Chứa logic nối dây DI (Wire).
+- `src/apps/farm-service/config/`: Định nghĩa `Config` struct (nhúng `BaseConfig`).
+- `api/runtime/farm/v1/farm.proto`: Hợp đồng API gRPC/REST.
+
+### 2. Required API Contract (`farm.proto`)
+- **Package:** `runtime.farm.v1`
+- **Messages:** `Farm`, `CreateFarmRequest/Response`, `GetFarmRequest/Response`, `ListFarmsRequest/Response`, `UpdateFarmRequest/Response`, `DeleteFarmRequest/Response`.
+- **Technique:** `Farm` message chỉ bao gồm các thông tin cơ bản: name, location, area, type, owner_id.
+
+### 3. Wiring Technique (DI)
+- Sử dụng **Google Wire**.
+- Phải inject: `provider.KeyProvider` (cho JWT), `casbin.Engine` (cho AuthZ), và `database.DB` (cho GORM).
+- **Ràng buộc:** `GRPCServerOptions` PHẢI bao gồm `authgrpc.GRPCUnaryInterceptor` và `casbingrpc.GRPCUnaryInterceptor`.
+
+### 4. Integration Commands
+```bash
+# Sau khi tạo .proto
+cd api && buf generate
+
+# Sau khi tạo wire.go
+cd src/apps/farm-service/internal/app && wire
+```

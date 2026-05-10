@@ -1,35 +1,43 @@
-# [RR-16] Farm Repository & Database
+# [RR-16] Flow 1: Create & List Farm
 
-- **Summary:** Triển khai tầng lưu trữ dữ liệu bền vững cho Nông trại với khả năng truy vấn linh hoạt.
+- **Summary:** Triển khai luồng tính năng tạo mới và hiển thị danh sách Nông trại (Farm).
 - **Priority:** `HIGH`
 - **Type:** Feature
 
 ---
 
-## 📖 User Story
-> As a farm owner, I want my farm data to be persisted reliably so that I can access historical records and search for specific farms based on various criteria.
-
-## 💰 Business Value
-Đảm bảo tính toàn vẹn và sẵn sàng của dữ liệu. Khả năng tìm kiếm giúp người dùng quản lý số lượng lớn nông trại một cách hiệu quả.
-
 ## 🔍 Acceptance Criteria
 
-### Scenario 1: Persistent Storage
-- **Given:** A farm creation request.
-- **When:** The system processes the request.
-- **Then:** The data must be stored in a relational database (PostgreSQL).
+### Scenario 1: Tạo mới Nông trại thành công
+- **Given:** Tôi là một Farmer đã đăng nhập và đang ở trang "Thêm Nông Trại".
+- **When:** Tôi nhập đầy đủ thông tin (Tên, Địa chỉ, Diện tích) và nhấn "Lưu".
+- **Then:** Hệ thống lưu dữ liệu vào Postgres và hiển thị thông báo thành công.
 
-### Scenario 2: Data Retrieval
-- **Given:** An existing farm ID.
-- **When:** Searching by ID.
-- **Then:** The system returns full details of that farm.
+### Scenario 2: Hiển thị danh sách Nông trại
+- **Given:** Tôi đã có một số nông trại trong hệ thống.
+- **When:** Tôi truy cập trang danh sách nông trại.
+- **Then:** Tôi phải thấy danh sách các nông trại của mình với đầy đủ thông tin cơ bản.
 
-### Scenario 3: Filtering & Search
-- **Given:** A list of farms.
-- **When:** Filtering by Region or Farm Type.
-- **Then:** The system returns only the matching records.
+---
 
-### Scenario 4: Audit Trails
-- **Given:** Any modification to farm data.
-- **When:** The record is saved.
-- **Then:** `CreatedAt` and `UpdatedAt` timestamps must be automatically managed.
+## 👨‍💻 Developer Implementation Guide
+
+### 1. Domain Model (`internal/domain/farm.go`)
+- **Entity:** `Farm` struct với các trường: `ID` (UUID), `Name`, `Location`, `Area` (float64), `OwnerID` (string).
+- **Technique:** `OwnerID` là khóa quan trọng để thực hiện Data Scoping (ABAC).
+
+### 2. Repository (`internal/infrastructure/postgres/farm_repo.go`)
+- **Functions:**
+  - `Create(ctx, *Farm) error`: Chèn record vào Postgres.
+  - `ListByOwner(ctx, ownerID string) ([]*Farm, error)`: TRUY VẤN bắt buộc kèm `WHERE owner_id = $1`.
+
+### 3. UseCase (`internal/usecase/farm_usecase.go`)
+- **Input/Output:** Nhận DTO (Request struct), trả về DTO (Response struct) hoặc Domain Entity.
+- **`CreateFarm` Logic:**
+  1. Lấy `CurrentUserID` từ `identity.FromContext(ctx)`.
+  2. Validate: `Area > 0`.
+  3. Gán `OwnerID = CurrentUserID`.
+  4. Gọi Repo `Create`.
+
+### 4. gRPC Handler (`internal/delivery/grpc/handler.go`)
+- **Technique:** Gọi UseCase và map kết quả sang Protobuf messages. Phải log trace ID bằng `logger.FromContext(ctx)`.

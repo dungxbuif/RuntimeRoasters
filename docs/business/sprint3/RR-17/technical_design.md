@@ -1,48 +1,38 @@
-# [RR-17] Technical Design: Farm UseCase & API (gRPC/REST)
+# Technical Design - [RR-17] Flow 2: View, Update, Delete Farm
 
-**Status:** `DRAFT`
-**Author:** Tech Lead
+Mục tiêu: Hoàn thiện vòng đời quản lý nông trại (CRUD) với kiểm tra quyền sở hữu dữ liệu.
 
----
+## 🏗️ 1. Domain & Repository
+- **Interface (Bổ sung):**
+    ```go
+    type FarmRepository interface {
+        // ... (các hàm cũ)
+        GetByID(ctx context.Context, id string) (*Farm, error)
+        Update(ctx context.Context, farm *Farm) error
+        Delete(ctx context.Context, id string) error
+    }
+    ```
 
-## 1. Context & Goal
-Triển khai logic nghiệp vụ tại tầng UseCase và phơi bày API qua gRPC Server. REST API sẽ được tự động hỗ trợ qua KrakenD Gateway mapping.
+## 🛠️ 2. Infrastructure (Postgres)
+- **File:** `internal/infrastructure/postgres/farm_repo.go` (Thêm các file `get.go`, `update.go`, `delete.go`)
+- **Technique:** Hàm `Update` sử dụng `db.Save(farm)` của GORM.
 
----
+## 🧠 3. UseCase (Business Logic)
+- **Logic `UpdateFarm` (Data Scope Enforcement):**
+    1. Gọi Repo `GetByID(ctx, req.ID)`. Nếu không thấy -> `errs.ErrNotFound`.
+    2. Lấy `CurrentUserID` từ Identity Context.
+    3. **KIỂM TRA:** `farm.OwnerID == CurrentUserID`.
+    4. Nếu KHÁC: Trả về `errs.ErrForbidden` (Chống truy cập chéo dữ liệu).
+    5. Nếu TRÙNG: Cập nhật các trường (Name, Location, Area, Type) và gọi Repo `Update`.
 
-## 2. API Definition (Proto)
-- **File:** `api/runtime/farm/v1/farm.proto`
+- **Logic `DeleteFarm`:** Tương tự `UpdateFarm`, phải kiểm tra quyền sở hữu trước khi thực thi xóa.
 
-```protobuf
-service FarmService {
-  rpc CreateFarm(CreateFarmRequest) returns (CreateFarmResponse);
-  rpc GetFarm(GetFarmRequest) returns (GetFarmResponse);
-  rpc ListFarms(ListFarmsRequest) returns (ListFarmsResponse);
-}
-```
+## 📡 4. Delivery (gRPC)
+- **Hàm `GetFarm`:** Gọi UseCase, map lỗi `ErrForbidden` sang gRPC `PermissionDenied`.
+- **Hàm `UpdateFarm`:** Nhận `UpdateFarmRequest`, gọi UseCase, trả về Entity đã cập nhật.
+- **Hàm `DeleteFarm`:** Trả về boolean `success`.
 
----
-
-## 3. Implementation Details
-
-### 3.1 UseCase Layer
-- **Package:** `internal/usecase`
-- **Responsibilities:**
-    - Input validation (sử dụng custom logic hoặc library).
-    - Mapping từ DTO (gRPC requests) sang Domain Entity.
-    - Gọi Repository để thực hiện lưu trữ/truy vấn.
-    - Xử lý lỗi nghiệp vụ và chuyển đổi sang Domain Errors.
-
-### 3.2 Delivery Layer (gRPC)
-- **Package:** `internal/delivery/grpc`
-- **Responsibilities:**
-    - Triển khai interface được sinh ra từ Proto.
-    - Tích hợp Middleware/Interceptor:
-        - `AuthenticationInterceptor` (từ RR-11).
-        - `AuthorizationInterceptor` (Casbin - từ RR-12).
-    - Trích xuất `Claims` và truyền `OwnerID` xuống tầng UseCase.
-
----
-
-## 4. Error Handling
-- Sử dụng `pkg/errs` để trả về các mã lỗi RFC 9457 (Problem Details) thống nhất cho REST và mapping tương ứng sang gRPC Status Codes.
+## 📋 Sub-tasks
+- [ ] Implement `GetByID`, `Update`, `Delete` trong Repository.
+- [ ] Viết UseCase `GetFarm`, `UpdateFarm`, `DeleteFarm` kèm logic check Ownership.
+- [ ] Hoàn thiện gRPC Handler cho các phương thức tương ứng.

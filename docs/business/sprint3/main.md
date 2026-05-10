@@ -31,7 +31,7 @@ Sprint này tập trung vào 3 luồng dữ liệu chính:
 
 | Ticket | Summary | Status |
 | :--- | :--- | :--- |
-| [RR-15](./RR-15.md) | Farm Service Bootstrapping | 🕒 To Do |
-| [RR-16](./RR-16.md) | Flow 1: Create & List Farm | 🕒 To Do |
-| [RR-17](./RR-17.md) | Flow 2: Update & Delete Farm | 🕒 To Do |
-| [RR-18](./RR-18.md) | Flow 3: Batch Management | 🕒 To Do |
+| [RR-15](./RR-15/ticket.md) | Farm Service Bootstrapping | 🕒 To Do |
+| [RR-16](./RR-16/ticket.md) | Flow 1: Create & List Farm | 🕒 To Do |
+| [RR-17](./RR-17/ticket.md) | Flow 2: Update & Delete Farm | 🕒 To Do |
+| [RR-18](./RR-18/ticket.md) | Flow 3: Batch Management | 🕒 To Do |

@@ -1,35 +1,48 @@
-# [RR-17] Farm UseCase & API (gRPC/REST)
+# [RR-17] Flow 2: View, Update, Delete Farm
 
-- **Summary:** Triển khai logic nghiệp vụ và cung cấp giao diện lập trình ứng dụng (API) cho các dịch vụ khác.
-- **Priority:** `HIGH`
+- **Summary:** Triển khai các tính năng quản lý chi tiết, cập nhật và xóa Nông trại.
+- **Priority:** `MEDIUM`
 - **Type:** Feature
 
 ---
 
-## 📖 User Story
-> As a system integrator, I want to access farm data via standard APIs so that I can build mobile apps, web dashboards, or integrate other services with the farm management system.
-
-## 💰 Business Value
-Mở rộng khả năng tương tác của hệ thống qua các giao thức chuẩn. Đảm bảo logic nghiệp vụ (như kiểm tra giới hạn diện tích, quyền sở hữu) được thực thi nhất quán.
-
 ## 🔍 Acceptance Criteria
 
-### Scenario 1: gRPC Interface
-- **Given:** A technical client (another service).
-- **When:** Calling `CreateFarm` or `GetFarm` via gRPC.
-- **Then:** The system responds with Protobuf-encoded data.
+### Scenario 1: Cập nhật thông tin Nông trại
+- **Given:** Tôi đang ở trang chi tiết nông trại.
+- **When:** Tôi thay đổi thông tin và nhấn "Cập nhật".
+- **Then:** Thông tin mới được lưu lại và phiên bản (version) của bản ghi được tăng lên.
 
-### Scenario 2: REST Interface (via Gateway)
-- **Given:** A web or mobile client.
-- **When:** Calling `POST /v1/farms` or `GET /v1/farms/{id}`.
-- **Then:** The system responds with JSON-encoded data.
+### Scenario 2: Xử lý xung đột khi cập nhật (Optimistic Locking)
+- **Given:** Hai người dùng cùng mở trang chỉnh sửa một nông trại.
+- **When:** Người thứ nhất lưu thành công, sau đó người thứ hai nhấn lưu.
+- **Then:** Người thứ hai phải nhận được thông báo lỗi "Dữ liệu đã bị thay đổi bởi người khác" (ErrOptimisticLock).
 
-### Scenario 3: Validation Rules
-- **Given:** A farm creation request with negative area.
-- **When:** The UseCase processes the request.
-- **Then:** It returns a validation error "Area must be positive".
+### Scenario 3: Xóa Nông trại
+- **Given:** Tôi muốn ngừng quản lý một nông trại.
+- **When:** Tôi nhấn "Xóa" và xác nhận.
+- **Then:** Nông trại bị xóa khỏi danh sách (hoặc đánh dấu Soft Delete).
 
-### Scenario 4: Authorization Enforcement
-- **Given:** A user without proper roles.
-- **When:** Accessing farm management APIs.
-- **Then:** The system returns `403 Forbidden` (Gate 2 check).
+---
+
+### 1. Repository Technique
+- **Update Function:**
+```go
+// postgres/farm_repo.go
+func (r *farmRepo) Update(ctx, farm *domain.Farm) error {
+    return r.db.WithContext(ctx).Save(farm).Error
+}
+```
+
+
+### 2. UseCase Logic (Data Scope Enforcement)
+- **`UpdateFarm` Logic:**
+  1. Gọi Repo `GetByID(ctx, id)`.
+  2. KIỂM TRA: `farm.OwnerID == identity.FromContext(ctx).Subject`.
+  3. NẾU SAI: Return `errs.ErrForbidden`. (Cấm sửa hàng của người khác).
+  4. NẾU ĐÚNG: Cập nhật các trường và gọi Repo `Update`.
+
+### 3. Error Handling
+- Map `errs.ErrConflict` sang gRPC status `codes.Aborted`.
+- Map `errs.ErrForbidden` sang gRPC status `codes.PermissionDenied`.
+- Sử dụng helper tại `pkg/errs` để chuẩn hóa lỗi RFC 9457.
