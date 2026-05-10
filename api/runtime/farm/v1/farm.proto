@@ -2,13 +2,15 @@ syntax = "proto3";
 
 package runtime.farm.v1;
 
-import "google/api/annotations.proto";
-
 option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1;farmv1";
+
+import "google/api/annotations.proto";
 
 service FarmService {
   rpc GetFarm(GetFarmRequest) returns (GetFarmResponse) {
-    option (google.api.http) = { get: "/v1/farms/{id}" };
+    option (google.api.http) = {
+      get: "/v1/farms/{id}"
+    };
   }
 }
 
@@ -18,6 +20,5 @@ message GetFarmRequest {
 
 message GetFarmResponse {
   string id = 1;
-  string name = 2;
-  string location = 3;
+  string message = 2;
 }

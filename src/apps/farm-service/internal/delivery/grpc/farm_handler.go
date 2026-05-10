@@ -3,26 +3,26 @@ package grpc
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
+	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
 	"go.uber.org/zap"
 )
 
-type DemoHandler struct {
-	demov1.UnimplementedDemoServiceServer
-	usecase usecase.DemoUsecase
+type FarmHandler struct {
+	farmv1.UnimplementedFarmServiceServer
+	usecase usecase.FarmUsecase
 }
 
-func NewDemoHandler(u usecase.DemoUsecase) *DemoHandler {
-	return &DemoHandler{
+func NewFarmHandler(u usecase.FarmUsecase) *FarmHandler {
+	return &FarmHandler{
 		usecase: u,
 	}
 }
 
-func (h *DemoHandler) GetDemo(ctx context.Context, req *demov1.GetDemoRequest) (*demov1.GetDemoResponse, error) {
+func (h *FarmHandler) GetFarm(ctx context.Context, req *farmv1.GetFarmRequest) (*farmv1.GetFarmResponse, error) {
 	log := logger.FromContext(ctx)
 
 	// Debug log: Check if identity is propagated
@@ -35,14 +35,14 @@ func (h *DemoHandler) GetDemo(ctx context.Context, req *demov1.GetDemoRequest) (
 		log.Warn("Request NOT authenticated (missing context identity)")
 	}
 
-	demo, err := h.usecase.GetDemo(ctx)
+	farm, err := h.usecase.GetFarm(ctx)
 	if err != nil {
-		log.Error("failed to get demo", zap.Error(err))
+		log.Error("failed to get farm", zap.Error(err))
 		return nil, errs.ToGRPCError(err)
 	}
 
-	return &demov1.GetDemoResponse{
-		Id:      demo.ID,
-		Message: demo.Message,
+	return &farmv1.GetFarmResponse{
+		Id:      farm.ID,
+		Message: farm.Message,
 	}, nil
 }

@@ -114,11 +114,11 @@ func GinErrorHandler() gin.HandlerFunc {
 		// Extract TraceID from OpenTelemetry
 		traceID := trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()
 
-		log := logger.FromContext(c.Request.Context())
+		ctxLog := logger.FromContext(c.Request.Context())
 		if status >= 500 {
-			log.Error("internal server error", zap.Error(err), zap.String("path", c.Request.URL.Path))
+			ctxLog.Error("internal server error", zap.Error(err), zap.String("path", c.Request.URL.Path))
 		} else {
-			log.Warn("client error", zap.Error(err), zap.Int("status", status), zap.String("path", c.Request.URL.Path))
+			ctxLog.Warn("client error", zap.Error(err), zap.Int("status", status), zap.String("path", c.Request.URL.Path))
 		}
 
 		p := Problem{

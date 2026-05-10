@@ -1,6 +1,6 @@
 package e2e
 
-import ("go.uber.org/zap"
+import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -103,7 +103,7 @@ func (s *SecurityTestSuite) createToken(role string, scopes []string) string {
 // --- Test Cases ---
 
 func (s *SecurityTestSuite) Test_S1_Unauthorized_NoToken() {
-	resp, err := http.Get(s.gatewayURL + "/v1/demo/ping")
+	resp, err := http.Get(s.gatewayURL + "/v1/farm/ping")
 	s.NoError(err)
 	defer resp.Body.Close()
 
@@ -115,22 +115,22 @@ func (s *SecurityTestSuite) Test_S2_Forbidden_Gate1_InvalidScope() {
 	// Token has correct role but WRONG scope for KrakenD
 	token := s.createToken("admin", []string{"wrong:scope"})
 	
-	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/demo/ping", nil)
+	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/farm/ping", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	
 	resp, err := http.DefaultClient.Do(req)
 	s.NoError(err)
 	defer resp.Body.Close()
 
-	// Gate 1 (KrakenD) should block this because it expects 'demo:read'
+	// Gate 1 (KrakenD) should block this because it expects 'farm:read'
 	s.Equal(http.StatusForbidden, resp.StatusCode)
 }
 
 func (s *SecurityTestSuite) Test_S3_Forbidden_Gate2_InvalidRole() {
 	// Token has correct scope (Passes Gate 1) but WRONG role (Blocked by Casbin at Gate 2)
-	token := s.createToken("guest", []string{"demo:read"})
+	token := s.createToken("guest", []string{"farm:read"})
 	
-	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/demo/ping", nil)
+	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/farm/ping", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	
 	resp, err := http.DefaultClient.Do(req)
@@ -144,9 +144,9 @@ func (s *SecurityTestSuite) Test_S3_Forbidden_Gate2_InvalidRole() {
 
 func (s *SecurityTestSuite) Test_S4_Success_FullAccess() {
 	// Token has correct scope AND correct role
-	token := s.createToken("admin", []string{"demo:read"})
+	token := s.createToken("admin", []string{"farm:read"})
 	
-	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/demo/ping", nil)
+	req, _ := http.NewRequest("GET", s.gatewayURL+"/v1/farm/ping", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	
 	resp, err := http.DefaultClient.Do(req)

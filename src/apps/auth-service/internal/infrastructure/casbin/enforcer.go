@@ -77,21 +77,18 @@ func SyncDefaultPolicies(e *casbin.Enforcer) error {
 			continue
 		}
 
-		ptype := parts[0]
-		params := convertToInterface(parts[1:])
-
+		// Check if rule already exists to avoid duplication
 		var exists bool
 		var err error
-
-		if ptype == "p" {
-			exists, err = e.HasPolicy(params...)
-			if err == nil && !exists {
-				_, err = e.AddPolicy(params...)
+		if parts[0] == "p" {
+			exists, _ = e.HasPolicy(convertToInterface(parts[1:])...)
+			if !exists {
+				_, err = e.AddPolicy(convertToInterface(parts[1:])...)
 			}
-		} else if ptype == "g" {
-			exists, err = e.HasGroupingPolicy(params...)
-			if err == nil && !exists {
-				_, err = e.AddGroupingPolicy(params...)
+		} else if parts[0] == "g" {
+			exists, _ = e.HasGroupingPolicy(convertToInterface(parts[1:])...)
+			if !exists {
+				_, err = e.AddGroupingPolicy(convertToInterface(parts[1:])...)
 			}
 		}
 

@@ -1,0 +1,93 @@
+package app
+
+import (
+	"time"
+
+	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/config"
+	demogrpc "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	authgrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
+	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/redis"
+	"google.golang.org/grpc"
+)
+
+func InitializeApp() (*App, func(), error) {
+	cfg := config.Load()
+
+	// 1. Core Infra
+	db, err := database.NewPostgres(database.PostgresConfig{
+		URL: cfg.DatabaseURL,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rdb := redis.NewClient(redis.Config{
+		Addr: cfg.RedisAddr,
+	})
+
+	// 2. Auth & Casbin
+	ttl, _ := time.ParseDuration(cfg.JWKSCacheTTL)
+	keyProvider, err := provider.NewJWKSCache(cfg.JWKSURL, cfg.InternalSecret, ttl)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	casbinClient, err := casbingrpc.NewAuthSnapshotClient(cfg.AuthServiceAddr, "demo-service")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	modelText := `
+[request_definition]
+r = sub, obj, act
+[policy_definition]
+p = sub, obj, act
+[role_definition]
+g = _, _
+[policy_effect]
+e = some(where (p.eft == allow))
+[matchers]
+m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act))
+`
+	casbinEngine, err := casbin.NewResilientReader(casbinClient, casbin.ReaderOptions{
+		ModelText:     modelText,
+		SyncInterval:  10 * time.Minute,
+		RetryInterval: 5 * time.Second,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 3. Server Options & Base App
+	grpcOpts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer),
+			casbingrpc.GRPCUnaryInterceptor(casbinEngine),
+		),
+	}
+
+	baseApp := base.NewApp(base.Options{
+		Name:              "demo-service",
+		Config:            cfg.BaseConfig,
+		GRPCServerOptions: grpcOpts,
+	})
+
+	// 4. App-specific Components
+	demoUsecase := usecase.NewDemoUsecase()
+	demoHandler := demogrpc.NewDemoHandler(demoUsecase)
+
+	// 5. Build App
+	app := NewApp(baseApp, &cfg, db, rdb, keyProvider, casbinEngine, demoHandler)
+
+	cleanup := func() {
+		// No manual cleanup required for db/rdb here as shutdown handles graceful termination
+	}
+
+	return app, cleanup, nil
+}

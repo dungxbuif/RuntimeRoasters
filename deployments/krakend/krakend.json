@@ -71,6 +71,36 @@
       ]
     },
     {
+      "endpoint": "/v1/farms",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://identity:4434/.well-known/jwks.json",
+          "roles_key": "scope",
+          "roles": ["farm:read"],
+          "issuer": "http://localhost:4444/"
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/v1/farms",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
       "endpoint": "/swagger/demo.swagger.json",
       "method": "GET",
       "output_encoding": "no-op",

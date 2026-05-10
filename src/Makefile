@@ -2,8 +2,6 @@
 
 BUF=$(shell go env GOPATH)/bin/buf
 
-WIRE=$(shell go env GOPATH)/bin/wire
-
 proto:
 	cd ../api && $(BUF) dep update && $(BUF) generate
 
@@ -12,9 +10,6 @@ proto-lint:
 
 proto-breaking:
 	cd ../api && $(BUF) breaking --against '../.git#branch=main,subdir=api'
-
-wire:
-	cd apps/demo-service/internal/app && $(WIRE)
 
 run-demo:
 	go run ./apps/demo-service/cmd/
