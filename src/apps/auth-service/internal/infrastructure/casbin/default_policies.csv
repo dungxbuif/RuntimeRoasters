@@ -1,0 +1,4 @@
+p, farmer, /runtime.demo.v1.DemoService/GetDemo, read
+p, farmer, /farm.v1.FarmService/CreateFarm, write
+p, farmer, /farm.v1.FarmService/ListFarms, read
+g, admin, farmer

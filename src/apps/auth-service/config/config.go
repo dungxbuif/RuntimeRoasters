@@ -7,14 +7,12 @@ import (
 
 type Config struct {
 	config.BaseConfig `mapstructure:",squash"`
-	InternalSecret    string `mapstructure:"INTERNAL_SECRET"`
-	JWKSURL           string `mapstructure:"JWKS_URL"`
-	JWKSCacheTTL      string `mapstructure:"JWKS_CACHE_TTL"`
-	ExpectedIssuer    string `mapstructure:"EXPECTED_ISSUER"`
-	AuthServiceAddr   string `mapstructure:"AUTH_SERVICE_ADDR"`
+	// Kafka Config
+	KafkaBrokers []string `mapstructure:"KAFKA_BROKERS"`
+	KafkaTopic   string   `mapstructure:"KAFKA_AUTH_TOPIC"`
 }
 
-// Load loads the demo-service configuration
+// Load loads the auth-service configuration
 func Load() Config {
 	var cfg Config
 	paths := []string{".", "..", "../..", "../../.."}

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package runtime.auth.v1;
+
+option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1;authv1";
+
+service AuthService {
+  // GetFullSnapshot returns all policies for a given service
+  rpc GetFullSnapshot(GetFullSnapshotRequest) returns (GetFullSnapshotResponse);
+}
+
+message GetFullSnapshotRequest {
+  string service_name = 1;
+}
+
+message GetFullSnapshotResponse {
+  repeated string policies = 1; // CSV formatted lines: p, role, obj, act
+}

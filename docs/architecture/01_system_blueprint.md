@@ -57,33 +57,35 @@ graph TB
 
     subgraph "Microservices"
         DS[demo-service :8080/:50051]
-        FS[farm-service Sprint 2+]
+        AS[auth-service :8082/:50052]
         WS[warehouse-service Sprint 3+]
     end
 
     subgraph "Data Persistence"
-        PG[(PostgreSQL :5432)]
+        PG[(PostgreSQL :54321)]
         RD[(Redis :6379)]
-        ES[(Elasticsearch :9200)]
-        CS[(Cassandra :9042)]
     end
 
     subgraph "Message Broker"
-        RP[Redpanda :19092]
-        RPC[Redpanda Console :8090]
-        RPC --- RP
+        KF[Kafka :9092/:9094]
+        ZK[Zookeeper :2181]
+        KUI[Kafka UI :8082]
+        KUI --- KF
+        KF --- ZK
     end
 
     Browser -->|:3000| CA
     Browser -->|:3301| SZ
     CA -->|REST :8081| GW
     GW -->|gRPC| DS
-    GW -->|gRPC Sprint 2| FS
+    GW -->|gRPC| AS
     DS --> PG
     DS --> RD
-    DS -.->|Kafka| RP
+    AS --> PG
+    DS -.->|Kafka| KF
+    AS -.->|Kafka| KF
     DS -->|OTLP :4317| SZ
-    FS -->|OTLP :4317| SZ
+    AS -->|OTLP :4317| SZ
     CA -->|OTLP :4318| SZ
 ```
 
@@ -95,16 +97,15 @@ graph TB
 | :--- | :--- | :--- |
 | client-app | 3000 | Unified UI (Business + Admin) |
 | KrakenD | 8081 | API Gateway |
-| demo-service HTTP | 8080 | grpc-gateway (Sprint 1) |
+| demo-service HTTP | 8080 | |
 | demo-service gRPC | 50051 | |
-| farm-service HTTP | 8080 | grpc-gateway (Sprint 2) |
-| farm-service gRPC | 50051 | |
-| PostgreSQL | 5432 | |
+| auth-service HTTP | 8082 | (RR-12) |
+| auth-service gRPC | 50052 | |
+| PostgreSQL | 54321 | (Mapped from 5432) |
 | Redis | 6379 | |
-| Elasticsearch | 9200 | |
-| Cassandra | 9042 | |
-| Redpanda Kafka | 19092 | external |
-| Redpanda Console | 8090 | conflict-free (moved from 8080) |
+| Kafka | 9094 | (External) |
+| Kafka UI | 8082 | |
+| Zookeeper | 2181 | |
 | SigNoz OTLP gRPC | 4317 | Go services → SigNoz |
 | SigNoz OTLP HTTP | 4318 | browser → SigNoz |
 | SigNoz UI | 3301 | **NOT exposed** — proxy via /signoz/* |
@@ -144,7 +145,7 @@ graph TB
    - `type`, `title`, `status`, `detail`, `instance`, `trace_id`, `errors[]`.
    - `application/problem+json` Content-Type.
 
-5. **Decentralized Authorization:** Mỗi service giữ bộ Casbin rules riêng.
+5. **Resilient Centralized Authorization:** Một `auth-service` quản lý tập trung (Writer), các service khác thực thi in-memory (Reader) qua **Casbin v3** với cơ chế đồng bộ 3 trụ cột (gRPC Snapshot + Kafka Live + Polling).
 
 6. **Hash Chaining (Cassandra):** Audit log chống gian lận nội bộ.
 
@@ -183,9 +184,8 @@ RuntimeRoasters/
 │   └── runtime/
 │       └── farm/v1/
 ├── apps/
-│   ├── client-app/         # Unified UI (port 3000)
-│   ├── demo-service/       # Sprint 1: boilerplate template
-│   └── farm-service/       # Sprint 2+
+│   ├── demo-service/       # Primary service & boilerplate template
+│   └── warehouse-service/  # Sprint 3+
 ├── src/
 │   └── pkg/                # Go Workspaces shared packages
 │       ├── base/
@@ -209,12 +209,12 @@ RuntimeRoasters/
 
 ## 10. Sprint Roadmap
 
-| Sprint | Goal | Key Deliverable |
+| Sprint | Goal | Key Deliverable (RR-x) |
 | :--- | :--- | :--- |
-| **Sprint 1** | Complete Infrastructure | docker-compose, demo-service, client-app shell |
-| **Sprint 2** | Farm Service Business Logic | Farm CRUD, copy demo-service template |
-| **Sprint 3** | Distributed Transactions | Saga, Warehouse, Retail |
-| **Sprint 4** | Security | mTLS, Ory Kratos, Casbin |
+| **Sprint 1** | Foundation & Identity | Identity Infra, Client Auth Flow (RR-1 to RR-10) |
+| **Sprint 2** | Security Core | JWT Validation, Centralized AuthZ (RR-11 to RR-14) |
+| **Sprint 3** | Farm Service Logic | Vertical Slice CRUD, DDD, Repository (RR-15 to RR-18) |
+| **Sprint 4** | Distributed Systems | Saga Pattern, Retail, Warehouse (RR-19 to RR-22) |
 
 **Nguyên tắc:** Sprint 1 hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.
  hoàn tất toàn bộ infra. Sprint 2+ chỉ viết business logic — không setup thêm bất kỳ infrastructure nào.

@@ -8,6 +8,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
 	authhttp "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/http"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
 	"github.com/gin-gonic/gin"
@@ -15,26 +16,34 @@ import (
 )
 
 type App struct {
-	Base        *base.App
-	Cfg         *svcconfig.Config
-	DB          *database.DB
-	RDB         *redisclient.Client
-	KeyProvider provider.KeyProvider
-	DemoHandler *demogrpc.DemoHandler
+	Base         *base.App
+	Cfg          *svcconfig.Config
+	DB           *database.DB
+	RDB          *redisclient.Client
+	KeyProvider  provider.KeyProvider
+	CasbinEngine casbin.Engine
+	DemoHandler  *demogrpc.DemoHandler
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, rdb *redisclient.Client, keyProvider provider.KeyProvider, demoHandler *demogrpc.DemoHandler) *App {
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, rdb *redisclient.Client, keyProvider provider.KeyProvider, casbinEngine casbin.Engine, demoHandler *demogrpc.DemoHandler) *App {
 	return &App{
-		Base:        baseApp,
-		Cfg:         cfg,
-		DB:          db,
-		RDB:         rdb,
-		KeyProvider: keyProvider,
-		DemoHandler: demoHandler,
+		Base:         baseApp,
+		Cfg:          cfg,
+		DB:           db,
+		RDB:          rdb,
+		KeyProvider:  keyProvider,
+		CasbinEngine: casbinEngine,
+		DemoHandler:  demoHandler,
 	}
 }
 
 func (a *App) Run() {
+	// 1. Start Casbin Background Sync (gRPC Snapshot + Kafka Live + Polling)
+	if reader, ok := a.CasbinEngine.(*casbin.ResilientReader); ok {
+		// Use a background context that is cancelled on app shutdown
+		reader.StartBackgroundSync(context.Background())
+	}
+
 	// Register gRPC
 	a.Base.RegisterGRPC(&demov1.DemoService_ServiceDesc, a.DemoHandler)
 
