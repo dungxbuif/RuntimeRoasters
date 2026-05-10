@@ -45,8 +45,12 @@ func NewApp(opts Options) *App {
 	log.Info("bootstrapping service", zap.String("name", opts.Name))
 
 	// Initialize OpenTelemetry
-	// Chỗ này giả định Jaeger chạy ở localhost:4317 cho service trên host
-	otelShutdown, err := telemetry.InitTracer(opts.Name, "localhost:4317")
+	otelEndpoint := opts.Config.OTLPEndpoint
+	if otelEndpoint == "" {
+		otelEndpoint = "localhost:4317" // Default for local dev
+	}
+
+	otelShutdown, err := telemetry.InitTracer(opts.Name, otelEndpoint)
 	if err != nil {
 		log.Warn("failed to initialize telemetry", zap.Error(err))
 	}

@@ -14,7 +14,8 @@ import (
 
 // InterceptorOptions chứa các cấu hình mở rộng cho Interceptor.
 type InterceptorOptions struct {
-	PublicRoutes []string
+	PublicRoutes     []string
+	BlacklistChecker token.BlacklistChecker
 }
 
 // InterceptorOption định nghĩa signature cho Functional Options.
@@ -24,6 +25,13 @@ type InterceptorOption func(*InterceptorOptions)
 func WithPublicRoutes(routes ...string) InterceptorOption {
 	return func(o *InterceptorOptions) {
 		o.PublicRoutes = append(o.PublicRoutes, routes...)
+	}
+}
+
+// WithBlacklistChecker allows injecting a revocation checker (e.g. Redis).
+func WithBlacklistChecker(checker token.BlacklistChecker) InterceptorOption {
+	return func(o *InterceptorOptions) {
+		o.BlacklistChecker = checker
 	}
 }
 
@@ -84,6 +92,18 @@ func GRPCUnaryInterceptor(keyProvider provider.KeyProvider, expectedIssuer strin
 		if err != nil {
 			// Ngăn rò rỉ lỗi nội bộ ra ngoài
 			return nil, status.Error(codes.Unauthenticated, "unauthorized or invalid token")
+		}
+
+		// Bước 3.5: Kiểm tra Blacklist (Revocation)
+		if options.BlacklistChecker != nil {
+			revoked, err := options.BlacklistChecker.IsRevoked(ctx, idToken.JTI)
+			if err != nil {
+				// Fail-Closed: Chặn nếu không kiểm tra được blacklist
+				return nil, status.Error(codes.Internal, "security check failed")
+			}
+			if revoked {
+				return nil, status.Error(codes.Unauthenticated, "token has been revoked")
+			}
 		}
 
 		// Bước 4: Lưu Identity vào Context

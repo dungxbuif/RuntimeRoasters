@@ -6,9 +6,10 @@
 
 | 🕒 To Do | 🚧 In Progress | ✅ Done |
 | :--- | :--- | :--- |
-| [RR-12: Casbin AuthZ](./RR-12/ticket.md) | | [RR-9: Identity Infrastructure](./RR-9/ticket.md) |
-| [RR-13: E2E Integration](./RR-13/ticket.md) | | [RR-10: Client Auth Flow](./RR-10/ticket.md) |
-| [RR-14: Revocation](./RR-14/ticket.md) | | [RR-11: JWT Validation](./RR-11/ticket.md) |
+| [RR-13: E2E Integration](./RR-13/ticket.md) (Backlog) | | [RR-9: Identity Infrastructure](./RR-9/ticket.md) |
+| [RR-14: Revocation](./RR-14/ticket.md) | | [RR-10: Client Auth Flow](./RR-10/ticket.md) |
+| | | [RR-11: JWT Validation](./RR-11/ticket.md) |
+| | | [RR-12: Casbin AuthZ](./RR-12/ticket.md) |
 
 ---
 

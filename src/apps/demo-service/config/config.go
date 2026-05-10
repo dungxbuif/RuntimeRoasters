@@ -11,6 +11,7 @@ type Config struct {
 	JWKSURL           string `mapstructure:"JWKS_URL"`
 	JWKSCacheTTL      string `mapstructure:"JWKS_CACHE_TTL"`
 	ExpectedIssuer    string `mapstructure:"EXPECTED_ISSUER"`
+	AuthServiceAddr   string `mapstructure:"AUTH_SERVICE_ADDR"`
 }
 
 // Load loads the demo-service configuration

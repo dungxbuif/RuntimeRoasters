@@ -48,6 +48,15 @@
         "Authorization",
         "Content-Type"
       ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://identity:4434/.well-known/jwks.json",
+          "roles_key": "scope",
+          "roles": ["demo:read"],
+          "issuer": "http://localhost:4444/"
+        }
+      },
       "backend": [
         {
           "url_pattern": "/v1/demo/ping",

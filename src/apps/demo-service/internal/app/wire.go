@@ -11,7 +11,9 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
+	authgrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
+	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/redis"
 	"github.com/google/wire"
@@ -27,9 +29,37 @@ func provideKeyProvider(cfg svcconfig.Config) (provider.KeyProvider, error) {
 	return provider.NewJWKSCache(cfg.JWKSURL, cfg.InternalSecret, ttl)
 }
 
-func provideGRPCServerOptions(keyProvider provider.KeyProvider, cfg svcconfig.Config) []grpc.ServerOption {
+func provideCasbinClient(cfg svcconfig.Config) (casbin.AuthSnapshotClient, error) {
+	return casbingrpc.NewAuthSnapshotClient(cfg.AuthServiceAddr, "demo-service")
+}
+
+func provideCasbinEngine(client casbin.AuthSnapshotClient) (casbin.Engine, error) {
+	// In a real app, modelText would come from a shared config or file
+	modelText := `
+[request_definition]
+r = sub, obj, act
+[policy_definition]
+p = sub, obj, act
+[role_definition]
+g = _, _
+[policy_effect]
+e = some(where (p.eft == allow))
+[matchers]
+m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act))
+`
+	return casbin.NewResilientReader(client, casbin.ReaderOptions{
+		ModelText:     modelText,
+		SyncInterval:  10 * time.Minute,
+		RetryInterval: 5 * time.Second,
+	})
+}
+
+func provideGRPCServerOptions(keyProvider provider.KeyProvider, casbinEngine casbin.Engine, cfg svcconfig.Config) []grpc.ServerOption {
 	return []grpc.ServerOption{
-		grpc.UnaryInterceptor(authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer)),
+		grpc.ChainUnaryInterceptor(
+			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer),
+			casbingrpc.GRPCUnaryInterceptor(casbinEngine),
+		),
 	}
 }
 
@@ -58,6 +88,8 @@ func InitializeApp() (*App, func(), error) {
 		svcconfig.Load,
 		provideConfigPtr,
 		provideKeyProvider,
+		provideCasbinClient,
+		provideCasbinEngine,
 		provideGRPCServerOptions,
 		provideBaseOptions,
 		providePostgresConfig,

@@ -15,7 +15,7 @@ Chúng ta đã hoàn tất giai đoạn Bootstrap (Sprint 1), thiết lập nề
 ├── go.work                  ← Go Workspaces root
 ├── src/                     ← Source code root
 │   ├── pkg/                 ← Shared Framework đã hoàn thiện (The Foundation)
-│   └── apps/farm-service/   ← Service đầu tiên đã được dựng khung The Clean Architecture
+│   └── apps/demo-service/   ← Service đầu tiên đã được dựng khung The Clean Architecture
 │
 └── docs/                    ← Tài liệu thiết kế kiến trúc và quy trình
 ```
@@ -77,7 +77,7 @@ Chúng ta đã hoàn tất giai đoạn Bootstrap (Sprint 1), thiết lập nề
 │       └── distributed_lock.go
 │
 ├── apps/                             # Các Microservices
-│   ├── farm-service/                 # Service đầu tiên (Sprint 1)
+│   ├── demo-service/                 # Service đầu tiên (Sprint 1)
 │   │   ├── cmd/
 │   │   │   └── main.go              # Composition Root — ~30 lines
 │   │   ├── config/
@@ -120,7 +120,7 @@ Chúng ta đã hoàn tất giai đoạn Bootstrap (Sprint 1), thiết lập nề
 
 ---
 
-## 4. Clean Architecture: Farm Service Standard
+## 4. Clean Architecture: Demo Service Standard
 
 ### Quy Tắc Phụ Thuộc (The Dependency Rule)
 
@@ -145,7 +145,7 @@ main.go         ← Wires everything (Composition Root). Only place that knows a
 > **Quy tắc:** Domain chỉ chứa **các entities và định nghĩa lỗi nghiệp vụ (domain errors)**. Không có bất kỳ phụ thuộc (import) nào khác tại đây.
 
 ```go
-// apps/farm-service/internal/domain/farm.go
+// apps/demo-service/internal/domain/farm.go
 package domain
 
 import "time"
@@ -188,7 +188,7 @@ func (b *HarvestBatch) CanTransitionTo(next BatchStatus) error {
 ```
 
 ```go
-// apps/farm-service/internal/domain/errors.go
+// apps/demo-service/internal/domain/errors.go
 package domain
 
 import "github.com/dungxbuif/RuntimeRoasters/pkg/errs"
@@ -213,12 +213,12 @@ var (
 > Tầng Infrastructure sẽ implement chúng. Tầng Domain không cần biết sự tồn tại của chúng.
 
 ```go
-// apps/farm-service/internal/usecase/farm_usecase.go
+// apps/demo-service/internal/usecase/farm_usecase.go
 package usecase
 
 import (
     "context"
-    "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
+    "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/domain"
     "github.com/google/uuid"
 )
 
@@ -290,14 +290,14 @@ func (s *FarmService) CreateBatch(ctx context.Context, farmID string, weightKg f
 > Package infrastructure import `usecase` (để dùng type trong interface) và `domain` (để truyền tải entities).
 
 ```go
-// apps/farm-service/internal/infrastructure/postgres/farm_repo.go
+// apps/demo-service/internal/infrastructure/postgres/farm_repo.go
 package postgres
 
 import (
     "context"
     "database/sql"
     "github.com/dungxbuif/RuntimeRoasters/pkg/database"
-    "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
+    "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/domain"
 )
 
 // FarmRepository implements usecase.FarmRepository (implicitly — duck typing)
@@ -324,13 +324,13 @@ func (r *FarmRepository) GetByID(ctx context.Context, id string) (*domain.Farm, 
 ```
 
 ```go
-// apps/farm-service/internal/infrastructure/grpc/handler.go
+// apps/demo-service/internal/infrastructure/grpc/handler.go
 package grpc
 
 import (
     "context"
     farmv1 "github.com/dungxbuif/RuntimeRoasters/api/farm/v1"
-    "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
+    "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
 )
 
 type FarmHandler struct {
@@ -350,13 +350,13 @@ func (h *FarmHandler) CreateFarm(ctx context.Context, req *farmv1.CreateFarmRequ
 ```
 
 ```go
-// apps/farm-service/internal/infrastructure/http/router.go
+// apps/demo-service/internal/infrastructure/http/router.go
 package http
 
 import (
     "net/http"
     "github.com/gin-gonic/gin"
-    "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
+    "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
     "github.com/dungxbuif/RuntimeRoasters/pkg/errs"
 )
 
@@ -459,7 +459,7 @@ func main() {
 ✅ pkg/base       Bootstrap + Health + Graceful Shutdown
 ```
 
-### Farm Service — Next Steps
+### Demo Service — Next Steps
 
 ```
 Step 1:  domain/              Entities + domain errors ONLY (không interface)

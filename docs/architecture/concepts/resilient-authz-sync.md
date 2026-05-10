@@ -9,9 +9,11 @@
 
 ## 2. Kiến trúc Tổng thể
 
-1. **Centralized Auth Service:** Một dịch vụ trung tâm (ví dụ: `auth-service`) quản lý toàn bộ các bản ghi `casbin_rule` trong cơ sở dữ liệu (Postgres).
-2. **Kafka Watcher/Dispatcher:** Khi có sự thay đổi quyền tại Auth Service (thêm/sửa/xóa policy), một sự kiện (Event) được phát hành (Publish) lên Kafka.
-3. **In-memory Enforcer:** Các Microservices lắng nghe sự kiện này và tự động cập nhật bộ nhớ đệm (Enforcer cache) của chúng ngay lập tức.
+Dựa trên mô hình **Centralized Management, Distributed Enforcement**:
+
+1. **Centralized Auth Service (The Writer):** Một dịch vụ trung tâm quản lý toàn bộ các bản ghi `casbin_rule` trong Postgres. Đây là nơi duy nhất thực hiện các thao tác Ghi (Add/Remove policy).
+2. **Kafka & Zookeeper (The Bus):** Sử dụng Kafka (phiên bản Zookeeper-based) làm kênh truyền tin thời gian thực. Khi có sự thay đổi quyền, Auth Service bắn Event lên Kafka.
+3. **In-memory Enforcer (The Reader):** Các Microservices sử dụng **Casbin v3.x** để thực thi kiểm tra quyền trực tiếp trên RAM, đảm bảo tốc độ tối đa.
 
 ## 3. Chiến lược "3 Trụ Cột" Chống Lỗi
 

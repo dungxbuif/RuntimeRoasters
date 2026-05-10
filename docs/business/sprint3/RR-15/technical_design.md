@@ -1,37 +1,36 @@
-# [RR-15] Technical Design: Farm Service Bootstrap & Domain
+# Technical Design: Farm Service Bootstrapping (RR-15)
 
-**Status:** `DRAFT`
-**Author:** Tech Lead
+## 1. Overview
+Farm Service là service nghiệp vụ đầu tiên của hệ thống sau khi đã hoàn thiện hạ tầng bảo mật. Service này sẽ quản lý thông tin các nông hộ và vùng trồng cà phê.
 
----
+## 2. Component Design
 
-## 1. Context & Goal
-Khởi tạo service `farm-service` dựa trên template từ `demo-service`. Thiết lập Domain entities và cấu trúc thư mục Clean Architecture.
+### 2.1 Project Structure
+Tiếp tục sử dụng Clean Architecture và copy boilerplate từ `demo-service` để đảm bảo tính nhất quán:
+- `cmd/main.go`: Entrypoint.
+- `internal/domain`: Entity và Repository interfaces.
+- `internal/usecase`: Business logic.
+- `internal/delivery`: gRPC Handlers.
+- `internal/infrastructure`: Repo implementation, DB migrations.
 
----
+### 2.2 Security Model
+- **AuthN:** Sử dụng `pkg/base/auth` (JWKS Validation).
+- **AuthZ:** Sử dụng `pkg/base/casbin` (Resilient Reader).
+- **Policies:** Sẽ được khai báo trong `auth-service` và sync về Farm Service.
 
-## 2. Technical Decisions
+### 2.3 Data Model
+- Table `farms`:
+    - `id`: UUID (Primary Key)
+    - `name`: String
+    - `location`: String (Geo-coordinates or address)
+    - `owner_id`: UUID (Reference to Identity Server `sub`)
+    - `created_at/updated_at`: Timestamps
 
-### 2.1 Service Bootstrap
-- **Path:** `src/apps/farm-service`
-- **Pattern:** Copy boilerplate từ `src/apps/demo-service` bao gồm:
-    - `cmd/main.go`
-    - `wire.go` / `wire_gen.go`
-    - `internal/` structure (domain, usecase, repository, delivery).
+## 3. Integration
+- **KrakenD:** Mở port :8083 (gRPC 50053) nội bộ cho Farm Service.
+- **Database:** Sử dụng `farm_db` trong cụm Postgres chung.
+- **OTel:** Export trace về SigNoz qua OTLP.
 
-### 2.2 Domain Entities
-- **Package:** `internal/domain`
-- **Structs:**
-    - `Farm`: Định nghĩa các trường `ID`, `Name`, `Location`, `Area`, `Type`, `OwnerID`, `CreatedAt`, `UpdatedAt`.
-
-### 2.3 Dependency Injection
-- Sử dụng **Google Wire** để quản lý dependency.
-- Các provider cần thiết: `Config`, `Logger`, `DB (Postgres)`, `FarmRepository`, `FarmUseCase`, `FarmDelivery`.
-
----
-
-## 3. Implementation Plan
-1. Tạo thư mục `src/apps/farm-service`.
-2. Sao chép và refactor code từ `demo-service` (đổi tên package, config prefix).
-3. Định nghĩa `Farm` struct trong `internal/domain/farm.go`.
-4. Cập nhật `wire.go` để bao gồm các thành phần của Farm Service.
+## 4. Verification Plan
+- Unit tests cho Usecase và Repository.
+- Integration test cho gRPC handler với mock auth.
