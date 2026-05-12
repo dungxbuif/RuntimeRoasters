@@ -35,7 +35,8 @@ Tài liệu này là "Single Source of Truth" để rà soát toàn bộ hệ th
 
 ### 2.2. Network Security
 - [ ] **CORS**: Chỉ whitelist các domain chính thống.
-- [ ] **API Gateway**: KrakenD/Nginx đã chặn các endpoint nhạy cảm từ bên ngoài.
+- [ ] **API Gateway Mapping**: Mọi endpoint resource phải sử dụng danh từ số nhiều (Plural: `/v1/users`, `/v1/farms`).
+- [ ] **Gateway Config Sync**: Đã chạy `force-recreate` hoặc `reload` gateway để đảm bảo bản đồ routing mới nhất được nạp.
 - [ ] **TLS/SSL**: Đảm bảo HTTPS được cấu hình cho mọi traffic public.
 
 ---
@@ -64,6 +65,12 @@ Các bước cuối cùng trước khi "Go Live".
 - [ ] **Resource Limits**: Đã cấu hình CPU/Memory Requests & Limits cho từng container.
 
 ### 4.2. CI/CD
+- [ ] **Unit Tests**: Đã pass 100% trước khi merge.
+- [ ] **Linter**: Không còn lỗi linting nghiêm trọng.
+- [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).
+
+---
+*Cập nhật lần cuối: 2026-05-07 bởi Antigravity*
 - [ ] **Unit Tests**: Đã pass 100% trước khi merge.
 - [ ] **Linter**: Không còn lỗi linting nghiêm trọng.
 - [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).

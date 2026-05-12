@@ -1,50 +1,61 @@
-# System-Wide Architectural Design: Runtime Roasters
+# System-Wide Architectural Standards: Runtime Roasters
 
-Tài liệu này định nghĩa các tiêu chuẩn kỹ thuật áp dụng xuyên suốt cho toàn bộ hệ thống microservices, đảm bảo tính đồng nhất, khả năng mở rộng và vận hành tin cậy.
-
----
-
-## 1. Tiêu chuẩn Truyền thông & Sự kiện (Messaging Standard)
-
-Để tránh tình trạng "Event Spaghetti", chúng ta áp dụng các tiêu chuẩn sau:
-
-- **Protocol**: Sử dụng Kafka làm xương sống.
-- **Event Schema**: Áp dụng chuẩn **CloudEvents** (hoặc tương đương) để mọi event đều có Metadata thống nhất:
-    - `id`: Unique event ID.
-    - `source`: Tên service phát hành.
-    - `type`: Loại sự kiện (VD: `retail.order.created`).
-    - `time`: RFC3339 timestamp.
-    - `data`: Payload nghiệp vụ.
-- **Reliability**: Mọi hành động phát hành sự kiện PHẢI qua **Transactional Outbox**.
-- **Idempotency**: Mọi Consumer PHẢI triển khai **Inbox Pattern** để chống xử lý lặp.
-
-## 2. Tiêu chuẩn Trạng thái & Nhất quán (Distributed Consistency)
-
-- **Saga Pattern**: Ưu tiên **Choreography** (phối hợp phi tập trung) cho các luồng đơn giản (Order-Warehouse). Cân nhắc **Orchestration** (Temporal.io) nếu luồng nghiệp vụ vượt quá 5 bước.
-- **Error Handling (API)**: Tuyệt đối tuân thủ **RFC 9457 (Problem Details)**. Mọi service phải dùng chung `pkg/errs` để trả về lỗi có Trace-ID.
-
-## 3. Tiêu chuẩn Quan sát & Giám sát (Observability Standard)
-
-- **Tracing**: Sử dụng chuẩn **W3C Trace Context**. Trace-ID phải được truyền từ Gateway -> gRPC -> Kafka -> Downstream services.
-- **Metrics**: Áp dụng mô hình **RED** (Request Rate, Error Rate, Duration) cho tất cả các endpoint.
-- **Logging**: Sử dụng Structured Logging (JSON). Mọi Log record phải đính kèm `trace_id` và `span_id` nếu có context.
-
-## 4. Tiêu chuẩn Hạ tầng & DI (Standardized Bootstrap)
-
-- **Internal Library (`pkg/`)**: 
-    - Mọi service mới đều phải sử dụng bộ khung khởi tạo từ `pkg/base`.
-    - Việc "nối dây" (Dependency Injection) thực hiện thủ công trong `internal/app/init.go` (ưu tiên sự minh bạch, tránh magic của các framework DI quá nặng).
-- **Database Access**: Sử dụng **GORM** làm chuẩn ORM, nhưng cấm dùng `AutoMigrate` trên môi trường dùng chung. Phải có file SQL Migration riêng.
+Tài liệu này định nghĩa các tiêu chuẩn kỹ thuật, thư viện dùng chung và các mẫu thiết kế áp dụng xuyên suốt cho toàn bộ hệ thống microservices.
 
 ---
 
-## 5. Danh sách các "Global Infrastructure Components"
+## 1. Tiêu chuẩn Thư viện Dùng chung (`pkg/`)
 
-1.  **PgBouncer**: Tập trung pool kết nối Postgres.
-2.  **Ory Kratos/Hydra**: Quản lý danh tính và cấp phát Token.
-3.  **Auth Service (Casbin Manager)**: Quản trị chính sách tập trung.
-4.  **OTel Collector**: Trạm trung chuyển dữ liệu quan sát.
-5.  **Redis/Valkey**: Shared cache và Idempotency store.
+Các thư viện trong thư mục `src/pkg/` là nền tảng giúp giảm thiểu code lặp và đảm bảo tính đồng nhất.
+
+| Package | Vai trò | Cơ chế / Công nghệ |
+| :--- | :--- | :--- |
+| `pkg/base/auth` | Authentication | **Three-Gate Model**, gRPC Metadata Propagator. |
+| `pkg/base/casbin` | Authorization | **Distributed Enforcement**, gRPC-based Snapshot. |
+| `pkg/database` | Persistence | **GORM Wrapper**, Unit of Work (TxManager). |
+| `pkg/kafka` | Messaging | **CloudEvents Standard**, Sync/Async Producer. |
+| `pkg/errs` | Error Handling | **RFC 9457 (Problem Details)**. |
+| `pkg/valkey` | Caching | **Valkey 7.2**, High-performance Redis replacement. |
 
 ---
-*TechLead Signed-off: 2026-05-10*
+
+## 2. Các Mô hình Thiết kế Quan trọng (Core Patterns)
+
+### 2.1. Internal gRPC-Only Mandate
+Chúng ta áp dụng chính sách **Zero Internal HTTP**.
+- Mọi giao tiếp giữa các service phải sử dụng gRPC.
+- Gateway (KrakenD) thực hiện chuyển đổi HTTP sang gRPC.
+- Lợi ích: Type-safety tuyệt đối, hiệu năng cao, giảm bề mặt tấn công.
+
+### 2.2. Three-Gate Authorization
+Hệ thống bảo vệ dữ liệu qua 3 lớp (Gate):
+1.  **Gate 1 (Identity):** Kiểm tra JWT tại Gateway/Interceptor.
+2.  **Gate 2 (Method-level):** Casbin kiểm tra quyền gọi RPC (VD: `can call ListFarms`).
+3.  **Gate 3 (Data-level):** Sử dụng `GormScoper` tại tầng Repository để tự động thêm điều kiện lọc dữ liệu (VD: `WHERE owner_id = ?`) dựa trên Policy.
+
+### 2.3. Selective Transactional Outbox
+Chỉ áp dụng cho các luồng nghiệp vụ cần tính nhất quán cao (VD: Thu hoạch, Đặt hàng). Ghi dữ liệu nghiệp vụ và sự kiện vào DB trong cùng một Transaction để đảm bảo Kafka message không bao giờ bị mất.
+
+---
+
+## 3. Quy trình Tài liệu API (Swagger Flow)
+
+Chúng ta không sử dụng tài liệu build từ Protobuf cho các đối tác bên ngoài.
+- **Source of Truth:** Cấu hình Gateway (`krakend.json`).
+- **Quy trình:** 
+    1. Dev cập nhật endpoint trong KrakenD.
+    2. Chạy `task swagger-export` để xuất OpenAPI spec từ KrakenD.
+    3. Frontend tự động hiển thị tài liệu mới tại `/api-docs`.
+- **Lý do:** Đảm bảo tài liệu phản ánh chính xác những gì Gateway đang thực sự mở ra.
+
+---
+
+## 4. Tiêu chuẩn Khởi tạo (Manual DI)
+
+Chúng ta không sử dụng DI Framework (như Wire). Việc khởi tạo được thực hiện thủ công tại **Composition Root**:
+- Đảm bảo tính minh bạch: "Mọi thứ được nối dây ở đâu?".
+- Cấu trúc khởi tạo tập trung tại `internal/app/init.go`.
+
+---
+**Ký duyệt:** TechLead
+*Cập nhật lần cuối: 2026-05-13*

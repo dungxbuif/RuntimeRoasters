@@ -51,11 +51,11 @@ Dự án **không** hướng tới việc giải quyết bài toán thương m�
 
 | Role         | Mã hệ thống  | Mô tả ngắn                                              | Quyền chính                                                  |
 | :----------- | :----------- | :------------------------------------------------------- | :----------------------------------------------------------- |
-| **Nông dân** | `farmer`     | Chủ nông trại cà phê, khai báo thu hoạch                 | CRUD nông trại, tạo lô thu hoạch, xem lịch sử               |
-| **Quản đốc** | `processor`  | Quản lý nhà máy chế biến, rang xay                       | Tiếp nhận hạt thô, tạo mẻ rang, cấp `Batch ID`, đóng gói    |
-| **Tài xế**   | `driver`     | Lái xe vận chuyển, cập nhật GPS                          | Nhận cuốc, cập nhật trạng thái vận chuyển, gửi tọa độ GPS    |
-| **QL Cửa hàng** | `store_mgr` | Quản lý cửa hàng bán lẻ                                | Xem tồn kho, tạo yêu cầu cung ứng, tiếp nhận hàng           |
-| **Admin**    | `admin`      | Quản trị viên hệ thống                                   | Xem toàn bộ `Dashboard`, `Audit log`, quản lý user           |
+| **Nông dân** | `FARMER`     | Chủ nông trại cà phê, khai báo thu hoạch                 | CRUD nông trại, tạo lô thu hoạch, xem lịch sử               |
+| **Quản đốc** | `PROCESSOR`  | Quản lý nhà máy chế biến, rang xay                       | Tiếp nhận hạt thô, tạo mẻ rang, cấp `Batch ID`, đóng gói    |
+| **Tài xế**   | `DRIVER`     | Lái xe vận chuyển, cập nhật GPS                          | Nhận cuốc, cập nhật trạng thái vận chuyển, gửi tọa độ GPS    |
+| **QL Cửa hàng** | `STORE_MGR` | Quản lý cửa hàng bán lẻ                                | Xem tồn kho, tạo yêu cầu cung ứng, tiếp nhận hàng           |
+| **Admin**    | `ADMIN`      | Quản trị viên hệ thống                                   | Xem toàn bộ `Dashboard`, `Audit log`, quản lý user           |
 | **Khách hàng** | `end_user` | Người tiêu dùng cuối (không cần đăng nhập)              | Quét QR, xem truy xuất nguồn gốc                             |
 
 ---
@@ -271,7 +271,7 @@ Lưu trữ đa phương thức, mỗi loại dữ liệu dùng đúng công cụ
 | `PostgreSQL`      | Giao dịch lõi `ACID` — `Source of Truth` cho mỗi Microservice |
 | `Apache Cassandra`   | Lưu trữ Event thô vĩnh cửu (`Audit` / `Event Sourcing`)       |
 | `Elasticsearch`   | Tra cứu tốc độ cao, `CQRS Read Model` cho truy xuất nguồn gốc |
-| `Redis`          | `Cache`, `Distributed Lock`, tọa độ `GPS` thời gian thực      |
+| `Valkey`          | `Cache`, `Distributed Lock`, tọa độ `GPS` thời gian thực      |
 
 #### Deployment: Docker on Proxmox
 Triển khai 100% qua `Docker Compose`. Môi trường host là máy chủ `Proxmox` tự quản. Toàn bộ infra (DBs, Kafka, Services) chạy dưới dạng container, dễ dàng migrate lên Cloud VPS.
@@ -280,17 +280,17 @@ Triển khai 100% qua `Docker Compose`. Môi trường host là máy chủ `Prox
 
 | #  | Service                | Protocol                    | Database              | Kafka Role        |
 | :- | :--------------------- | :-------------------------- | :-------------------- | :---------------- |
-| 1  | `API Gateway`          | HTTP `:8000`                | —                     | —                 |
+| 1  | `API Gateway`          | HTTP `:8081`                | —                     | —                 |
 | 2  | `Identity Service`     | HTTP `:4433`                | Ory Kratos            | —                 |
-| 3  | `Webhook Service`      | HTTP `:8088`                | PostgreSQL (Inbox)    | Producer only     |
-| 4  | `Farm Service`         | HTTP `:8081` / gRPC `:9081` | PostgreSQL            | Producer          |
-| 5  | `Processing Service`   | HTTP `:8082` / gRPC `:9082` | PostgreSQL            | Producer/Consumer |
-| 6  | `Warehouse Service`    | HTTP `:8084` / gRPC `:9084` | PostgreSQL            | Producer/Consumer |
-| 7  | `Logistics Service`    | HTTP `:8083` / gRPC `:9083` | PostgreSQL + Redis   | Producer/Consumer |
-| 8  | `Retail Service`       | HTTP `:8085` / gRPC `:9085` | PostgreSQL            | Producer/Consumer |
-| 9  | `Payment Service`      | HTTP `:8087` / gRPC `:9087` | PostgreSQL            | Producer/Consumer |
-| 10 | `Traceability Service` | HTTP `:8086`                | Elasticsearch         | Consumer          |
-| 11 | `Audit Service`        | Background worker           | Apache Cassandra      | Consumer          |
+| 3  | `Webhook Service`      | HTTP `:8092` / gRPC `:50062`| PostgreSQL (Inbox)    | Producer only     |
+| 4  | `Farm Service`         | HTTP `:8083` / gRPC `:50053`| PostgreSQL            | Producer          |
+| 5  | `Process Service`      | HTTP `:8084` / gRPC `:50054`| PostgreSQL            | Producer/Consumer |
+| 6  | `Warehouse Service`    | HTTP `:8085` / gRPC `:50055`| PostgreSQL            | Producer/Consumer |
+| 7  | `Retail Service`       | HTTP `:8086` / gRPC `:50056`| PostgreSQL            | Producer/Consumer |
+| 8  | `Logistics Service`    | HTTP `:8087` / gRPC `:50057`| Valkey                 | Producer/Consumer |
+| 9  | `Payment Service`      | HTTP `:8088` / gRPC `:50058`| PostgreSQL            | Producer/Consumer |
+| 10 | `Trace Service`        | HTTP `:8089` / gRPC `:50059`| Elasticsearch         | Consumer          |
+| 11 | `Audit Service`        | HTTP `:8091` / gRPC `:50061`| Apache Cassandra      | Consumer          |
 | 12 | `Monitor Service`      | HTTP `:8090` (SSE/WS)       | —                     | Consumer          |
 
 #### `Webhook Service` (Ingress Gateway) — Chi tiết
@@ -335,7 +335,7 @@ Mặc dù triển khai demo trên single-node `Docker Compose`, kiến trúc đ�
 | `Go Services`       | Stateless — scale horizontal bằng cách thêm container replicas   |
 | `PostgreSQL`        | Mỗi service có DB riêng (database-per-service) → scale độc lập   |
 | `Kafka`             | Multi-partition topics, consumer groups cho parallel processing   |
-| `Redis`            | Hỗ trợ Cluster mode (Sentinel/Cluster) cho GPS data              |
+| `Valkey`            | Hỗ trợ Cluster mode (Sentinel/Cluster) cho GPS data              |
 | `Elasticsearch`     | Shard/Replica strategy cho read-model                            |
 | `API Gateway`       | Stateless, có thể đặt sau Load Balancer                          |
 
@@ -348,11 +348,11 @@ Mặc dù triển khai demo trên single-node `Docker Compose`, kiến trúc đ�
 Mỗi Microservice tích hợp `Casbin` vào lớp `Middleware` nội bộ. Dựa trên file `policy.csv` riêng của mình, service **tự phán quyết quyền truy cập (Authorization)** vào từng API endpoint — không phụ thuộc Gateway, tăng tính tự chủ và giảm tải tập trung.
 
 ```
-[Client] ──► [API Gateway] ──► JWT validate + extract Roles ──► Header: X-Roles=store_mgr
+[Client] ──► [API Gateway] ──► JWT validate + extract Roles ──► Header: X-Roles=STORE_MGR
                                                                        │
                                                                [Retail Service]
                                                                Casbin Middleware
-                                                               policy.csv: store_mgr CAN POST /orders
+                                                               policy.csv: STORE_MGR CAN POST /orders
                                                                        │
                                                                ✅ Allow / ❌ Deny
 ```
@@ -363,10 +363,10 @@ Hệ thống bảo vệ chống trùng lặp ở **hai tầng độc lập**:
 
 | Tầng | Loại request | Cơ chế | Storage | TTL |
 | :--- | :----------- | :----- | :------ | :-- |
-| **Tầng 1** (Synchronous) | HTTP REST API | Header `Idempotency-Key` lưu vào `Redis` | `Redis` | 24h |
+| **Tầng 1** (Synchronous) | HTTP REST API | Header `Idempotency-Key` lưu vào `Valkey` | `Valkey` | 24h |
 | **Tầng 2** (Asynchronous) | Kafka Consumer + Webhook | `Inbox Pattern` ghi `event_id` vào `PostgreSQL` | `PostgreSQL` | Vĩnh viễn |
 
-- **Tầng 1:** Client gửi `Idempotency-Key: <uuid>` trong header. `API Gateway` middleware kiểm tra `Redis`. Nếu key đã tồn tại → trả response cached, không xử lý lại.
+- **Tầng 1:** Client gửi `Idempotency-Key: <uuid>` trong header. `API Gateway` middleware kiểm tra `Valkey`. Nếu key đã tồn tại → trả response cached, không xử lý lại.
 - **Tầng 2:** Consumer (Kafka/Webhook) trích xuất `event_id`, mở `Transaction`: kiểm tra `inbox_events` table → nếu đã có → rollback và bỏ qua → nếu chưa có → lưu và xử lý.
 
 #### C. Quản Lý Cấu Hình (Configuration Management)
@@ -403,7 +403,7 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 | Project scaffold (Monorepo + shared libs)   | `DDD` project structure              |
 | `API Gateway` (Gin + JWT parse + routing)   | `API Gateway Pattern`, `Rate Limiting` |
 | `Identity Service` (Ory Kratos integration) | `OAuth2`/`OIDC`                      |
-| `Farm Service` (CRUD nông trại + thu hoạch) | `Transactional Outbox`               |
+| `Farm Service` (CRUD nông trại + thu hoạch) | `Transactional Design (Outbox)`      |
 | Kafka + PostgreSQL infra (Docker Compose)   | `Event-Driven` base                  |
 | Casbin middleware (shared lib)              | `Decentralized Authorization`        |
 | gRPC proto definitions (shared)            | `Protocol Buffers`                   |
@@ -427,9 +427,9 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 
 | Deliverable                                   | Pattern showcase                   |
 | :-------------------------------------------- | :--------------------------------- |
-| `Logistics Service` (điều xe, tracking GPS)    | `Geo-spatial` (Redis GEO commands)|
-| GPS simulator (fake driver coordinates)        | Real-time data pipeline            |
-| Redis integration (cache + distributed lock)  | `Distributed Lock`, `Cache-aside`  |
+| `Logistics Service` (điều xe, tracking GPS)    | `Geo-spatial` (Valkey GEO commands)|
+| GPS simulator (fake DRIVER coordinates)        | Real-time data pipeline            |
+| Valkey integration (cache + distributed lock)  | `Distributed Lock`, `Cache-aside`  |
 | mTLS cho gRPC giữa các services               | `Zero Trust Architecture`          |
 
 ### Phase 4: Observability & Traceability
@@ -493,12 +493,14 @@ Sử dụng kết hợp `.env` files và thư viện `viper` (Go):
 | Relational DB                | `PostgreSQL` v15            | ACID, mature, database-per-service                                 |
 | Document DB                  | `Apache Cassandra`          | Wide-column store, flexible schema cho audit log, raw event storage |
 | Search engine                | `Elasticsearch`             | Full-text search + CQRS read-model                                 |
-| Cache / Real-time            | `Redis`                    | Redis alternative, GEO commands cho GPS, Idempotency-Key store     |
+| Cache / Real-time            | `Valkey`                    | Valkey alternative, GEO commands cho GPS, Idempotency-Key store     |
 | Payment gateway              | `Stripe` (Test Mode)        | Industry standard, excellent API docs, Webhook support             |
 | Payment abstraction          | `Strategy + Factory Pattern` | `PaymentProvider` interface + `ProviderFactory` → dễ thêm VNPay  |
 | Identity                     | `Ory Kratos`                | Open-source, self-hosted identity management                       |
 | Authorization                | `Casbin` + `policy.csv`     | Embeddable RBAC, decentralized per-service, Gateway chỉ authn     |
 | Config management            | `viper` + `.env`            | Flexible, hot-reload, không hardcode secrets, Docker-friendly      |
+| Dependency Injection         | Manual DI                   | Tránh magic, dễ debug, Composition Root tại main.go               |
+| Reliability                  | Selective Outbox            | Áp dụng cho các luồng quan trọng để đảm bảo tính nhất quán         |
 | Frontend                     | `ReactJS` (Vite)            | Kết hợp Operational UI + Control Plane Visualization Dashboard                        |
 | Visualization                | `React Flow`                | Node-based UI cho service mesh visualization                       |
 | Animation                    | `Framer Motion`             | Micro-animations, glow effects                                     |
@@ -557,7 +559,7 @@ Dự án được coi là **thành công** khi:
 | `PaymentIntent`        | Object Stripe đại diện cho một giao dịch thanh toán đang chờ xử lý                  |
 | `Webhook Service`      | Ingress Gateway chuyên biệt tiếp nhận và xác thực dữ liệu từ bên ngoài (Stripe, IoT) |
 | `HMAC`                 | Hash-based Message Authentication Code — chữ ký số xác thực tính toàn vẹn           |
-| `Dual Idempotency`     | Bảo vệ 2 tầng: Redis cho HTTP (sync) + Inbox Pattern cho Kafka/Webhook (async)     |
+| `Dual Idempotency`     | Bảo vệ 2 tầng: Valkey cho HTTP (sync) + Inbox Pattern cho Kafka/Webhook (async)     |
 | `Idempotency-Key`      | UUID do client tạo, gửi trong HTTP header để chống thực thi lặp khi retry           |
 | `ProviderFactory`      | Factory tạo ra Payment adapter (Stripe/VNPay) dựa trên config, dễ mở rộng           |
 | `Compensating Action`  | Hành động hoàn tác (VD: Refund) khi một bước trong Saga bị lỗi                      |
@@ -581,3 +583,4 @@ s/architecture/database-schema.md`           |
 | REST API Specifications                                                   | `docs/api/rest-api.md`                           |
 | gRPC Contract Definitions                                                 | `docs/api/grpc-contracts.md`                     |
 | Deployment & Setup Guide                                                  | `docs/deployment/setup-guide.md`                 |
+ |

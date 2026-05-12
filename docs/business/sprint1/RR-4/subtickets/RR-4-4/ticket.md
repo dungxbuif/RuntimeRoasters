@@ -1,6 +1,6 @@
 # [RR-4-4] Infrastructure — KrakenD, Apps Shell & Core DBs
 
-- **Summary:** Thiết lập hạ tầng cơ bản gồm API Gateway, App Shells (Client + Control) và các database cốt lõi (Postgres, Redis).
+- **Summary:** Thiết lập hạ tầng cơ bản gồm API Gateway, App Shells (Client + Control) và các database cốt lõi (Postgres, Valkey).
 - **Parent:** [RR-4](../ticket.md)
 - **Priority:** `HIGH`
 
@@ -11,7 +11,7 @@
 ### Scenario 1: Infrastructure khởi động
 - **Given:** `docker-compose.yaml` đã được cập nhật.
 - **When:** Tôi chạy `docker compose up -d`.
-- **Then:** Các container `rr-krakend`, `rr-postgres`, `rr-redis`, `client-app`, `control-app` ở trạng thái `Running`.
+- **Then:** Các container `rr-krakend`, `rr-postgres`, `rr-valkey`, `client-app`, `control-app` ở trạng thái `Running`.
 
 ### Scenario 2: Apps shells accessible
 - **Then:** 

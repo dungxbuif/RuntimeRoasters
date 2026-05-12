@@ -26,47 +26,104 @@
       ],
       "allow_credentials": true,
       "max_age": "12h"
-    },
-    "telemetry/opentelemetry": {
-      "service_name": "krakend",
-      "exporters": {
-        "otlp": [
-          {
-            "host": "jaeger",
-            "port": 4317
-          }
-        ]
-      }
     }
   },
   "endpoints": [
     {
-      "endpoint": "/v1/demo/ping",
+      "endpoint": "/v1/auth/login/accept",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "encoding": "grpc",
+          "sd": "static",
+          "host": [
+            "host.docker.internal:50052"
+          ],
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.auth.v1.AuthService",
+              "method": "AcceptLogin"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/users",
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
         "Content-Type"
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["demo:read"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
       "backend": [
         {
-          "url_pattern": "/v1/demo/ping",
-          "encoding": "no-op",
+          "encoding": "grpc",
           "sd": "static",
-          "method": "GET",
           "host": [
-            "http://host.docker.internal:8080"
+            "host.docker.internal:50052"
           ],
-          "disable_host_sanitize": true
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.auth.v1.AuthService",
+              "method": "ListUsers"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/users",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "encoding": "grpc",
+          "sd": "static",
+          "host": [
+            "host.docker.internal:50052"
+          ],
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.auth.v1.AuthService",
+              "method": "CreateUser"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/farms",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "encoding": "grpc",
+          "sd": "static",
+          "host": [
+            "host.docker.internal:50053"
+          ],
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.farm.v1.FarmService",
+              "method": "ListFarms"
+            }
+          }
         }
       ]
     },
@@ -78,145 +135,20 @@
         "Authorization",
         "Content-Type"
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:admin"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
       "backend": [
         {
-          "url_pattern": "/v1/farms",
-          "encoding": "no-op",
+          "encoding": "grpc",
           "sd": "static",
-          "method": "POST",
           "host": [
-            "http://host.docker.internal:8083"
+            "host.docker.internal:50053"
           ],
-          "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/v1/admin/users",
-      "method": "GET",
-      "output_encoding": "no-op",
-      "input_headers": [
-        "Authorization",
-        "Content-Type"
-      ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:admin"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/v1/admin/users",
-          "encoding": "no-op",
-          "sd": "static",
-          "method": "GET",
-          "host": [
-            "http://host.docker.internal:8082"
-          ],
-          "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/v1/admin/users",
-      "method": "POST",
-      "output_encoding": "no-op",
-      "input_headers": [
-        "Authorization",
-        "Content-Type"
-      ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:admin"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/v1/admin/users",
-          "encoding": "no-op",
-          "sd": "static",
-          "method": "POST",
-          "host": [
-            "http://host.docker.internal:8082"
-          ],
-          "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/v1/farms",
-      "method": "GET",
-      "output_encoding": "no-op",
-      "input_headers": [
-        "Authorization",
-        "Content-Type"
-      ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:read"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/v1/farms",
-          "encoding": "no-op",
-          "sd": "static",
-          "method": "GET",
-          "host": [
-            "http://host.docker.internal:8083"
-          ],
-          "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/v1/farms",
-      "method": "POST",
-      "output_encoding": "no-op",
-      "input_headers": [
-        "Authorization",
-        "Content-Type"
-      ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:write"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
-      "backend": [
-        {
-          "url_pattern": "/v1/farms",
-          "encoding": "no-op",
-          "sd": "static",
-          "method": "POST",
-          "host": [
-            "http://host.docker.internal:8083"
-          ],
-          "disable_host_sanitize": true
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.farm.v1.FarmService",
+              "method": "CreateFarm"
+            }
+          }
         }
       ]
     },
@@ -225,28 +157,22 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": [
-        "Authorization",
-        "Content-Type"
+        "Authorization"
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:read"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
       "backend": [
         {
-          "url_pattern": "/v1/farms/{id}",
-          "encoding": "no-op",
+          "encoding": "grpc",
           "sd": "static",
-          "method": "GET",
           "host": [
-            "http://host.docker.internal:8083"
+            "host.docker.internal:50053"
           ],
-          "disable_host_sanitize": true
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.farm.v1.FarmService",
+              "method": "GetFarm"
+            }
+          }
         }
       ]
     },
@@ -258,25 +184,20 @@
         "Authorization",
         "Content-Type"
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:write"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
       "backend": [
         {
-          "url_pattern": "/v1/farms/{id}",
-          "encoding": "no-op",
+          "encoding": "grpc",
           "sd": "static",
-          "method": "PUT",
           "host": [
-            "http://host.docker.internal:8083"
+            "host.docker.internal:50053"
           ],
-          "disable_host_sanitize": true
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.farm.v1.FarmService",
+              "method": "UpdateFarm"
+            }
+          }
         }
       ]
     },
@@ -285,45 +206,22 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": [
-        "Authorization",
-        "Content-Type"
+        "Authorization"
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "RS256",
-          "jwk_url": "http://identity:4434/.well-known/jwks.json",
-          "roles_key": "scope",
-          "roles": ["farm:write"],
-          "issuer": "http://localhost:4444/"
-        }
-      },
       "backend": [
         {
-          "url_pattern": "/v1/farms/{id}",
-          "encoding": "no-op",
+          "encoding": "grpc",
           "sd": "static",
-          "method": "DELETE",
           "host": [
-            "http://host.docker.internal:8083"
+            "host.docker.internal:50053"
           ],
-          "disable_host_sanitize": true
-        }
-      ]
-    },
-    {
-      "endpoint": "/swagger/demo.swagger.json",
-      "method": "GET",
-      "output_encoding": "no-op",
-      "backend": [
-        {
-          "url_pattern": "/swagger/demo.swagger.json",
-          "encoding": "no-op",
-          "sd": "static",
-          "method": "GET",
-          "host": [
-            "http://host.docker.internal:8080"
-          ],
-          "disable_host_sanitize": true
+          "disable_host_sanitize": true,
+          "extra_config": {
+            "backend/grpc": {
+              "service": "runtime.farm.v1.FarmService",
+              "method": "DeleteFarm"
+            }
+          }
         }
       ]
     }

@@ -19,7 +19,7 @@
 ## Sprint Goal
 
 Sau Sprint 1, toàn bộ infrastructure chạy được end-to-end:
-- `docker compose up -d` khởi động mọi thứ (Postgres, Redis, Jaeger, KrakenD)
+- `docker compose up -d` khởi động mọi thứ (Postgres, Valkey, Jaeger, KrakenD)
 - `GET localhost:8081/v1/demo/ping` trả về JSON qua KrakenD → grpc-gateway → gRPC handler
 - Trace visible trong Jaeger tại `localhost:16686` (Control Plane)
 - API Explorer (Swagger) tích hợp trong `client-app`, load contract qua KrakenD

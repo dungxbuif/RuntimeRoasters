@@ -1,38 +1,19 @@
-# Sprint 5: Logistics & Real-time Tracking
+# Sprint 5: Roastery Process
 
-**Goal:** Triển khai hệ thống Logistics, quản lý lộ trình vận chuyển và theo dõi vị trí (GPS) theo thời gian thực sử dụng Redis Geo và Kafka.
-
----
-
-## 🎯 Sprint Goal
-
-> **Hệ thống có thể điều phối vận chuyển, cập nhật tọa độ GPS liên tục và cho phép theo dõi thời gian thực.**
+**Epic Goal:** Khởi tạo dịch vụ chế biến và số hóa quy trình biến hạt thô thành thành phẩm (Roasted Beans).
 
 ---
 
-## 📋 Roadmap & Flows
+## 📋 Tickets
 
-Sprint này tập trung vào khả năng xử lý dữ liệu thời gian thực:
-
-### 1. Logistics Service
-- Quản lý chuyến xe và tài xế.
-- Giao việc (Assign Shipment) khi nhận được sự kiện `StockReserved`.
-
-### 2. Redis Geo Integration
-- Lưu trữ và truy vấn vị trí hiện tại của xe chở hàng bằng lệnh không gian của Redis.
-
-### 3. GPS Simulator
-- Giả lập dữ liệu GPS liên tục gửi về hệ thống để test tính năng thời gian thực.
-
-### 4. Zero Trust Security
-- Áp dụng mTLS (Mutual TLS) cho các kết nối gRPC nội bộ giữa các services để tăng cường bảo mật.
+| Ticket | Summary | Status | Role |
+| :--- | :--- | :--- | :--- |
+| [RR-5.1](./RR-5.1/ticket.md) | [BA] Quy trình chế biến mẻ hạt (Processing Flow) | 🕒 To Do | Roastery Manager |
+| [RR-5.2](./RR-5.2/ticket.md) | [Tech] Roastery Service Initialization & State Machine | 🕒 To Do | Tech Lead |
 
 ---
 
-## 🎫 Tickets
-
-| Ticket | Summary | Status |
-| :--- | :--- | :--- |
-| [RR-23](./RR-23.md) | Logistics Service Core (Shipments & Drivers) | 🕒 To Do |
-| [RR-24](./RR-24.md) | Redis Geo Tracking Integration | 🕒 To Do |
-| [RR-25](./RR-25.md) | GPS Simulator & Event Publishing | 🕒 To Do |
+## 🛠️ Technical Focus
+- **State Machine:** Quản lý vòng đời mẻ hạt (Hulling -> Drying -> Roasting).
+- **Service Scaffolding:** Áp dụng Clean Architecture cho service mới.
+- **Traceability Linking:** Kết nối Batch ID mới với mã Harvest ID gốc từ Farm.

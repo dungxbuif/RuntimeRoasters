@@ -54,5 +54,5 @@ Sử dụng để đồng bộ thông tin định danh và quyền hạn trên t
 | `payload.user_id` | UUID | Subject ID từ Ory Kratos. |
 | `payload.email` | STRING | Email người dùng. |
 | `payload.name` | STRING | Tên hiển thị. |
-| `payload.role` | STRING | Role cố định (`farm_admin`, `farm_manager`). |
+| `payload.role` | STRING | Role cố định (`FARM_ADMIN`, `FARM_MANAGER`). |
 | `occurred_at` | TIMESTAMPTZ | Thời điểm phát sinh sự kiện. |

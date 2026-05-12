@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	AuthService_GetFullSnapshot_FullMethodName = "/runtime.auth.v1.AuthService/GetFullSnapshot"
+	AuthService_AcceptLogin_FullMethodName     = "/runtime.auth.v1.AuthService/AcceptLogin"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -28,6 +29,8 @@ const (
 type AuthServiceClient interface {
 	// GetFullSnapshot returns all policies for a given service
 	GetFullSnapshot(ctx context.Context, in *GetFullSnapshotRequest, opts ...grpc.CallOption) (*GetFullSnapshotResponse, error)
+	// AcceptLogin processes the login acceptance from Ory Kratos/Hydra
+	AcceptLogin(ctx context.Context, in *AcceptLoginRequest, opts ...grpc.CallOption) (*AcceptLoginResponse, error)
 }
 
 type authServiceClient struct {
@@ -48,12 +51,24 @@ func (c *authServiceClient) GetFullSnapshot(ctx context.Context, in *GetFullSnap
 	return out, nil
 }
 
+func (c *authServiceClient) AcceptLogin(ctx context.Context, in *AcceptLoginRequest, opts ...grpc.CallOption) (*AcceptLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptLoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_AcceptLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
 type AuthServiceServer interface {
 	// GetFullSnapshot returns all policies for a given service
 	GetFullSnapshot(context.Context, *GetFullSnapshotRequest) (*GetFullSnapshotResponse, error)
+	// AcceptLogin processes the login acceptance from Ory Kratos/Hydra
+	AcceptLogin(context.Context, *AcceptLoginRequest) (*AcceptLoginResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -66,6 +81,9 @@ type UnimplementedAuthServiceServer struct{}
 
 func (UnimplementedAuthServiceServer) GetFullSnapshot(context.Context, *GetFullSnapshotRequest) (*GetFullSnapshotResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFullSnapshot not implemented")
+}
+func (UnimplementedAuthServiceServer) AcceptLogin(context.Context, *AcceptLoginRequest) (*AcceptLoginResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcceptLogin not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -106,6 +124,24 @@ func _AuthService_GetFullSnapshot_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_AcceptLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).AcceptLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_AcceptLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).AcceptLogin(ctx, req.(*AcceptLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +152,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetFullSnapshot",
 			Handler:    _AuthService_GetFullSnapshot_Handler,
+		},
+		{
+			MethodName: "AcceptLogin",
+			Handler:    _AuthService_AcceptLogin_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

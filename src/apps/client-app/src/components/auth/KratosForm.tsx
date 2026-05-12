@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/atoms/Button';
 import { Input } from '@/components/ui/atoms/Input';
+import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { LoginFlow, UiNode, UpdateLoginFlowBody } from '@ory/client';
 import { motion } from 'framer-motion';
 import React from 'react';
@@ -54,6 +55,7 @@ export const KratosForm: React.FC<KratosFormProps> = ({ flow, onSubmit, isLoadin
           type="submit" 
           className="w-full py-6 text-lg font-black italic uppercase tracking-[0.2em]"
           disabled={isLoading}
+          {...testId(e2eSelectors.LOGIN_SUBMIT)}
         >
           {isLoading ? 'Verifying Identity...' : 'Authenticate'}
         </Button>
@@ -77,18 +79,27 @@ const FormNode: React.FC<{ node: UiNode }> = ({ node }) => {
       return null; // We use our own submit button
     }
 
+    let defaultValue = inputAttr.value as string;
+    if (inputAttr.name === 'identifier' && !defaultValue) {
+      defaultValue = 'admin@runtimeroasters.com';
+    }
+    if (inputAttr.name === 'password' && !defaultValue) {
+      defaultValue = 'Hello@123';
+    }
+
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" data-e2e={`form-field-${inputAttr.name}`}>
         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant opacity-80 ml-4">
           {meta.label?.text || inputAttr.name}
         </label>
         <Input
           name={inputAttr.name}
           type={inputAttr.type}
-          defaultValue={inputAttr.value as string}
+          defaultValue={defaultValue}
           placeholder={`Enter your ${meta.label?.text?.toLowerCase() || inputAttr.name}...`}
           required={inputAttr.required}
           className="h-16 shadow-inner"
+          data-e2e={`input-${inputAttr.name}`}
         />
         {messages.map((msg) => (
           <p key={msg.id} className="text-[10px] text-error font-bold ml-1 italic">

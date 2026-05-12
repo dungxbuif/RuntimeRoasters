@@ -1,6 +1,6 @@
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN_ACCEPT: '/api/auth/login/accept',
+    LOGIN_ACCEPT: '/v1/auth/login/accept',
     CONSENT_ACCEPT: '/api/auth/consent/accept',
     CALLBACK: '/api/auth/callback',
   },

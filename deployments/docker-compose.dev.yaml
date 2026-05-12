@@ -42,18 +42,18 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # Redis — Dùng cho: Session Store, Token Blacklist (Distributed Blacklist)
+  # Valkey — Dùng cho: Session Store, Token Blacklist, Idempotency & GPS Tracking
   # ---------------------------------------------------------------------------
-  redis:
-    image: redis:7-alpine
-    container_name: rr-redis
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: rr-valkey
     restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
       - rr-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -98,7 +98,7 @@ services:
 
   # ---------------------------------------------------------------------------
   # Kafka UI — Giao diện quản lý Kafka
-  # Truy cập: http://localhost:8082
+  # Truy cập: http://localhost:8090
   # ---------------------------------------------------------------------------
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -108,7 +108,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8082:8080"
+      - "8090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
@@ -233,7 +233,7 @@ services:
   # KrakenD API Gateway
   # ---------------------------------------------------------------------------
   krakend:
-    image: devopsfaith/krakend:2
+    image: krakend:2.9
     container_name: rr-krakend
     restart: unless-stopped
     volumes:
@@ -244,6 +244,37 @@ services:
       - rr-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # ---------------------------------------------------------------------------
+  # Seeder — Tự động khởi tạo dữ liệu mẫu
+  # ---------------------------------------------------------------------------
+  seeder:
+    image: oryd/hydra:v2.2.0
+    container_name: rr-seeder
+    depends_on:
+      kratos:
+        condition: service_healthy
+      hydra:
+        condition: service_healthy
+    volumes:
+      - ./kratos:/etc/config/kratos
+      - ./hydra:/etc/config/hydra
+    entrypoint: ""
+    command: >
+      sh -c "
+        echo '⏳ Waiting for Kratos & Hydra Admin APIs...';
+        while ! wget -qO- http://rr-kratos:4434/admin/identities > /dev/null 2>&1; do sleep 1; done;
+        while ! wget -qO- http://rr-hydra:4445/health/ready > /dev/null 2>&1; do sleep 1; done;
+        
+        echo '👤 Seeding Kratos Admin User...';
+        wget -qO- --post-file=/etc/config/kratos/seed-admin.json --header='Content-Type: application/json' http://rr-kratos:4434/admin/identities || echo 'User might already exist';
+        
+        echo '🔑 Seeding Hydra Client App...';
+        hydra import oauth2-client --endpoint http://rr-hydra:4445/ /etc/config/hydra/client-app.json;
+        
+        echo '✨ Seeding complete!';"
+    networks:
+      - rr-network
 
 # ===========================================================================
 # Networks & Volumes

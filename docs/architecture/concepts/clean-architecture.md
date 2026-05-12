@@ -1,10 +1,12 @@
 # 🏗️ Clean Architecture Framework — RuntimeRoasters
 
-Tài liệu này định nghĩa tiêu chuẩn codebase và các mô hình thiết kế áp dụng cho mọi microservice trong dự án.
+Tài liệu này định nghĩa tiêu chuẩn codebase và cách tổ chức thư mục áp dụng cho mọi microservice trong dự án.
 
 ---
 
 ## 1. Triết lý Kiến trúc (The Dependency Rule)
+
+Triết lý cốt lõi là **Dependencies point INWARDS**. Tầng bên trong không được biết về sự tồn tại của tầng bên ngoài.
 
 ```
 domain/         ← Pure entities + domain errors ONLY. Zero imports from this project.
@@ -13,44 +15,53 @@ usecase/        ← Declares its OWN repository interfaces. Imports domain/ only
     ↑
 infrastructure/ ← Implements usecase interfaces. Imports usecase/ + domain/ + pkg/*
 
-main.go         ← Wires everything (Composition Root). Only place that knows all concrete types.
+main.go         ← Composition Root. Only place that knows all concrete types.
 ```
 
 ---
 
-## 2. Tiêu chuẩn Thư viện Dùng chung (`pkg/`)
+## 2. Cấu trúc Thư mục & Ánh xạ (Directory Mapping)
 
-| Package | Vai trò | Tầng bảo vệ / Cơ chế |
-| :--- | :--- | :--- |
-| `pkg/base/auth` | Authentication | **Three-Gate Model**, gRPC Metadata Propagator. |
-| `pkg/base/casbin` | Authorization | **Distributed Enforcement**, gRPC Snapshot + Kafka Sync. |
-| `pkg/database` | Persistence | **GORM Wrapper**, PgBouncer-ready (Port 6432). |
-| `pkg/kafka` | Messaging | **CloudEvents Standard**, Transactional Outbox Support. |
-| `pkg/errs` | Error Handling | **RFC 9457**, Global Problem Details. |
+Dưới đây là cấu trúc chuẩn cho một microservice (ví dụ: `farm-service`) và sự tương ứng với các tầng lý thuyết của Clean Architecture:
 
----
+### 2.1. Tầng Domain (`internal/domain/`)
+- **Lý thuyết:** Lõi của ứng dụng (Entities, Value Objects). Chứa logic nghiệp vụ thuần túy không đổi.
+- **Nội dung:** 
+    - `farm.go`: Định nghĩa struct `Farm` và các hàm validate nghiệp vụ.
+    - `errors.go`: Các lỗi nghiệp vụ đặc thù của domain.
 
-## 3. Các Mô hình Thiết kế Quan trọng
+### 2.2. Tầng UseCase (`internal/usecase/`)
+- **Lý thuyết:** Điều phối luồng dữ liệu (Application Rules). Chứa các kịch bản sử dụng hệ thống.
+- **Nội dung:** 
+    - `farm_usecase.go`: Implementation của logic nghiệp vụ (Create, Update, List).
+    - `repository.go`: **QUAN TRỌNG:** Tầng này định nghĩa (Interface) những gì nó cần từ hạ tầng.
 
-### 3.1. Dual Idempotency (Lũy đẳng kép)
-- **Tầng 1 (API)**: `Idempotency-Key` lưu vào Redis. Cache toàn bộ response (Body + Status Code).
-- **Tầng 2 (Consumer)**: `Transactional Inbox` lưu `message_id` vào Postgres trong cùng transaction nghiệp vụ.
+### 2.3. Tầng Infrastructure (`internal/infrastructure/`)
+- **Lý thuyết:** Các chi tiết thực thi (Frameworks & Drivers). Database, External Services, Message Broker.
+- **Nội dung:** 
+    - `repository/postgres/`: Implement interface repository đã định nghĩa ở UseCase bằng GORM/Postgres.
+    - `external/`: Gọi các API của service khác.
 
-### 3.2. Transactional Outbox (Relay Worker)
-- Mọi service phát hành sự kiện phải ghi vào bảng `outbox_events` trước khi worker ngầm đẩy lên Kafka. 
-- Đảm bảo tính nguyên tử (Atomicity) giữa thay đổi trạng thái DB và phát sự kiện.
+### 2.4. Tầng Delivery / Transport (`internal/delivery/`)
+- **Lý thuyết:** Cổng giao tiếp với thế giới bên ngoài (Interface Adapters).
+- **Nội dung:** 
+    - `grpc/`: gRPC handlers, chuyển đổi proto sang domain model.
+    - `http/`: Gin handlers (nếu có).
 
-### 3.3. Defensive Programming (Chốt chặn số âm)
-*Tham chiếu: UrbanX*
-- Tuyệt đối không thực hiện phép tính thay đổi số lượng nhạy cảm mà không bọc trong `Math.Max(0, ...)`.
-
----
-
-## 4. Tiêu chuẩn Bảo mật 3 Tầng (Three-Gate Auth)
-
-1.  **Gate 1 (Gateway)**: Verify chữ ký và `scope`.
-2.  **Gate 2 (Service)**: Casbin kiểm tra `role` (RBAC) và Repository kiểm tra `owner_id` (ABAC).
-3.  **Gate 3 (Internal)**: Tự động trích xuất và chuyển tiếp JWT qua gRPC Metadata.
+### 2.5. Composition Root (`cmd/main.go` và `internal/app/`)
+- **Lý thuyết:** Nơi khởi tạo và kết nối (Wiring) mọi thứ.
+- **Nội dung:** Khởi tạo DB, Valkey, Repo, UseCase, Handler và "nối dây" chúng bằng Manual DI.
 
 ---
-*Cập nhật lần cuối: 2026-05-10 bởi TechLead*
+
+## 3. Quy chuẩn "Interface belong to Consumer"
+
+Theo **ADR 0001**, chúng ta áp dụng quy tắc: **Interface phải nằm ở nơi nó được sử dụng (Consumer), không phải nơi nó được thực thi (Producer).**
+
+- **Sai:** Định nghĩa `Repository` interface trong `infrastructure`.
+- **Đúng:** Định nghĩa `Repository` interface trong `usecase`. Tầng `infrastructure` chỉ đơn giản là thực thi (implement) nó.
+
+---
+**Xem thêm:**
+- [Tiêu chuẩn Hệ thống & Shared Libraries](./system-wide-standards.md) để biết chi tiết về `pkg/` và các mẫu thiết kế chung (Outbox, Idempotency).
+- [ADR 0001: Clean Architecture](../adrs/0001-use-clean-architecture.md).

@@ -5,7 +5,6 @@ import (
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/config"
 	authgrpc "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/delivery/grpc"
-	authhttp "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/delivery/http"
 	authcasbin "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
@@ -42,12 +41,11 @@ func InitializeApp() (*App, func(), error) {
 	})
 
 	// 5. Handlers & Usecases
-	handler := authgrpc.NewHandler(enforcer)
 	userUsecase := usecase.NewUserUsecase(&cfg, enforcer, producer)
-	userHandler := authhttp.NewUserHandler(userUsecase)
+	handler := authgrpc.NewHandler(enforcer, userUsecase)
 
 	// 6. Build App
-	app := NewApp(baseApp, &cfg, enforcer, handler, userHandler, keyProvider)
+	app := NewApp(baseApp, &cfg, enforcer, handler, userUsecase, keyProvider)
 
 	cleanup := func() {
 		producer.Close()

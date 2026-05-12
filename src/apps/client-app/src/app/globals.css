@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-headline: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-label: "Space Grotesk", sans-serif;
+  --font-headline: "JetBrains Mono", monospace;
+  --font-body: "Roboto Mono", monospace;
+  --font-label: "JetBrains Mono", monospace;
   --font-marker: "Gaegu", cursive;
   --font-annotation: "Indie Flower", cursive;
 
@@ -107,4 +107,42 @@ body {
 .animate-gradient-x {
   background-size: 200% 200%;
   animation: gradient-x 3s ease infinite;
+}
+
+/* ── Topology Diagram / Excalidraw Aesthetics ─────────────── */
+
+@keyframes flow-dash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 3px 3px 0px 0px rgba(25,113,194,0.15); }
+  50%       { box-shadow: 3px 3px 0px 0px rgba(25,113,194,0.5), 0 0 0 3px rgba(25,113,194,0.2); }
+}
+
+.topology-node-glow {
+  animation: pulse-glow 1.4s ease-in-out infinite;
+}
+
+.animate-flow-dash {
+  stroke-dasharray: 8, 4;
+  animation: flow-dash 1s linear infinite;
+}
+
+.rough-stroke {
+  stroke-dasharray: 4, 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Excalidraw-style dot grid background */
+.excalidraw-bg {
+  background-color: #f7f9fb;
+  background-image: radial-gradient(circle, #ced4da 1px, transparent 1px);
+  background-size: 32px 32px;
 }

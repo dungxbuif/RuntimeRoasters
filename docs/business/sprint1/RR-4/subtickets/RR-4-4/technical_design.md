@@ -5,7 +5,7 @@
 - Cấu hình KrakenD routing cho các service.
 
 ## 🛠️ Các bước thực hiện (Implementation Steps)
-- [ ] Cập nhật `docker-compose.yaml` với KrakenD, Postgres, Redis và App Shells.
+- [ ] Cập nhật `docker-compose.yaml` với KrakenD, Postgres, Valkey và App Shells.
 - [ ] Cấu hình `krakend.json`.
 - [ ] Khởi tạo project Next.js cho Client và Control Apps.
 

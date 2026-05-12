@@ -1,6 +1,6 @@
 ---
 name: runtime-roasters-reviewer
-description: A specialized code review skill for the RuntimeRoasters project, focusing on Clean Architecture v4, Go best practices, and microservices security.
+description: A specialized code review skill for the RuntimeRoasters project, focusing on Clean Architecture, Go best practices, and microservices security.
 license: MIT
 metadata:
   author: RuntimeRoasters Tech Lead
@@ -11,7 +11,7 @@ metadata:
 
 This skill defines the rigorous review process for the RuntimeRoasters ecosystem. It ensures that all contributions align with the project's high standards for architectural purity, security, and reliability.
 
-## 🏛️ Clean Architecture v4 Standards
+## 🏛️ Clean Architecture Standards
 
 The most critical rule: **Interfaces belong to the consumer.**
 
@@ -19,7 +19,7 @@ The most critical rule: **Interfaces belong to the consumer.**
 -   **Domain Layer**: Must be pure Go. No imports from `infrastructure`, `usecase`, or external frameworks (except `time` or basic `math`).
 -   **UseCase Layer**: Declares its own Repository and Service interfaces. Imports only `domain`.
 -   **Infrastructure Layer**: Implements UseCase interfaces. Imports `usecase`, `domain`, and `pkg/*`.
--   **Composition Root**: All DI wiring MUST happen in `cmd/main.go` using Google Wire.
+-   **Composition Root**: All DI wiring MUST happen in `cmd/main.go` using Manual Dependency Injection.
 
 ### 2. Dependency Rule
 -   Dependencies point **INWARDS** only.

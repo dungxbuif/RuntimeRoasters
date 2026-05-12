@@ -3,15 +3,18 @@ package casbingrpc
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+type Enforcer interface {
+	Enforce(rvals ...interface{}) (bool, error)
+}
+
 // GRPCUnaryInterceptor creates a gRPC interceptor for Casbin authorization
-func GRPCUnaryInterceptor(engine casbin.Engine) grpc.UnaryServerInterceptor {
+func GRPCUnaryInterceptor(engine Enforcer) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// 1. Get identity from context (Injected by JWT interceptor)
 		claims, ok := identity.FromContext(ctx)

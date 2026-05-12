@@ -5,7 +5,7 @@
 - **Database:** Postgres (dedicated `identity_db` and `hydra_db`).
 - **Key Algorithm:** RS256 (Asymmetric Key Pair). Hydra manages Signing Keys; Public Keys distributed via JWKS.
 - **S2S Security:** Hydra's JWKS endpoint is protected by `X-Internal-Secret` (Sprint 2 MVP) via an Nginx sidecar.
-- **Token Revocation:** Redis Distributed Blacklist + Kafka event bus wired up in this ticket; revocation logic consumed in RR-11.
+- **Token Revocation:** Valkey Distributed Blacklist + Kafka event bus wired up in this ticket; revocation logic consumed in RR-11.
 - **Key Rotation:** Kratos handles key rotation; consumers implement stale-while-revalidate (RR-11 concern).
 
 ## 🏗️ Architecture Design
@@ -15,7 +15,7 @@
 - **`kratos`:** Manages Identity.
 - **`hydra`:** Manages OAuth2 flows.
 - **`identity` (Identity Proxy - Nginx Sidecar):** Wraps Hydra's Admin/Public ports to protect JWKS endpoint. Runs on port `4434`.
-- **`kafka` & `redis`:** Included in infrastructure.
+- **`kafka` & `valkey`:** Included in infrastructure.
 
 ### 2.2 JWT & OIDC Configuration
 - **Signing Algorithm:** RS256 managed by Hydra.

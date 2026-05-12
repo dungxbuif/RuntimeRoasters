@@ -14,6 +14,12 @@ proto-breaking:
 run-demo:
 	go run ./apps/demo-service/cmd/
 
+run-be:
+	(cd apps/auth-service && go run cmd/main.go & cd apps/farm-service && go run cmd/main.go & wait)
+
+run-all:
+	(cd apps/auth-service && go run cmd/main.go & cd apps/farm-service && go run cmd/main.go & cd apps/client-app && npm run dev & wait)
+
 run-client:
 	cd apps/client-app && npm run dev
 

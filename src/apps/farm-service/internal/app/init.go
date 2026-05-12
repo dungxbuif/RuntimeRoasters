@@ -13,7 +13,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/redis"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
 	"google.golang.org/grpc"
 )
 
@@ -28,18 +28,13 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
-	rdb := redis.NewClient(redis.Config{
-		Addr: cfg.RedisAddr,
+	vdb := valkey.NewClient(valkey.Config{
+		Addr: cfg.ValkeyAddr,
 	})
 
 	// 2. Auth & Casbin
 	ttl, _ := time.ParseDuration(cfg.JWKSCacheTTL)
 	keyProvider, err := provider.NewJWKSCache(cfg.JWKSURL, cfg.InternalSecret, ttl)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	casbinClient, err := casbingrpc.NewAuthSnapshotClient(cfg.AuthServiceAddr, "farm-service")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,11 +51,7 @@ e = some(where (p.eft == allow))
 [matchers]
 m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act))
 `
-	casbinEngine, err := casbin.NewResilientReader(casbinClient, casbin.ReaderOptions{
-		ModelText:     modelText,
-		SyncInterval:  10 * time.Minute,
-		RetryInterval: 5 * time.Second,
-	})
+	casbinEnforcer, err := casbin.NewGormAdapterEnforcer(db.DB, modelText)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,7 +60,7 @@ m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatc
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer),
-			casbingrpc.GRPCUnaryInterceptor(casbinEngine),
+			casbingrpc.GRPCUnaryInterceptor(casbinEnforcer),
 		),
 	}
 
@@ -80,13 +71,13 @@ m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatc
 	})
 
 	// 4. App-specific Components
-	farmRepo := repository.NewFarmRepository(db)
+	farmRepo := repository.NewFarmRepository(db, casbinEnforcer)
 
 	farmUsecase := usecase.NewFarmUsecase(farmRepo)
 	farmHandler := farmgrpc.NewFarmHandler(farmUsecase)
 
 	// 5. Build App
-	app := NewApp(baseApp, &cfg, db, rdb, keyProvider, casbinEngine, farmHandler)
+	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler)
 
 	cleanup := func() {
 		// No manual cleanup required for db/rdb here as shutdown handles graceful termination

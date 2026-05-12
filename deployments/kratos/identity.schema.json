@@ -32,9 +32,9 @@
         "role": {
           "type": "string",
           "title": "User Role",
-          "description": "e.g. admin, farmer, processor, warehouse_mgr, driver, store_mgr, guest",
-          "default": "guest",
-          "enum": ["admin", "farmer", "processor", "warehouse_mgr", "driver", "store_mgr", "guest"]
+          "description": "e.g. ADMIN, FARM_ADMIN, FARM_MANAGER, FARMER, PROCESSOR, WAREHOUSE_MGR, DRIVER, STORE_MGR, GUEST",
+          "default": "GUEST",
+          "enum": ["ADMIN", "FARM_ADMIN", "FARM_MANAGER", "FARMER", "PROCESSOR", "WAREHOUSE_MGR", "DRIVER", "STORE_MGR", "GUEST"]
         },
         "org_id": {
           "type": "string",

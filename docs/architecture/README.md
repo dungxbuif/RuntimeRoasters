@@ -28,7 +28,8 @@ To prevent this directory from becoming a chaotic "God Document" dump, all contr
 - [01_system_blueprint.md](./01_system_blueprint.md) - Sơ đồ kiến trúc tổng thể, hạ tầng và Roadmap.
 
 ### 2. 🧠 Concepts (Lý thuyết cốt lõi)
-- [clean-architecture.md](./concepts/clean-architecture.md) - Triết lý Clean Architecture, Dependency Rule.
+- [clean-architecture.md](./concepts/clean-architecture.md) - Triết lý Clean Architecture, phân lớp và Directory Mapping.
+- [system-wide-standards.md](./concepts/system-wide-standards.md) - Thư viện dùng chung, Outbox, Idempotency và Manual DI.
 - [resilient-authz-sync.md](./concepts/resilient-authz-sync.md) - Kiến trúc đồng bộ quyền (Casbin + Kafka + gRPC).
 - [observability-strategy.md](./concepts/observability-strategy.md) - Chiến lược giám sát (SigNoz, 4 pillars).
 

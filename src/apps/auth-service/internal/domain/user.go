@@ -17,3 +17,14 @@ type CreateUserRequest struct {
 type CreateUserResponse struct {
 	User *User `json:"user"`
 }
+
+type AcceptLoginRequest struct {
+	LoginChallenge string `json:"login_challenge" binding:"required"`
+	Subject        string `json:"subject" binding:"required"`
+	Remember       bool   `json:"remember"`
+	RememberFor    int64  `json:"remember_for"`
+}
+
+type AcceptLoginResponse struct {
+	RedirectTo string `json:"redirect_to"`
+}

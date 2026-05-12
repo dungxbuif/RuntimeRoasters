@@ -7,6 +7,13 @@ option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1;authv1
 service AuthService {
   // GetFullSnapshot returns all policies for a given service
   rpc GetFullSnapshot(GetFullSnapshotRequest) returns (GetFullSnapshotResponse);
+
+  // AcceptLogin processes the login acceptance from Ory Kratos/Hydra
+  rpc AcceptLogin(AcceptLoginRequest) returns (AcceptLoginResponse);
+
+  // User Management
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
 }
 
 message GetFullSnapshotRequest {
@@ -15,4 +22,39 @@ message GetFullSnapshotRequest {
 
 message GetFullSnapshotResponse {
   repeated string policies = 1; // CSV formatted lines: p, role, obj, act
+}
+
+message AcceptLoginRequest {
+  string login_challenge = 1;
+  string subject = 2;
+  bool remember = 3;
+  int64 remember_for = 4;
+}
+
+message AcceptLoginResponse {
+  string redirect_to = 1;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+  string role = 4;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
 }

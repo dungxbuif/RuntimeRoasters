@@ -1,12 +1,12 @@
 # Technical Design: Token Revocation (RR-14)
 
 ## 1. Overview
-Hệ thống sử dụng chiến lược **Distributed Blacklist** với Redis để vô hiệu hóa các JWT vẫn còn hạn sử dụng (Signature valid) nhưng đã bị người dùng logout hoặc admin thu hồi.
+Hệ thống sử dụng chiến lược **Distributed Blacklist** với Valkey để vô hiệu hóa các JWT vẫn còn hạn sử dụng (Signature valid) nhưng đã bị người dùng logout hoặc admin thu hồi.
 
 ## 2. Component Design
 
 ### 2.1 Blacklist Interface (`pkg/base/auth/token`)
-Định nghĩa một interface trừu tượng để các middleware có thể sử dụng mà không phụ thuộc trực tiếp vào Redis.
+Định nghĩa một interface trừu tượng để các middleware có thể sử dụng mà không phụ thuộc trực tiếp vào Valkey.
 
 ```go
 type BlacklistChecker interface {
@@ -14,12 +14,12 @@ type BlacklistChecker interface {
 }
 ```
 
-### 2.2 Redis Implementation (`pkg/base/auth/blacklist`)
-Triển khai interface sử dụng `go-redis`.
+### 2.2 Valkey Implementation (`pkg/base/auth/blacklist`)
+Triển khai interface sử dụng `go-valkey`.
 
 - **Key Format:** `blacklist:jti:{jti}`
 - **TTL:** Tính toán dựa trên `exp` của token.
-- **Logic:** Nếu key tồn tại trong Redis -> Token bị thu hồi.
+- **Logic:** Nếu key tồn tại trong Valkey -> Token bị thu hồi.
 
 ### 2.3 Middleware Logic
 Cả gRPC Interceptor và Gin Middleware sẽ thực hiện check sau khi verify signature thành công:
@@ -29,8 +29,8 @@ Cả gRPC Interceptor và Gin Middleware sẽ thực hiện check sau khi verify
 4. Nếu `true` -> Return `401 Unauthorized`.
 
 ## 3. Deployment
-Redis đã có sẵn trong `docker-compose.dev.yaml`.
+Valkey đã có sẵn trong `docker-compose.dev.yaml`.
 
 ## 4. Security Considerations
-- **Fail-Closed:** Nếu Redis sập, middleware sẽ trả về lỗi (deny access) để đảm bảo an toàn tối đa.
-- **Performance:** Sử dụng `EXISTS` command trong Redis, độ trễ cực thấp (< 1ms).
+- **Fail-Closed:** Nếu Valkey sập, middleware sẽ trả về lỗi (deny access) để đảm bảo an toàn tối đa.
+- **Performance:** Sử dụng `EXISTS` command trong Valkey, độ trễ cực thấp (< 1ms).

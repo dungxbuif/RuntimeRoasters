@@ -12,6 +12,7 @@ type Config struct {
 	JWKSCacheTTL      string `mapstructure:"JWKS_CACHE_TTL"`
 	ExpectedIssuer    string `mapstructure:"EXPECTED_ISSUER"`
 	AuthServiceAddr   string `mapstructure:"AUTH_SERVICE_ADDR"`
+	ValkeyAddr        string `mapstructure:"VALKEY_ADDR"`
 }
 
 // Load loads the farm-service configuration

@@ -58,7 +58,7 @@
 - **Phân tích:** KrakenD tuy là binary engine nhưng hoàn toàn đáp ứng được tính linh hoạt nhờ cơ chế pipeline. Hiệu năng (throughput) của nó vượt trội hơn các giải pháp Gateway viết bằng code library truyền thống.
 
 ### Session 12: Production Hardening & Resilience
-- **Token Revocation:** Đề xuất dùng **Distributed Blacklist (Redis)** kết hợp Kafka để vô hiệu hóa Token ngay lập tức khi Logout/Lock.
+- **Token Revocation:** Đề xuất dùng **Distributed Blacklist (Valkey)** kết hợp Kafka để vô hiệu hóa Token ngay lập tức khi Logout/Lock.
 - **Key Rotation:** Áp dụng cơ chế **Stale-while-revalidate** khi cache JWKS để hệ thống không bị gián đoạn khi Identity Server xoay vòng Key.
 - **Security Interceptors:** Mọi cuộc gọi **gRPC Internal** phải được bảo vệ bằng Interceptors kiểm tra JWT trong Metadata.
 
@@ -100,7 +100,7 @@
 ### 5. Quyết định về Infrastructure & Resilience
 - **Identity Server:** Ory Kratos (Identity Management) + Ory Hydra (OAuth2/OIDC Provider).
 - **API Gateway:** KrakenD (Go-based, configuration-driven).
-- **Thu hồi Token:** Sử dụng **Distributed Blacklist** (Redis + Kafka).
+- **Thu hồi Token:** Sử dụng **Distributed Blacklist** (Valkey + Kafka).
 - **S2S Security:** Shared Secret Header (MVP) và lộ trình nâng cấp lên mTLS (Sprint 4).
 
 **== CHỐT PHƯƠNG ÁN & CHUYỂN SANG GIAI ĐOẠN THỰC THI ==**

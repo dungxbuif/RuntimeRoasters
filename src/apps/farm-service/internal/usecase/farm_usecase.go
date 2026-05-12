@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/google/uuid"
 )
 
@@ -17,16 +17,21 @@ type FarmUsecase interface {
 }
 
 type farmUsecase struct {
-	repo repository.FarmRepository
+	repo FarmRepository
 }
 
-func NewFarmUsecase(repo repository.FarmRepository) FarmUsecase {
+func NewFarmUsecase(repo FarmRepository) FarmUsecase {
 	return &farmUsecase{
 		repo: repo,
 	}
 }
 
 func (u *farmUsecase) CreateFarm(ctx context.Context, farm *domain.Farm) (*domain.Farm, error) {
+	userId, _ := identity.FromContext(ctx)
+	if farm.OwnerID == "" {
+		farm.OwnerID = userId.Subject
+	}
+
 	farm.ID = uuid.New().String()
 	if err := farm.Validate(); err != nil {
 		return nil, err
@@ -48,6 +53,11 @@ func (u *farmUsecase) ListFarms(ctx context.Context) ([]*domain.Farm, error) {
 }
 
 func (u *farmUsecase) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domain.Farm, error) {
+	userId, _ := identity.FromContext(ctx)
+	if farm.OwnerID == "" {
+		farm.OwnerID = userId.Subject
+	}
+
 	if err := farm.Validate(); err != nil {
 		return nil, err
 	}
@@ -60,5 +70,6 @@ func (u *farmUsecase) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 }
 
 func (u *farmUsecase) DeleteFarm(ctx context.Context, id string) error {
+	// Authorization is now handled at Gate 1 (Interceptor) and Gate 2 (Repository Scope)
 	return u.repo.Delete(ctx, id)
 }

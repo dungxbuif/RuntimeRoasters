@@ -1,0 +1,54 @@
+version: '3'
+
+tasks:
+  infra:
+    desc: Start infrastructure containers
+    cmds:
+      - docker compose -f deployments/docker-compose.dev.yaml up -d
+
+  proto:
+    desc: Generate gRPC and Swagger code from Protos
+    cmds:
+      - cd api && go run github.com/bufbuild/buf/cmd/buf@latest generate
+
+  swagger-export:
+    desc: Export KrakenD OpenAPI spec for the Frontend Portal
+    cmds:
+      - docker run --rm -v "$PWD/deployments/krakend:/etc/krakend" krakend/krakend-ee:2.9 openapi export -c /etc/krakend/krakend.json > src/apps/client-app/public/api-spec.json
+
+  seed:
+    desc: Manually trigger data seeding (Admin User & OAuth2 Client)
+    cmds:
+      - docker compose -f deployments/docker-compose.dev.yaml up seeder
+
+  auth:
+    desc: Start Auth Service with hot-reload
+    dir: src/apps/auth-service
+    cmds:
+      - air -c .air.toml
+
+  farm:
+    desc: Start Farm Service with hot-reload
+    dir: src/apps/farm-service
+    cmds:
+      - air -c .air.toml
+
+  fe:
+    desc: Start Frontend Client App
+    dir: src/apps/client-app
+    cmds:
+      - npm run dev
+
+  be:
+    desc: Start all backend services in parallel
+    deps: [auth, farm]
+
+  dev:
+    desc: Start full system (BE + FE)
+    deps: [auth, farm, fe]
+
+  stop:
+    desc: Stop all containers and background tasks
+    cmds:
+      - docker compose -f deployments/docker-compose.dev.yaml down
+      - lsof -ti :8082,8083,50052,50053 | xargs kill -9 || true
