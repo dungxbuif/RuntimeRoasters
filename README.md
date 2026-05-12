@@ -24,14 +24,14 @@ This project serves as a comprehensive showcase of industry-standard patterns an
 - **Event-Driven Communication:** Asynchronous coordination using `Apache Kafka`.
 - **Saga Pattern** (`Choreography`): Managing multi-step flows (`Order` ➔ `Payment` ➔ `Warehouse` ➔ `Logistics`) with automatic compensation (`Rollbacks` + `Auto-Refund`).
 - **CQRS** (`Command Query Responsibility Segregation`): Separating transactional writes (`PostgreSQL`) from high-speed traceability reads (`Elasticsearch`).
-- **Transactional Outbox** & **Inbox:** Guaranteeing message delivery and preventing duplicate processing (`Idempotency`).
-- **Dual Idempotency:** `Idempotency-Key` in `Redis` (HTTP, sync) + `Inbox Pattern` in `PostgreSQL` (async) — two independent layers.
+- **Transactional Outbox** & **Inbox:** Applied selectively to critical business flows to guarantee message delivery and prevent duplicate processing (`Idempotency`).
+- **Dual Idempotency:** `Idempotency-Key` in `Valkey` (HTTP, sync) + `Inbox Pattern` in `PostgreSQL` (async) — two independent layers.
 - **Payment Gateway Integration:** `Stripe` `PaymentIntents`, `Webhook` handling with `HMAC` signature validation, auto-refund `Compensating Actions`.
 - **Webhook Ingress Gateway:** Dedicated `Webhook Service` validates all external data (`Stripe`, `VNPay`, `IoT`) with `HMAC` before publishing to `Kafka`.
 - **Zero Trust Architecture:** `mTLS` for all internal `gRPC`, `Decentralized Authorization` via `Casbin` per-service.
 - **Distributed Tracing:** `Trace-ID` injected at `Gateway`, propagated through `gRPC Context` and `Kafka Headers`, visualized in `Jaeger` Gantt charts.
 - **Standardized API Response (RFC 7807):** Unified error handling using the `Problem Details` standard for consistent client-side processing.
-- **Real-time Geo-Tracking:** Live GPS management using `Redis` (high-performance `Redis` alternative).
+- **Real-time Geo-Tracking:** Live GPS management using `Valkey` (high-performance `Valkey` alternative).
 
 ---
 
@@ -41,6 +41,13 @@ In Vietnamese culture, coffee is a "thread" that connects society. However, ther
 
 Each coffee bean is given a digital identity. From the smallest data point at the plantation, through processing stages at the factory, to nationwide logistics, and finally into the customer's cup, every step is recorded and verifiable.
 
+**The main touchpoints are:**
+1. **Upstream (Farm):** Farmers update cultivation area and declare newly harvested coffee batches.
+2. **Midstream (Processing & Warehouse):** Factory managers receive raw beans, proceed to hulling, drying, roasting, and packaging into finished batches (Batch ID). Goods are stored at the central warehouse.
+3. **Transportation (Logistics):** When a dispatch order is received, the driver receives the trip, transports goods from the factory to retail locations, and continuously updates GPS coordinates in real-time.
+4. **Downstream (Retail):** Store managers track inventory at the point of sale, send replenishment requests, and receive goods from drivers.
+5. **Traceability & Audit:** End users can scan QR codes to view the entire journey of the coffee cup. Administrators have tools for panoramic monitoring and audit logs to prevent fraud.
+
 ---
 
 ### 🧩 System Overview
@@ -49,10 +56,10 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 | :---------- | :---------------------------------------------------------------------------------------------------- | :---------------------- |
 | `Gateway`   | Entry point, Authentication, Rate Limiting                                                            | `API Gateway Pattern`   |
 | `Webhook`   | Ingress gateway for external data (`Stripe`, `VNPay`, `IoT GPS`) — `HMAC` validate + publish to Kafka | `Inbox Pattern`, `HMAC` |
-| `Farm`      | Farmer management, plantation tracking, and harvest coffee batches                                    | `Outbox Pattern`        |
+| `Farm`      | Farmer management, plantation tracking, and harvest coffee batches                                    | `Transactional Design`  |
 | `Process`   | Mill/Roastery operations, processing raw beans into `Batch ID`s                                       | `Event-Driven`          |
 | `Warehouse` | Inventory management, stock reservation (`Saga Participant`)                                          | `Transactional DB`      |
-| `Logistics` | Route coordination, real-time `GPS` tracking via `Redis`                                              | `Geo-spatial Tracking`  |
+| `Logistics` | Route coordination, real-time `GPS` tracking via `Valkey`                                              | `Geo-spatial Tracking`  |
 | `Retail`    | Store ordering, consumption tracking (`Saga Orchestrator`)                                            | `State Machine`         |
 | `Payment`   | `Stripe`/`VNPay` integration via `Strategy Pattern`, `Refund` management                              | `Inbox Pattern`, `HMAC` |
 | `Trace`     | Unified traceability engine aggregate data into `Elasticsearch`                                       | `CQRS` (`Read model`)   |
@@ -65,7 +72,7 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 #### Backend
 
 - **Language:** `Go` (`Golang`) 1.25+ with **Go Workspaces**
-- **DI Framework:** **Google Wire** (Compile-time DI)
+- **Dependency Injection:** **Manual DI** (Composition Root tại `main.go`)
 - **Codebase:** `Monorepo` — shared `api/` (`gRPC` Proto), `pkg/` (Middleware, DB Wrapper)
 - **Service structure:** `Clean Architecture` (Domain / UseCase / Infrastructure)
 - **Communication:** `gRPC` (Internal), `Gin`/`REST` (External)
@@ -79,7 +86,7 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 - **PostgreSQL:** `Source of Truth` (`ACID` transactions)
 - **Elasticsearch:** Search engine for traceability and history
 - **Apache Cassandra:** `Audit logs` and hash-chained event storage
-- **Redis:** `Distributed locking`, `caching`, and real-time `GPS` tracking
+- **Valkey:** `Distributed locking`, `caching`, and real-time `GPS` tracking
 
 #### Security & IAM
 
@@ -105,11 +112,11 @@ The system implements **Centralized Identity** but **Distributed Validation**. *
 
 #### Dual Idempotency
 
-Two independent layers protect against duplicate processing: (1) `Idempotency-Key` header stored in `Redis` (24h TTL) for synchronous HTTP retries, (2) `Inbox Pattern` in `PostgreSQL` for async `Kafka` consumers and `Webhooks`.
+Two independent layers protect against duplicate processing: (1) `Idempotency-Key` header stored in `Valkey` (24h TTL) for synchronous HTTP retries, (2) `Inbox Pattern` in `PostgreSQL` for async `Kafka` consumers and `Webhooks`.
 
 #### Transactional Outbox
 
-To prevent `dual-write` problems, services write events to an `outbox` table _in the same transaction_ as business logic. A dedicated worker relays these to `Kafka`, guaranteeing at-least-once delivery even if the broker is temporarily down.
+To prevent `dual-write` problems in critical flows, services write events to an `outbox` table _in the same transaction_ as business logic. A dedicated worker relays these to `Kafka`, guaranteeing at-least-once delivery even if the broker is temporarily down.
 
 #### Webhook Ingress Gateway
 
@@ -129,7 +136,7 @@ The project includes an `Isometric 3D` `Dashboard` that visualizes the system's 
 
 1. **User Touchpoints:** Simulated mobile apps for Farmers/Drivers and `POS` for Stores.
 2. **The Core (Microservices):** An interactive map of `Go` `Services` and their connections.
-3. **Infrastructure:** Visual representation of `Kafka`, `Databases`, and `Redis`.
+3. **Infrastructure:** Visual representation of `Kafka`, `Databases`, and `Valkey`.
 
 #### Visual Metaphors
 
@@ -182,14 +189,14 @@ Hệ thống được phát triển 100% bằng `Golang`, tuân thủ nghiêm ng
 - **Giao tiếp hướng sự kiện (Event-Driven):** Phối hợp bất đồng bộ sử dụng `Apache Kafka`.
 - **Saga Pattern** (`Choreography`): Quản lý luồng đa bước (`Order` ➔ `Payment` ➔ `Warehouse` ➔ `Logistics`) với hoàn tác tự động (`Rollbacks` + `Auto-Refund`).
 - **CQRS:** Tách biệt luồng ghi (`PostgreSQL`) và đọc traoốc độ cao (`Elasticsearch`).
-- **Transactional Outbox** & **Inbox:** Đảm bảo gửi tin nhắn và tránh xử lý lặp lại (`Idempotency`).
-- **Tính Lũy Đẳng Kép (Dual Idempotency):** `Idempotency-Key` trong `Redis` (HTTP sync) + `Inbox Pattern` trong `PostgreSQL` (async) — hai lớp bảo vệ độc lập.
+- **Transactional Outbox** & **Inbox:** Áp dụng có chọn lọc cho các luồng nghiệp vụ quan trọng để đảm bảo gửi tin nhắn và tránh xử lý lặp lại (`Idempotency`).
+- **Tính Lũy Đẳng Kép (Dual Idempotency):** `Idempotency-Key` trong `Valkey` (HTTP sync) + `Inbox Pattern` trong `PostgreSQL` (async) — hai lớp bảo vệ độc lập.
 - **Tích hợp Payment Gateway:** `Stripe` `PaymentIntents`, xử lý `Webhook` với `HMAC`, hoàn tiền tự động qua `Strategy + Factory Pattern`.
 - **Webhook Ingress Gateway:** `Webhook Service` riêng biệt xác thực `HMAC` từ `Stripe`, `VNPay`, thiết bị `IoT` trước khi publish lên `Kafka`.
 - **Kiến trúc Zero Trust:** `mTLS` cho `gRPC` nội bộ + `Casbin` phân quyền phi tập trung tại từng service.
 - **Distributed Tracing:** `Trace-ID` phát sinh tại `Gateway`, lan truyền qua `gRPC Context` và `Kafka Headers`, hiển thị `Gantt Chart` trên `Jaeger`.
 - **Phản hồi lỗi chuẩn hóa (RFC 7807):** Sử dụng chuẩn `Problem Details` để đồng nhất cách xử lý lỗi giữa Backend và các loại Client.
-- **Theo dõi GPS thời gian thực:** Sử dụng `Redis` (GEO commands, high-performance `Redis` alternative).
+- **Theo dõi GPS thời gian thực:** Sử dụng `Valkey` (GEO commands, high-performance `Valkey` alternative).
 
 ---
 
@@ -207,10 +214,10 @@ Dự án mô phỏng một hệ sinh thái nơi mỗi hạt cà phê đều có 
 | :---------- | :----------------------------------------------------------------------------------------------------------- | :---------------------- |
 | `Gateway`   | Cửa ngõ, Xác thực, Giới hạn lưu lượng (`Rate Limiting`)                                                      | `API Gateway Pattern`   |
 | `Webhook`   | Ingress gateway tiếp nhận dữ liệu bên ngoài (`Stripe`, `VNPay`, `IoT GPS`) — xác thực `HMAC` + publish Kafka | `Inbox Pattern`, `HMAC` |
-| `Farm`      | Quản lý nông hộ, vườn cây và thu hoạch theo mẻ                                                               | `Outbox Pattern`        |
+| `Farm`      | Quản lý nông hộ, vườn cây và thu hoạch theo mẻ                                                               | `Transactional Design`  |
 | `Process`   | Tiếp nhận hạt thô, bóc vỏ, rang xay và cấp `Batch ID`                                                        | `Event-Driven`          |
 | `Warehouse` | Quản lý kho, giữ chỗ hàng (`Saga Participant`)                                                               | `Transactional DB`      |
-| `Logistics` | Điều phối vận tải, tracking `GPS` qua `Redis`                                                                | `Geo-spatial Tracking`  |
+| `Logistics` | Điều phối vận tải, tracking `GPS` qua `Valkey`                                                                | `Geo-spatial Tracking`  |
 | `Retail`    | Cửa hàng đặt hàng, quản lý tiêu thụ (`Saga Orchestrator`)                                                    | `State Machine`         |
 | `Payment`   | Tích hợp `Stripe`/`VNPay` qua `Strategy Pattern`, quản lý `Refund`                                           | `Inbox Pattern`, `HMAC` |
 | `Trace`     | Tổng hợp hành trình hạt cà phê vào `Elasticsearch`                                                           | `CQRS` (`Read model`)   |
@@ -223,7 +230,7 @@ Dự án mô phỏng một hệ sinh thái nơi mỗi hạt cà phê đều có 
 #### Backend
 
 - **Ngôn ngữ:** `Go` (`Golang`) 1.25+ với **Go Workspaces**
-- **DI Framework:** **Google Wire** (Compile-time DI)
+- **Dependency Injection:** **Manual DI** (Composition Root tại `main.go`)
 - **Codebase:** `Monorepo` — chia sẻ `api/` (`gRPC` Proto), `pkg/` (Middleware, DB Wrapper)
 - **Kiến trúc service:** `Clean Architecture` (Domain / UseCase / Infrastructure)
 - **Giao tiếp:** `gRPC` (Nội bộ), `Gin`/`REST` (Bên ngoài)
@@ -237,7 +244,7 @@ Dự án mô phỏng một hệ sinh thái nơi mỗi hạt cà phê đều có 
 - **PostgreSQL:** `Source of Truth` (Giao dịch `ACID`)
 - **Elasticsearch:** Công cụ tìm kiếm truy xuất nguồn gốc
 - **Apache Cassandra:** Lưu trữ `Audit log` và `Hash-chained event` storage
-- **Redis:** `Distributed locking`, `Cache` và quản lý `GPS` thời gian thực
+- **Valkey:** `Distributed locking`, `Cache` và quản lý `GPS` thời gian thực
 
 #### Bảo mật & IAM
 
@@ -263,11 +270,11 @@ Hệ thống áp dụng mô hình **Bảo mật tập trung (Centralized Identit
 
 #### Tính Lũy Đẳng Kép (Dual Idempotency)
 
-Hai lớp bảo vệ độc lập: (1) `Idempotency-Key` trong `Redis` (TTL 24h) cho HTTP retry, (2) `Inbox Pattern` trong `PostgreSQL` cho `Kafka` consumer và `Webhook`.
+Hai lớp bảo vệ độc lập: (1) `Idempotency-Key` trong `Valkey` (TTL 24h) cho HTTP retry, (2) `Inbox Pattern` trong `PostgreSQL` cho `Kafka` consumer và `Webhook`.
 
 #### Transactional Outbox
 
-Để tránh lỗi `dual-write`, service ghi event vào bảng `outbox` _cùng một Transaction_ với logic nghiệp vụ. Worker riêng đẩy lên `Kafka`, đảm bảo event không mất dù `Broker` tạm thời chết.
+Để tránh lỗi `dual-write` trong các luồng quan trọng, service ghi event vào bảng `outbox` _cùng một Transaction_ với logic nghiệp vụ. Worker riêng đẩy lên `Kafka`, đảm bảo event không mất dù `Broker` tạm thời chết.
 
 #### Webhook Ingress Gateway
 
@@ -287,7 +294,7 @@ Dự án bao gồm một `Isometric 3D` `Dashboard` trực quan hóa "nhịp đ�
 
 1. **User Touchpoints:** Giả lập app mobile cho Nông dân/Tài xế và máy `POS` cho Cửa hàng.
 2. **The Core (Microservices):** Bản đồ tương tác của các `Go` `Services` và kết nối giữa chúng.
-3. **Infrastructure:** Hiển thị vị trí của `Kafka`, `Databases` và `Redis`.
+3. **Infrastructure:** Hiển thị vị trí của `Kafka`, `Databases` và `Valkey`.
 
 #### Ẩn dụ Hình ảnh
 

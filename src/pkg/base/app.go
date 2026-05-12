@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 type Options struct {
@@ -70,11 +72,6 @@ func NewApp(opts Options) *App {
 
 	gwMux := runtime.NewServeMux()
 
-	// Route everything to gateway mux for /v1
-	engine.Any("/v1/*any", func(c *gin.Context) {
-		gwMux.ServeHTTP(c.Writer, c.Request)
-	})
-
 	return &App{
 		Name:       opts.Name,
 		ginEngine:  engine,
@@ -94,8 +91,20 @@ func (a *App) RegisterHTTP(routes func(*gin.Engine)) {
 	routes(a.ginEngine)
 }
 
+func (a *App) FinalizeRoutes() {
+	// Route everything to gateway mux for /v1 ONLY IF NOT HANDLED BY GIN
+	a.ginEngine.NoRoute(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/v1") {
+			a.gwMux.ServeHTTP(c.Writer, c.Request)
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"message": "not found"})
+	})
+}
+
 func (a *App) RegisterGRPC(desc *grpc.ServiceDesc, impl interface{}) {
 	a.grpcServer.RegisterService(desc, impl)
+	reflection.Register(a.grpcServer)
 }
 
 func (a *App) RegisterGateway(register func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error, grpcPort int) {

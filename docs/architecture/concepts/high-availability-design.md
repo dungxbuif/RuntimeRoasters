@@ -35,7 +35,7 @@ Hệ thống được thiết kế để chạy đa node ở mọi tầng.
     - Node Master: Xử lý Write.
     - Node Slave (Replica): Xử lý Read.
     - Sử dụng **PgBouncer** để tự động chuyển hướng kết nối nếu Master gặp sự cố.
-- **Redis/Valkey**: Triển khai **Redis Sentinel** hoặc **Cluster Mode** để tự động Failover.
+- **Valkey/Valkey**: Triển khai **Valkey Sentinel** hoặc **Cluster Mode** để tự động Failover.
 
 ### 2.2. Tầng Truyền thông (Kafka HA)
 - **Broker Clustering**: Tối thiểu 3 Kafka Brokers chạy song song.
@@ -48,7 +48,7 @@ Hệ thống được thiết kế để chạy đa node ở mọi tầng.
 
 ### 2.4. Tầng Dịch vụ (Microservices HA)
 - Mọi service (Farm, Auth, Retail...) đều được thiết kế **Stateless**.
-- Trạng thái phiên làm việc (Session) lưu tập trung trong Redis/Kratos.
+- Trạng thái phiên làm việc (Session) lưu tập trung trong Valkey/Kratos.
 - Cho phép scale ngang (Horizontal Scaling) vô hạn mà không mất dữ liệu.
 
 ---

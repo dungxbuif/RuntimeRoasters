@@ -10,10 +10,10 @@ Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Ti
 
 ### Nguyên tắc cốt lõi (Constitution):
 - **Abstraction First:** Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
-- **Calculated Consistency:** Sử dụng **Transactional Outbox** để gửi tin và **Inbox Pattern** để nhận tin, triệt tiêu rủi ro mất dữ liệu.
+- **Calculated Consistency:** Sử dụng **Transactional Outbox** cho các luồng quan trọng và **Inbox Pattern** để nhận tin, triệt tiêu rủi ro mất dữ liệu.
 - **Dual Idempotency:** Bảo vệ 2 lớp: `Idempotency-Key` (API Level) và `Transactional Inbox` (Consumer Level).
 - **Observability by Design:** Mọi request mang dấu vết W3C Tracing xuyên suốt Gateway -> gRPC -> Kafka.
-- **Fail-Closed Security:** Ưu tiên an ninh hơn tính khả dụng trong các trường hợp kiểm tra quyền (VD: Redis Blacklist).
+- **Fail-Closed Security:** Ưu tiên an ninh hơn tính khả dụng trong các trường hợp kiểm tra quyền (VD: Valkey Blacklist).
 
 ---
 
@@ -24,7 +24,7 @@ Hệ thống được thiết kế để không có điểm yếu chí tử (No 
 - **Database HA**: PostgreSQL Master-Slave Replication với PgBouncer làm cổng kết nối tập trung.
 - **Messaging HA**: Cụm Kafka tối thiểu 3 Brokers, Replication Factor = 3.
 - **Gateway HA**: KrakenD chạy đa instance (stateless) phía sau External Load Balancer.
-- **Identity HA**: Ory Kratos/Hydra chạy đa instance với shared session store (Redis).
+- **Identity HA**: Ory Kratos/Hydra chạy đa instance với shared session store (Valkey).
 
 ---
 
@@ -55,13 +55,13 @@ graph TB
     subgraph "Data Persistence (HA)"
         PB[PgBouncer :6432]
         PG[(PostgreSQL :54321)]
-        RD[(Redis Sentinel :6379)]
+        RD[(Valkey Sentinel :6379)]
         PB --> PG
     end
 
     subgraph "Message Broker (HA)"
         KF[Kafka Cluster :9094]
-        KUI[Kafka UI :8082]
+        KUI[Kafka UI :8090]
         KUI --- KF
     end
 
@@ -104,18 +104,21 @@ Hệ thống áp dụng mô hình Zero Trust nội bộ:
 
 ---
 
-## 6. Port Map (Final)
+## 6. Port Map (Unified)
 
-| Service | Port | Ghi chú |
-| :--- | :--- | :--- |
-| client-app | 3000 | Unified UI |
-| KrakenD | 8081 | API Gateway |
-| auth-service | 8082 / 50052 | Identity Proxy |
-| farm-service | 8083 / 50053 | Farm Management |
-| PostgreSQL | 54321 | Direct access (Dev only) |
-| PgBouncer | 6432 | Connection Pooler (Primary) |
-| Kafka Cluster | 9094 | Broker network |
-| Valkey/Redis | 6379 | Idempotency & Cache |
+| Service | HTTP | gRPC | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| **Gateway** | 8081 | — | KrakenD Entry Point |
+| **Auth** | 8082 | 50052 | Identity & Policy Proxy |
+| **Farm** | 8083 | 50053 | Farm & Harvest Management |
+| **Process** | 8084 | 50054 | Roastery Production |
+| **Warehouse** | 8085 | 50055 | Inventory & Saga Participant |
+| **Retail** | 8086 | 50056 | Ordering & Saga Orchestrator |
+| **Logistics** | 8087 | 50057 | Real-time GPS Tracking |
+| **Payment** | 8088 | 50058 | Stripe Integration |
+| **Trace** | 8089 | 50059 | Traceability CQRS |
+| **Audit** | 8091 | 50061 | Cassandra Audit Logs |
+| **Webhook** | 8092 | 50062 | External Data Ingress |
 
 ---
 
@@ -126,7 +129,7 @@ Hệ thống áp dụng mô hình Zero Trust nội bộ:
 | **S1-3** | Foundation | Completed Infrastructure & Farm Core |
 | **S4** | Security Base | E2E Auth, Token Revocation |
 | **S5-6** | Saga & Consistency | Outbox/Inbox, Order Flow, Stock Reservation |
-| **S7-8** | Logistics | Real-time Tracking, Redis Geo |
+| **S7-8** | Logistics | Real-time Tracking, Valkey Geo |
 | **S9-10** | Transparency | CQRS, Elasticsearch, OTel, Cassandra Audit |
 | **S11** | Commerce | Real Stripe Payment & Saga Phase 2 |
 | **S12** | Grand Finale | System Mesh Visualization, Chaos, mTLS |

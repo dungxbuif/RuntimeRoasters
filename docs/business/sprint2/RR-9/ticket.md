@@ -31,5 +31,5 @@
 
 ### Scenario 4: Token Revocation Infrastructure
 - **Given:** The auth infrastructure is provisioned.
-- **When:** Redis and Kafka are running.
-- **Then:** A Distributed Token Blacklist (Redis) is reachable by backend services for logout/lock operations.
+- **When:** Valkey and Kafka are running.
+- **Then:** A Distributed Token Blacklist (Valkey) is reachable by backend services for logout/lock operations.

@@ -6,8 +6,8 @@ Tài liệu này mô tả luồng quản lý người dùng tập trung, đảm 
 - **Privileged Proxy**: Chỉ Admin mới có quyền tạo User. Client không bao giờ gọi trực tiếp vào Ory Kratos Admin API.
 - **Event-Driven Propagation**: Mọi thay đổi về Identity hoặc Role đều được phát tán qua Kafka để các service khác cập nhật trạng thái/quyền.
 - **Hardcoded Roles**: Hệ thống chấp nhận các Role cố định trong giai đoạn này:
-    - `farm_admin`: Quản trị viên hệ thống nông nghiệp.
-    - `farm_manager`: Người quản lý nông trại cụ thể.
+    - `FARM_ADMIN`: Quản trị viên hệ thống nông nghiệp.
+    - `FARM_MANAGER`: Người quản lý nông trại cụ thể.
 
 ## 2. Sequence Diagram: Admin Creates Manager
 
@@ -23,8 +23,8 @@ sequenceDiagram
     participant Farm as farm-service (Consumer)
 
     Admin->>App: Nhập thông tin Manager & Submit
-    App->>GW: POST /v1/admin/users (JWT: farm_admin)
-    GW->>GW: Validate JWT & Scope Check (farm_admin)
+    App->>GW: POST /v1/users (JWT: FARM_ADMIN)
+    GW->>GW: Validate JWT & Scope Check (FARM_ADMIN)
     GW->>Auth: Forward Request
     Auth->>Auth: Casbin Check: Can Admin create User? (ALLOW)
     
@@ -32,12 +32,13 @@ sequenceDiagram
     Auth->>Kratos: POST /admin/identities (Create Account)
     Kratos-->>Auth: 201 Created (UserID: manager_001)
     
-    Note over Auth, KF: Giai đoạn 2: Role Assignment & Event
-    Auth->>Auth: Casbin DB: Assign Role 'farm_manager' to 'manager_001'
-    Auth->>KF: Publish Event: `user.created` / `policy.updated`
+    Note over Auth, KF: Giai đoạn 2 (Future): Kafka Propagation
+    Auth-->>KF: Publish Event: `user.created` (Phase 2)
+    KF-->>Farm: Consume Event & Update Enforcer (Phase 2)
     
-    KF-->>Farm: Consume Event
-    Farm->>Farm: Update Local Casbin Enforcer
+    Note over Auth, Farm: Giai đoạn 1 (Current): Polling & Snapshot
+    Farm->>Auth: gRPC: GetFullSnapshot (Bootstrap)
+    Farm->>Auth: gRPC: GetFullSnapshot (Periodic Polling)
     
     Auth-->>App: 201 Created (Success)
     App->>Admin: Hiển thị thông báo thành công
@@ -51,13 +52,13 @@ Kafka đóng vai trò là "Xương sống" đảm bảo tính nhất quán cuố
 
 ## 4. Schemas (Dự thảo)
 
-### 4.1. API Request: `POST /v1/admin/users`
+### 4.1. API Request: `POST /v1/users`
 ```json
 {
   "email": "manager@runtimeroasters.com",
   "password": "temporary_password_123",
   "name": "Nguyen Van A",
-  "role": "farm_manager" 
+  "role": "FARM_MANAGER" 
 }
 ```
 
@@ -70,7 +71,7 @@ Kafka đóng vai trò là "Xương sống" đảm bảo tính nhất quán cuố
     "user_id": "manager_001",
     "email": "manager@runtimeroasters.com",
     "name": "Nguyen Van A",
-    "role": "farm_manager"
+    "role": "FARM_MANAGER"
   },
   "occurred_at": "2026-05-10T..."
 }

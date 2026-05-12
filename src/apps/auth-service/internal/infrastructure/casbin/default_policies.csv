@@ -1,5 +1,5 @@
-p, farm_admin, /farm.v1.FarmService/*, *
-p, farm_manager, /farm.v1.FarmService/GetFarm, read
-p, farm_manager, /farm.v1.FarmService/ListFarms, read
-p, farm_manager, /farm.v1.FarmService/UpdateFarm, write
-g, admin, farm_admin
+p, FARM_ADMIN, /farm.v1.FarmService/*, *
+p, FARM_MANAGER, /farm.v1.FarmService/GetFarm, read
+p, FARM_MANAGER, /farm.v1.FarmService/ListFarms, read
+p, FARM_MANAGER, /farm.v1.FarmService/UpdateFarm, write
+g, ADMIN, FARM_ADMIN

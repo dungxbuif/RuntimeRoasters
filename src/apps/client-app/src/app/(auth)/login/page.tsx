@@ -5,32 +5,70 @@ import { LoginCard } from '@/components/auth/LoginCard';
 import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAcceptHydraLogin, useLoginFlow, useSubmitLogin } from '@/hooks/useAuthFlow';
+import { useAuth } from '@/lib/auth';
+import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { UpdateLoginFlowBody } from '@ory/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useEffect } from 'react';
 
 const LOG = (...args: unknown[]) => console.log('%c[AUTH]', 'color:#38bdf8;font-weight:bold', ...args);
 
 function LoginContent() {
+  const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const loginChallenge = searchParams.get(AUTH_PARAMS.LOGIN_CHALLENGE);
 
-  LOG('LoginContent mount', { loginChallenge, url: typeof window !== 'undefined' ? window.location.href : '' });
+  LOG('LoginContent mount', { loginChallenge, isAuthenticated });
 
-  // When loginChallenge is present, Kratos uses it to know where to redirect after auth.
-  // Passing returnTo = current login URL would cause Kratos to redirect back here.
+  // If already authenticated and no challenge, go home
+  useEffect(() => {
+    if (isAuthenticated && !loginChallenge) {
+      router.push(APP_ROUTES.HOME);
+    }
+  }, [isAuthenticated, loginChallenge, router]);
+
   const { data: flow, error: flowError, refetch } = useLoginFlow(undefined, loginChallenge || undefined);
   const submitLogin = useSubmitLogin();
   const acceptHydra = useAcceptHydraLogin();
-  // Stable ref so the useEffect below doesn't list acceptHydra as a dep (would cause a loop)
   const acceptHydraRef = useRef(acceptHydra);
-  acceptHydraRef.current = acceptHydra;
+  
+  // Use effect to update ref safely
+  useEffect(() => {
+    acceptHydraRef.current = acceptHydra;
+  }, [acceptHydra]);
 
   // Guard: only handle a given flowError once to prevent re-entrancy
   const flowErrorHandled = useRef(false);
 
-  LOG('flow state', { flowId: flow?.id, hasError: !!flowError, errorId: (flowError as any)?.response?.data?.error?.id });
+  LOG('flow state', { flowId: flow?.id, hasError: !!flowError, errorId: (flowError as { response?: { data?: { error?: { id: string } } } })?.response?.data?.error?.id });
+
+  // Handle cases where flow is missing but there's no explicit error yet (e.g. empty response)
+  useEffect(() => {
+    if (!flow && !submitLogin.isPending && !acceptHydra.isPending && !flowError) {
+      const timer = setTimeout(() => {
+        LOG('Flow is missing for too long, checking session...');
+        import('@/services/auth.service').then(({ authService }) => {
+          authService.getSession().then((session) => {
+            if (session.identity?.id && loginChallenge) {
+              LOG('Found existing session, completing Hydra flow...');
+              acceptHydraRef.current.mutateAsync({
+                challenge: loginChallenge,
+                subject: session.identity.id,
+              }).then(({ redirect_to }) => {
+                window.location.href = redirect_to;
+              });
+            } else if (session.identity?.id) {
+              router.push(APP_ROUTES.DASHBOARD.USERS);
+            }
+          }).catch(() => {
+            LOG('No session found, flow creation might be failed');
+          });
+        });
+      }, 2000); // Wait 2s before fallback
+      return () => clearTimeout(timer);
+    }
+  }, [flow, flowError, loginChallenge, router, submitLogin.isPending, acceptHydra.isPending]);
 
   const handleLogin = async (body: UpdateLoginFlowBody) => {
     LOG('handleLogin: submitting to Kratos', { flowId: flow?.id, loginChallenge });
@@ -57,8 +95,8 @@ function LoginContent() {
         }
       }
 
-      LOG('handleLogin: no challenge, pushing to HOME');
-      router.push(APP_ROUTES.HOME);
+      LOG('handleLogin: no challenge, pushing to DASHBOARD');
+      router.push(APP_ROUTES.DASHBOARD.USERS);
     } catch (err: unknown) {
       console.error('[AUTH] handleLogin error:', err);
       if (err && typeof err === 'object' && 'response' in err) {
@@ -88,13 +126,13 @@ function LoginContent() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Guard: prevent re-entrancy. acceptHydra.mutateAsync changing mutation state would
     // otherwise re-trigger this effect on every render → infinite loop.
     if (!flowError || flowErrorHandled.current) return;
     flowErrorHandled.current = true;
 
-    const err = flowError as any;
+    const err = flowError as { response?: { status?: number; data?: { error?: { id: string }, redirect_browser_to?: string } } };
     const errorId = err.response?.data?.error?.id;
     const redirectTo = err.response?.data?.redirect_browser_to;
     const status = err.response?.status;
@@ -123,34 +161,32 @@ function LoginContent() {
           });
         });
       } else {
-        LOG('flowError: no challenge → pushing HOME');
-        router.push(APP_ROUTES.HOME);
+        LOG('flowError: no challenge → pushing DASHBOARD');
+        router.push(APP_ROUTES.DASHBOARD.USERS);
       }
-    } else if (redirectTo) {
+    }
+    if (redirectTo) {
       LOG('flowError: Kratos redirect →', redirectTo);
       window.location.href = redirectTo;
-    } else if (status === 422 && errorId === 'browser_location_change_required') {
+    } else if (status === 422 && errorId === 'browser_location_change_required' && redirectTo) {
       LOG('flowError: 422 browser_location_change_required →', redirectTo);
       window.location.href = redirectTo;
     } else {
       LOG('flowError: unhandled error', err.response?.data);
     }
-  // acceptHydra intentionally omitted from deps — mutateAsync is stable, and including
-  // the mutation object would re-trigger this effect on every state change → infinite loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowError, router, loginChallenge]);
 
   if (!flow) return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-950">
-      <div className="text-primary font-black uppercase italic animate-pulse tracking-[0.5em]">
+    <div className="flex items-center justify-center min-h-screen bg-[#f7f9fb]">
+      <div className="text-primary font-black uppercase italic animate-pulse tracking-[0.5em] text-xs">
         Initializing Secure Terminal...
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-blue-900/20">
-      <LoginCard title="System Login" subtitle="">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[#f7f9fb]">
+      <LoginCard title="System Access" subtitle="Please authenticate to manage cluster nodes">
         <KratosForm 
           flow={flow} 
           onSubmit={handleLogin} 

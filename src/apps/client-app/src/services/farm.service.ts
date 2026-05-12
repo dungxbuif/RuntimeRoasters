@@ -16,6 +16,15 @@ class FarmService {
     const res = await api.get("/v1/farms");
     return res.data.farms || [];
   }
+
+  async updateFarm(id: string, data: Partial<Farm>): Promise<Farm> {
+    const res = await api.put(`/v1/farms/${id}`, data);
+    return res.data.farm;
+  }
+
+  async deleteFarm(id: string): Promise<void> {
+    await api.delete(`/v1/farms/${id}`);
+  }
 }
 
 export const farmService = new FarmService();

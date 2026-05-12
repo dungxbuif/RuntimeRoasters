@@ -33,7 +33,7 @@
 - **Then:** KrakenD passes the JWT through unchanged, the service validates offline, Casbin approves, and the response is `200 OK` with data.
 
 ### Scenario 5: Revoked Token Blocked at Service
-- **Given:** A user has logged out (token JTI is in Redis Blacklist).
+- **Given:** A user has logged out (token JTI is in Valkey Blacklist).
 - **When:** They replay the old (still-signature-valid) JWT.
 - **Then:** The service's auth middleware detects the blacklisted JTI and returns `401 Unauthorized`.
 

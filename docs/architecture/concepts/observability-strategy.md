@@ -66,7 +66,7 @@ SigNoz UI (port 3301) được expose trực tiếp ra host để admin truy c�
 
 ## 3. Mục tiêu Thiết kế (The Four Pillars)
 
-1. **Auto-Instrumentation:** HTTP (Gin), gRPC, SQL (Postgres), Redis — tự động tạo spans mà không cần code thủ công trong business logic.
+1. **Auto-Instrumentation:** HTTP (Gin), gRPC, SQL (Postgres), Valkey — tự động tạo spans mà không cần code thủ công trong business logic.
 2. **Context Propagation:** `Trace-ID` lan truyền liên tục qua HTTP Headers, gRPC Metadata, **và Kafka Headers** — không bị đứt gãy tại bất kỳ biên giới nào.
 3. **Log Correlation:** `logger.FromContext(ctx)` tự động đính `trace_id` + `span_id` từ OpenTelemetry vào mọi dòng log.
 4. **Structured & Automatic Logging:** Mọi request (HTTP/gRPC) và lỗi hệ thống đều được tự động ghi log dưới dạng JSON với schema thống nhất.
@@ -103,8 +103,8 @@ go get go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@latest
 # Auto-instrumentation: SQL/Postgres
 go get github.com/XSAM/otelsql@latest
 
-# Auto-instrumentation: Redis
-go get github.com/redis/go-redis/extra/redisotel/v9@latest
+# Auto-instrumentation: Valkey
+go get github.com/valkey/go-valkey/extra/valkeyotel/v9@latest
 ```
 
 ---
@@ -431,15 +431,15 @@ func NewPostgres(cfg PostgresConfig) (*DB, error) {
 
 ---
 
-### 4.6 Cập nhật `pkg/redis/client.go`
+### 4.6 Cập nhật `pkg/valkey/client.go`
 
 ```go
-import "github.com/redis/go-redis/extra/redisotel/v9"
+import "github.com/valkey/go-valkey/extra/valkeyotel/v9"
 
-func NewClient(cfg Config) *redis.Client {
+func NewClient(cfg Config) *valkey.Client {
     // ...
-    redisotel.InstrumentTracing(client)
-    redisotel.InstrumentMetrics(client)
+    valkeyotel.InstrumentTracing(client)
+    valkeyotel.InstrumentMetrics(client)
     return client
 }
 ```
@@ -567,7 +567,7 @@ demo-service (Go + Gin)
   │    → log JSON tự động có: "trace_id": "...", "span_id": "..."
   │
   ├─ db.QueryContext(ctx, ...) → otelsql span "db.query"
-  ├─ rdb.Set(ctx, ...) → redisotel span "redis.set"
+  ├─ rdb.Set(ctx, ...) → valkeyotel span "valkey.set"
   └─ produce Kafka → telemetry.InjectKafkaHeaders(ctx)
 
   → Toàn bộ waterfall trace visible trong SigNoz UI tại localhost:3301
@@ -582,7 +582,7 @@ demo-service (Go + Gin)
 | 1 | SigNoz + ClickHouse vào docker-compose (expose 3301) | RR-5 |
 | 2 | `go get` các thư viện OTel | RR-6 |
 | 3 | Implement `pkg/telemetry/provider.go` + `kafka.go` | RR-6 |
-| 4 | Cập nhật `pkg/base/app.go` — wire OTel + otelgin + otelgrpc | RR-6 |
-| 5 | Cập nhật `pkg/logger`, `pkg/database`, `pkg/redis` | RR-6 |
+| 4 | Cập nhật `pkg/base/app.go` — tích hợp OTel + otelgin + otelgrpc | RR-6 |
+| 5 | Cập nhật `pkg/logger`, `pkg/database`, `pkg/valkey` | RR-6 |
 | 6 | Setup Frontend OTel (`initTelemetry`) | RR-7 |
 | 7 | Dashboard Health Monitoring (không proxy SigNoz) | RR-7 |

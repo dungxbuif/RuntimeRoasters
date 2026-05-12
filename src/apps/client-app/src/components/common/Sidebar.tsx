@@ -3,70 +3,86 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { APP_ROUTES } from "@/constants/routes";
+import { RoleGuard } from "@/lib/auth";
+
 export default function Sidebar() {
   const pathname = usePathname();
 
-  const mainLinks = [
-    { href: "/", label: "System Overview", icon: "account_tree" },
-    { href: "/app/topology", label: "Microservices", icon: "schema" },
-    { href: "/app/batches", label: "Data Flow", icon: "dataset" },
-    { href: "/explorer", label: "Infrastructure", icon: "dns" },
-    { href: "/app/resiliency", label: "Observability", icon: "monitoring" },
+  const managementLinks = [
+    { href: APP_ROUTES.DASHBOARD.USERS, label: "Manage Users", icon: "group_add" },
+    { href: APP_ROUTES.DASHBOARD.FARMS, label: "Manage Farms", icon: "admin_panel_settings" },
+    { href: APP_ROUTES.DASHBOARD.PROFILE, label: "Account Settings", icon: "manage_accounts" },
   ];
 
-  const supplyChainLinks = [
-    { href: "/app/farms", label: "Farm Origin", icon: "agriculture" },
-    { href: "/app/logistics", label: "Real-time Transit", icon: "local_shipping" },
-    { href: "/app/warehouse", label: "Warehouse Stock", icon: "warehouse" },
-    { href: "/app/retail", label: "Retail Saga", icon: "store" },
+  const operationalLinks = [
+    { href: APP_ROUTES.DASHBOARD.FARM_TELEMETRY, label: "Farm Telemetry", icon: "agriculture" },
+    { href: APP_ROUTES.DASHBOARD.LOGISTICS, label: "Transit Monitor", icon: "local_shipping" },
+    { href: APP_ROUTES.DASHBOARD.WAREHOUSE, label: "Stock Analytics", icon: "warehouse" },
+    { href: APP_ROUTES.DASHBOARD.RETAIL, label: "Market Insights", icon: "store" },
   ];
 
-  const adminLinks = [
-    { href: "/admin/farms", label: "Manage Farms", icon: "admin_panel_settings" },
-    { href: "/admin/users", label: "Manage Users", icon: "group_add" },
+  const diagnosticLinks = [
+    { href: APP_ROUTES.DASHBOARD.TOPOLOGY, label: "Cluster Mesh", icon: "schema" },
+    { href: APP_ROUTES.DASHBOARD.BATCHES, label: "Stream Flow", icon: "dataset" },
+    { href: APP_ROUTES.DASHBOARD.EXPLORER, label: "Nodes & Pods", icon: "dns" },
+    { href: APP_ROUTES.DASHBOARD.RESILIENCY, label: "Fault Logs", icon: "monitoring" },
   ];
 
   return (
-    <aside className="flex flex-col h-full p-4 space-y-2 fixed left-0 top-16 z-40 bg-[#f2f4f6] w-64 border-r border-outline-variant/10">
-      <div className="flex items-center gap-3 px-4 py-6 mb-2">
-        <div className="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-on-primary-container shadow-lg">
+    <aside className="flex flex-col h-full p-4 space-y-2 fixed left-0 top-0 z-40 bg-[#f2f4f6] w-64 border-r border-outline-variant/10 shadow-2xl shadow-black/20">
+      <div className="flex items-center gap-3 px-4 py-8 mb-4">
+        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
           <span className="material-symbols-outlined">coffee</span>
         </div>
         <div>
-          <h2 className="text-sm font-bold font-headline text-on-surface uppercase tracking-tighter italic">Runtime Roasters</h2>
-          <p className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest opacity-60">Global Origin v4.1</p>
+          <h2 className="text-sm font-black font-headline text-on-surface uppercase tracking-tighter italic text-primary">Runtime Roasters</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] opacity-80 mt-1">Management Portal</p>
         </div>
       </div>
       
       <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
-        {mainLinks.map((link) => (
-          <SidebarLink key={link.href} {...link} active={pathname === link.href} />
-        ))}
+        {/* Priority Management Section - PROTECTED */}
+        <RoleGuard roles={['ADMIN', 'FARM_ADMIN', 'FARM_MANAGER']}>
+          <div className="px-1 mb-8">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Identity & Access</p>
+            <div className="space-y-1">
+              {managementLinks.map((link) => (
+                <SidebarLink key={link.href} {...link} active={pathname === link.href} />
+              ))}
+            </div>
+          </div>
+        </RoleGuard>
 
-        {/* Admin Section - Only for FARM_ADMIN role */}
-        <div className="px-4 py-6 border-t border-outline-variant/10 mt-6 bg-slate-200/50 rounded-2xl mx-1">
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 italic opacity-70">Administrative Control</p>
+        {/* Operational Section - PROTECTED */}
+        <div className="px-1 mb-8 pt-4 border-t border-outline-variant/10">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Supply Chain Ops</p>
           <div className="space-y-1">
-            {adminLinks.map((link) => (
+            {operationalLinks.map((link) => (
               <SidebarLink key={link.href} {...link} active={pathname === link.href} small />
             ))}
           </div>
         </div>
-        
-        <div className="px-4 py-6 border-t border-outline-variant/10 mt-6">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 italic opacity-70">Supply Chain Ops</p>
+
+        {/* System & Diagnostics Section - PROTECTED */}
+        <div className="px-1 pt-4 border-t border-outline-variant/10">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">System Intelligence</p>
           <div className="space-y-1">
-            {supplyChainLinks.map((link) => (
+            {diagnosticLinks.map((link) => (
               <SidebarLink key={link.href} {...link} active={pathname === link.href} small />
             ))}
           </div>
         </div>
 
-        <div className="pt-6 px-2">
-          <button className="w-full bg-primary text-on-primary py-4 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[0.98] transition-all uppercase text-[10px] tracking-widest italic">
-            <span className="material-symbols-outlined !text-sm font-black">add</span>
-            New Component
-          </button>
+        {/* Home/Showcase Link */}
+        <div className="mt-10 px-4">
+          <Link 
+            href={APP_ROUTES.HOME}
+            className="flex items-center gap-3 text-primary hover:text-primary-fixed text-[10px] font-black uppercase tracking-[0.2em] italic transition-colors"
+          >
+            <span className="material-symbols-outlined !text-sm">arrow_back</span>
+            Back to Showcase
+          </Link>
         </div>
       </nav>
 

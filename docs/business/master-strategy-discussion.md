@@ -12,7 +12,7 @@ Sau khi hoàn tất **Sprint 3 (Farm Management)**, chúng ta đã có "Gốc" c
 
 ### Lộ trình 4 giai đoạn tới:
 1.  **Giao dịch Phân tán (Sprint 4)**: Đảm bảo Đặt hàng & Giữ hàng nhất quán (Saga).
-2.  **Vận tải Thời gian thực (Sprint 5)**: Điều phối xe và theo dõi GPS (Redis Geo).
+2.  **Vận tải Thời gian thực (Sprint 5)**: Điều phối xe và theo dõi GPS (Valkey Geo).
 3.  **Minh bạch Dữ liệu (Sprint 6)**: Truy xuất nguồn gốc và Giám sát (Elasticsearch/Cassandra).
 4.  **Trải nghiệm & Khả năng Phục hồi (Sprint 7)**: Dashboard điều khiển trung tâm và Zero Trust (Chaos/mTLS).
 
@@ -35,7 +35,7 @@ Sau khi hoàn tất **Sprint 3 (Farm Management)**, chúng ta đã có "Gốc" c
    - Mục tiêu: Nền tảng hạ tầng và bảo mật đạt chuẩn "Production-ready".
 
 2. **Sprint 5 (Epic: Distributed Order Orchestration)**
-   - Nội dung: Retail Service, Transactional Outbox Pattern.
+   - Nội dung: Retail Service, Transactional Design (Selective Outbox).
    - Mục tiêu: Ghi đơn hàng và phát tán sự kiện một cách nguyên tử.
 
 3. **Sprint 6 (Epic: Inventory Consistency & Saga Lite)**
@@ -47,7 +47,7 @@ Sau khi hoàn tất **Sprint 3 (Farm Management)**, chúng ta đã có "Gốc" c
    - Mục tiêu: Tự động điều phối vận chuyển khi kho đã giữ hàng.
 
 5. **Sprint 8 (Epic: Geographic Intelligence)**
-   - Nội dung: Tích hợp Redis Geo, GPS Simulator, Real-time Tracking UI.
+   - Nội dung: Tích hợp Valkey Geo, GPS Simulator, Real-time Tracking UI.
    - Mục tiêu: Theo dõi vị trí tài xế trên bản đồ theo thời gian thực.
 
 6. **Sprint 9 (Epic: System-wide Traceability & Search)**
@@ -91,6 +91,6 @@ Sau khi hoàn tất **Sprint 3 (Farm Management)**, chúng ta đã có "Gốc" c
 
 **3. Token Revocation: Luồng Logout An toàn**
 - **Kỹ thuật (TechLead)**: Triển khai Distributed Blacklist.
-    - Cơ chế: Lưu `jti` bị thu hồi vào Redis với TTL.
-    - Logic: Middleware check Redis `EXISTS`. Chọn phương án **Fail-closed** (Chặn request nếu Redis sập) để tối đa bảo mật.
+    - Cơ chế: Lưu `jti` bị thu hồi vào Valkey với TTL.
+    - Logic: Middleware check Valkey `EXISTS`. Chọn phương án **Fail-closed** (Chặn request nếu Valkey sập) để tối đa bảo mật.
 - **Business (BA)**: Cung cấp tính năng Logout thực sự cho người dùng, bảo vệ tài khoản trong trường hợp bị xâm nhập.

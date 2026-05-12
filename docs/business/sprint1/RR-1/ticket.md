@@ -10,7 +10,7 @@ Xây dựng file cấu hình Docker Compose bao gồm tất cả các thành ph�
 ## 🔍 Acceptance Criteria (BDD Specification)
 
 ### Scenario 1: Khởi tạo hạ tầng cơ bản
-- **Given:** Tôi đã cấu hình file `docker-compose.yaml` với Postgres, Redpanda, Elasticsearch, Redis, Cassandra, và Jaeger.
+- **Given:** Tôi đã cấu hình file `docker-compose.yaml` với Postgres, Redpanda, Elasticsearch, Valkey, Cassandra, và Jaeger.
 - **When:** Tôi thực hiện lệnh `docker-compose up -d` tại thư mục `deployments/`.
 - **Then:** Toàn bộ 7 containers phải ở trạng thái "Running" và không có lỗi khởi động.
 

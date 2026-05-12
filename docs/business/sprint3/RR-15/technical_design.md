@@ -4,7 +4,7 @@ Mục tiêu: Thiết lập hạ tầng code và nối dây (wiring) thủ công 
 
 ## 📂 1. Cấu trúc thư mục (Vertical Slice Preparation)
 - `src/apps/farm-service/cmd/main.go`: Khởi tạo và chạy `application.Run()`.
-- `src/apps/farm-service/internal/app/init.go`: **Manual DI Implementation**. Khởi tạo DB, Redis, Casbin Engine, JWKS Provider và các Handlers.
+- `src/apps/farm-service/internal/app/init.go`: **Manual DI Implementation**. Khởi tạo DB, Valkey, Casbin Engine, JWKS Provider và các Handlers.
 - `api/runtime/farm/v1/farm.proto`: Định nghĩa contract API CRUD.
 
 ## ⚙️ 2. Manual DI & Interceptor Strategy

@@ -10,7 +10,7 @@ Sprint này tập trung vào 3 luồng dữ liệu chính:
 
 ### 1. Bootstrapping & Foundation
 - Dựng khung sườn service mới dựa trên `demo-service`.
-- Nối dây (wiring) cơ sở hạ tầng (DB, Redis, Gateway).
+- Nối dây (wiring) cơ sở hạ tầng (DB, Valkey, Gateway).
 - **Patterns:** Composition Root, Dependency Injection (Wire).
 
 ### 2. Flow 1: Quản lý Danh sách & Tạo mới Nông trại

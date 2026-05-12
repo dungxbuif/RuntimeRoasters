@@ -6,7 +6,7 @@ Mục tiêu: Loại bỏ sự trùng lặp (Boilerplate) tại `apps/*/internal/
 Hiện tại, mỗi khi tạo một service mới (như Farm Service), chúng ta phải copy-paste khoảng 80% code từ `demo-service/internal/app/app.go`. Các phần lặp lại bao gồm:
 - Khởi tạo Casbin background sync.
 - Đăng ký Auth Middleware cho HTTP.
-- Thiết lập Readiness check (ping DB/Redis).
+- Thiết lập Readiness check (ping DB/Valkey).
 - Cấu hình Swagger/Gateway.
 - Logic Graceful Shutdown.
 
@@ -22,7 +22,7 @@ Chuyển các thành phần mà service nào cũng dùng vào một struct tập
 ```go
 type Dependencies struct {
     DB           *database.DB
-    RDB          *redisclient.Client
+    RDB          *valkeyclient.Client
     CasbinEngine casbin.Engine
     KeyProvider  provider.KeyProvider
 }
@@ -56,7 +56,7 @@ func (a *App) Launch(deps Dependencies, registrar ServiceRegistrar) {
     // 3. Tự động nhúng Auth Middleware vào mọi request qua Gateway (nếu cần)
     // Hoặc cung cấp một group đã được bọc Auth sẵn cho Service
     
-    // 4. Tự động đăng ký Readiness check cho DB & Redis
+    // 4. Tự động đăng ký Readiness check cho DB & Valkey
     a.RegisterReadiness(func() error {
         if deps.DB != nil { /* ping */ }
         if deps.RDB != nil { /* ping */ }
@@ -77,8 +77,8 @@ func (a *App) Run() {
 }
 ```
 
-### Code tại `cmd/main.go` (Sử dụng Wire):
-Hầu như không thay đổi, nhưng logic khởi tạo sẽ sạch hơn vì các tham số truyền vào đã được đóng gói trong `Dependencies`.
+### Code tại `cmd/main.go` (Sử dụng Manual DI):
+Hầu như không thay đổi, nhưng logic khởi tạo sẽ sạch hơn vì các tham số truyền vào đã được đóng gói trong `Dependencies`. Mọi dependency được khởi tạo và truyền vào thủ công tại Composition Root.
 
 ## 4. Lộ trình thực hiện (Sau Sprint 3)
 1. **Refactor `pkg/base`**: Thêm struct `Dependencies` và hàm `Launch`.

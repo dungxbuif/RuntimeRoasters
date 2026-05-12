@@ -19,7 +19,7 @@
 ### Scenario 3: Kết nối infrastructure
 - **Given:** Demo Service đang chạy với docker-compose up.
 - **When:** Tôi gọi `GET /health/ready`.
-- **Then:** Response JSON trả về status của PostgreSQL, Redis, và Kafka — tất cả `healthy`.
+- **Then:** Response JSON trả về status của PostgreSQL, Valkey, và Kafka — tất cả `healthy`.
 
 ### Scenario 4: Demo endpoint qua Gateway
 - **Given:** KrakenD và Demo Service đều đang chạy.
@@ -29,7 +29,7 @@
 ### Scenario 5: Trace visible trong SigNoz
 - **Given:** Demo Service đang chạy, SigNoz đang chạy.
 - **When:** Tôi gọi `GET /v1/demo/ping`.
-- **Then:** SigNoz UI hiển thị waterfall trace với các spans: HTTP, gRPC, DB query, Redis, Kafka produce — tất cả trong cùng 1 trace_id.
+- **Then:** SigNoz UI hiển thị waterfall trace với các spans: HTTP, gRPC, DB query, Valkey, Kafka produce — tất cả trong cùng 1 trace_id.
 
 ### Scenario 6: Kafka message có trace context
 - **Given:** Demo Service produce Kafka message khi gọi ping endpoint.

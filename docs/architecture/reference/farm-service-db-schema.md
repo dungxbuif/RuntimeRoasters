@@ -44,8 +44,8 @@ Tài liệu này định nghĩa cấu trúc dữ liệu tối thiểu nhưng đ�
 ---
 
 ### 2.3 Bảng `outbox_events` (Sự kiện Phân tán)
-- **Vai trò**: Đảm bảo tính nhất quán dữ liệu khi tích hợp với Kafka (Event-Driven).
-- **Mẫu thiết kế**: **Transactional Outbox**. Ghi sự kiện cùng lúc với dữ liệu nghiệp vụ.
+- **Vai trò**: Đảm bảo tính nhất quán dữ liệu khi tích hợp với Kafka (Event-Driven) cho các luồng quan trọng.
+- **Mẫu thiết kế**: **Transactional Outbox**. Áp dụng khi có nhu cầu đồng bộ trạng thái nguyên tử. Ghi sự kiện cùng lúc với dữ liệu nghiệp vụ.
 
 | Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |

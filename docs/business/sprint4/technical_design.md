@@ -1,50 +1,129 @@
-# Technical Design: Sprint 4 — Security Base (Refined)
+# Technical Design: Sprint 4 — The Resilient Farm
 
-Mục tiêu: Hoàn thiện nền tảng bảo mật vững chắc, đảm bảo xác thực và phân quyền xuyên suốt (End-to-End) và cơ chế thu hồi quyền hạn tức thì.
-
----
-
-## 1. [RR-13] End-to-End Auth Integration
-
-### 1.1. Chiến lược Scope đơn giản (Web/Mobile Unified)
-- **Design**: Sử dụng một bộ scope duy nhất cho cả Web App và Mobile App để giảm tải cấu hình Gateway.
-- **Khai báo**:
-    - `farm:app`: Quyền truy cập các tính năng Nông trại.
-    - `auth:app`: Quyền truy cập các tính năng định danh/admin.
-    - `retail:app`: Quyền truy cập đặt hàng.
-- **Gate 1 (KrakenD)**: Chỉ verify sự hiện diện của các scope này trong `scope` claim của JWT.
-
-### 1.2. Bảo mật Liên dịch vụ (gRPC Metadata Propagation)
-- **Kỹ thuật**: 
-    - Khi Service A gọi Service B: Tự động trích xuất JWT từ incoming context và gắn vào outbound gRPC Metadata.
-    - Nếu không có User JWT (System call): Sử dụng `Internal-Secret` đính kèm header `X-Internal-Token`.
-- **Implementation**: Viết Interceptor dùng chung trong `pkg/base/auth` để tự động hóa luồng này.
-
-### 1.3. Optional UserID Tracing
-- **Design**: Trace-ID là bắt buộc, nhưng `user_id` là **Optional**.
-- **Logic**:
-    - Nếu JWT hợp lệ -> Trích xuất `sub` và gắn vào OTel span attribute `user.id`.
-    - Nếu là System call -> Gắn attribute `user.id = "system"`.
-    - Đảm bảo Trace luôn liền mạch trong SigNoz kể cả khi không có User context.
+**Tác giả:** Tech Lead
+**Trạng thái:** Approved
+**Cốt lõi:** Áp dụng **Transactional Outbox Pattern** để đảm bảo tính nguyên tử (Atomicity) giữa nghiệp vụ và sự kiện phát tán.
 
 ---
 
-## 2. [RR-14] Token Revocation (Logout)
+## 1. Kiến trúc Tổng thể (Architecture Overview)
 
-### 2.1. Distributed Blacklist với Redis
-- **Vị trí**: Mọi request đi vào Microservice (HTTP/gRPC) đều phải check blacklist.
-- **Key**: `blacklist:jti:{jti_id}`.
-- **Fail-closed Policy**: Nếu cụm Redis gặp sự cố (Timeout/Conn Refused) -> Middleware PHẢI **Reject** request với lỗi `500 Internal Server Error`. Không cho phép "vượt rào" khi không kiểm tra được trạng thái thu hồi.
+Trong Microservices, việc cập nhật Database và gửi Message (Kafka) là hai hành động không thể bọc trong một Distributed Transaction (2PC). 
+**Giải pháp:** Sử dụng bảng `outbox_events` làm hàng đợi tạm thời ngay trong chính Database của `farm-service`.
 
-### 2.2. Luồng Logout & Password Change
-- **Explicit Logout**: Người dùng nhấn nút -> `auth-service` gọi Hydra Revoke + Ghi Redis Blacklist.
-- **Password Change (BA Requirement)**: Khi người dùng đổi mật khẩu thành công, `auth-service` sẽ thực hiện:
-    1. Thu hồi phiên hiện tại.
-    2. (Phase 2) Publish sự kiện `user.security.updated` để các thiết bị khác tự động log out.
-
-### 2.3. Redis Optimization
-- Dùng `EXISTS` command để kiểm tra nhanh.
-- TTL của key trong Redis = `token_exp - current_time`.
+### Luồng dữ liệu (Data Flow):
+1. **User** gọi `POST /v1/harvests`.
+2. **UseCase** mở một Transaction:
+    - Lưu bản ghi `harvests`.
+    - Lưu bản ghi `outbox_events` (chứa thông tin mẻ thu hoạch).
+3. **Transaction Commit** (Thành công 100% cả hai hoặc thất bại 100%).
+4. **Relay Worker** (Go Routine) chạy ngầm:
+    - Quét bảng `outbox_events` nơi `status = 'PENDING'`.
+    - Publish message lên Kafka.
+    - Cập nhật `processed_at = NOW()` và `status = 'COMPLETED'` sau khi Kafka xác nhận (Ack).
 
 ---
-*TechLead Signed-off: 2026-05-10*
+
+## 2. Thiết kế Cơ sở dữ liệu (Database Schema)
+
+### 2.1. Bảng `harvests` (Mở rộng từ CRUD cơ bản)
+```sql
+CREATE TABLE harvests (
+    id UUID PRIMARY KEY,
+    farm_id UUID NOT NULL,
+    coffee_type VARCHAR(50) NOT NULL, -- Arabica, Robusta...
+    quantity DECIMAL(12,2) NOT NULL,
+    harvest_date TIMESTAMPTZ NOT NULL,
+    status VARCHAR(20) DEFAULT 'NEW', -- NEW, PROCESSING, COMPLETED
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.2. Bảng `outbox_events` (Mẫu chuẩn Blueprint)
+```sql
+CREATE TABLE outbox_events (
+    id UUID PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL, -- e.g., 'farm.harvest.created.v1'
+    payload JSONB NOT NULL,            -- Data theo chuẩn CloudEvents
+    metadata JSONB,                    -- TraceID, UserID, v.v.
+    retry_count INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PROCESSING, COMPLETED, FAILED
+    processed_at TIMESTAMPTZ,          -- NULL nếu chưa gửi
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_outbox_unprocessed ON outbox_events(created_at) WHERE status = 'PENDING';
+```
+
+---
+
+## 3. Cơ chế triển khai chi tiết (Deep-Dive Implementation)
+
+### 3.1. Low-Level Relay Worker Logic (SELECT FOR UPDATE SKIP LOCKED)
+Để hỗ trợ nhiều instance của Relay Worker chạy song song mà không gửi trùng tin, chúng ta sử dụng cơ chế khóa mức dòng của Postgres:
+
+```sql
+UPDATE outbox_events 
+SET status = 'PROCESSING'
+WHERE id IN (
+    SELECT id FROM outbox_events 
+    WHERE status = 'PENDING' 
+    AND processed_at IS NULL
+    ORDER BY created_at ASC 
+    LIMIT 20 
+    FOR UPDATE SKIP LOCKED
+)
+RETURNING *;
+```
+*Giải thích:* `SKIP LOCKED` giúp các instance khác không bị block, chúng sẽ bỏ qua các row đang bị instance này xử lý và lấy các row tiếp theo.
+
+### 3.2. Distributed Tracing Propagation
+Để OTel hiển thị đúng biểu đồ từ API -> DB -> Kafka -> Consumer:
+1. **At API Layer:** Trích xuất `SpanContext` từ context.
+2. **At Outbox Save:** Serialize `SpanContext` vào cột `metadata`.
+3. **At Relay Worker:** Deserialize `metadata`, tạo một `Span` mới liên kết với `SpanContext` cũ (FollowsFrom), và inject `traceparent` vào Kafka Headers.
+
+---
+
+## 4. Failure Mode & Effects Analysis (FMEA)
+
+| Tình huống | Kết quả | Cơ chế xử lý |
+| :--- | :--- | :--- |
+| **Kafka sập** | Message vẫn nằm trong DB | Relay Worker retry theo Exponential Backoff. |
+| **Relay Worker sập** | Dữ liệu không bị mất | Khi Worker restart, nó tiếp tục quét các mẻ chưa xử lý. |
+| **DB sập giữa chừng** | Không có dữ liệu nào được lưu | DB Transaction đảm bảo tính nguyên tử (Rollback toàn bộ). |
+| **Duplicate Publish** | Kafka nhận 2 tin trùng | **Consumer side Idempotency** (Sử dụng `event.id` làm khóa trong bảng Inbox). |
+
+---
+
+## 5. Repository Pattern Implementation (The "Unit of Work")
+
+Chúng ta sẽ implement một `TxManager` để bọc UseCase, đảm bảo Manual DI minh bạch:
+
+```go
+func (uc *HarvestUseCase) Create(ctx context.Context, input CreateInput) error {
+    return uc.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+        // 1. Business Logic & Save Harvest
+        harvest := domain.NewHarvest(input)
+        if err := uc.harvestRepo.Save(txCtx, harvest); err != nil {
+            return err
+        }
+
+        // 2. Create Outbox Event in same transaction
+        event := domain.NewOutboxEvent("harvest.created", harvest)
+        return uc.outboxRepo.Save(txCtx, event)
+    })
+}
+```
+
+---
+
+## 6. Gap Analysis & Steps
+
+1. **Step 1:** Migration — Tạo bảng `harvests` và `outbox_events`.
+2. **Step 2:** `pkg/database` — Viết `TxManager` hỗ trợ Manual DI.
+3. **Step 3:** Repository — Viết logic `CreateHarvestWithOutbox(ctx, harvest, event)`.
+4. **Step 4:** Relay Worker — Viết Background service chạy trong `main.go`.
+
+---
+**Tech Lead Signature**

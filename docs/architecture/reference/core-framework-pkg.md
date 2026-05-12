@@ -27,7 +27,7 @@ func LoadConfig(path string, name string, out interface{}) error { ... }
 type Config struct {
     pkg_config.BaseConfig                        // embed — inherit AppName, AppEnv, ...
     DatabaseURL string `mapstructure:"DATABASE_URL"`
-    RedisAddr   string `mapstructure:"REDIS_ADDR"`
+    ValkeyAddr   string `mapstructure:"REDIS_ADDR"`
     GRPCPort    int    `mapstructure:"GRPC_PORT"`
 }
 
@@ -171,29 +171,29 @@ func (db *DB) WithTx(ctx context.Context, fn func(tx *gorm.DB) error) error {
 
 ---
 
-## `pkg/redis` — Redis Client (Sentinel-Aware)
+## `pkg/valkey` — Valkey Client (Sentinel-Aware)
 
 ```go
-// pkg/redis/client.go
+// pkg/valkey/client.go
 
-type RedisConfig struct {
+type ValkeyConfig struct {
     Addr          string   // single node (dev): "localhost:6379"
     SentinelAddrs []string // sentinel nodes (prod): ["s1:26379","s2:26379","s3:26379"]
     MasterName    string   // sentinel master name: "mymaster"
     Password      string
 }
 
-func NewClient(cfg RedisConfig) *redis.Client {
+func NewClient(cfg ValkeyConfig) *valkey.Client {
     if len(cfg.SentinelAddrs) > 0 {
         // Production: Sentinel mode (HA — tự động failover)
-        return redis.NewFailoverClient(&redis.FailoverOptions{
+        return valkey.NewFailoverClient(&valkey.FailoverOptions{
             MasterName:    cfg.MasterName,
             SentinelAddrs: cfg.SentinelAddrs,
             Password:      cfg.Password,
         })
     }
     // Development: single node
-    return redis.NewClient(&redis.Options{
+    return valkey.NewClient(&valkey.Options{
         Addr:     cfg.Addr,
         Password: cfg.Password,
     })
@@ -290,3 +290,4 @@ func (a *App) Run(httpPort, grpcPort int) {
     a.logger.Info("shutdown complete")
 }
 ```
+`

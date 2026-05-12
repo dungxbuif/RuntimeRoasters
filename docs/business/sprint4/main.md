@@ -1,24 +1,20 @@
-# Sprint 4: Security Base
+# Sprint 4: The Resilient Farm
 
-**Epic Goal:** Hoàn thiện nền tảng bảo mật vững chắc (AuthN/AuthZ).
-
----
-
-## 📋 Roadmap & Flows
-
-Sprint này tập trung vào việc hoàn thiện các phần bảo mật còn xót lại từ Sprint 2:
-
-### 1. End-to-End Security Integration
-- Rà soát và kiểm thử toàn bộ luồng Auth từ Gateway đến Microservices.
-
-### 2. Token Revocation
-- Triển khai cơ chế Logout/Revoke JWT sử dụng Redis Blacklist.
+**Epic Goal:** Đảm bảo mọi mẻ thu hoạch được ghi nhận 100% không mất dữ liệu ngay cả khi hệ thống phân tán gặp sự cố.
 
 ---
 
-## 🎫 Tickets
+## 📋 Tickets
 
-| Ticket | Summary | Status |
-| :--- | :--- | :--- |
-| [RR-13](../sprint2/RR-13/ticket.md) | Security: End-to-End Auth Integration | 🕒 To Do |
-| [RR-14](../sprint2/RR-14/ticket.md) | Security: Token Revocation (Logout) | 🕒 To Do |
+| Ticket | Summary | Status | Role |
+| :--- | :--- | :--- | :--- |
+| [RR-4.0](./RR-4.0/ticket.md) | [Tech] Refactor Farm Service (Sprint 3 Fixes) | 🕒 To Do | Tech Lead |
+| [RR-4.1](./RR-4.1/ticket.md) | [BA] Khai báo mẻ thu hoạch thông minh | 🕒 To Do | Farmer |
+| [RR-4.2](./RR-4.2/ticket.md) | [Tech] Transactional Outbox Blueprint | 🕒 To Do | Tech Lead |
+
+---
+
+## 🛠️ Technical Focus
+- **Transactional Outbox:** Đảm bảo Atomicity giữa DB update và Event publishing.
+- **Relay Worker:** Cơ chế polling/streaming dữ liệu từ bảng Outbox sang Kafka.
+- **CloudEvents Standard:** Áp dụng chuẩn CloudEvents 1.0 cho mọi message payload.

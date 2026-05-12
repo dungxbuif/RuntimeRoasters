@@ -2,13 +2,10 @@ package casbin
 
 import (
 	"context"
-
-	"github.com/casbin/casbin/v3"
 )
 
 type Engine interface {
 	Enforce(rvals ...interface{}) (bool, error)
-	GetEnforcer() *casbin.Enforcer
 	Sync(ctx context.Context) error
 }
 

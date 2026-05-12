@@ -80,7 +80,7 @@ oauth2_provider:
 # ===========================================================================
 serve:
   public:
-    base_url: http://kratos:4433/
+    base_url: http://localhost:4433/
     cors:
       enabled: true
       allowed_origins:
@@ -99,4 +99,4 @@ serve:
         - Content-Type
         - Set-Cookie
   admin:
-    base_url: http://kratos:4434/
+    base_url: http://localhost:4434/

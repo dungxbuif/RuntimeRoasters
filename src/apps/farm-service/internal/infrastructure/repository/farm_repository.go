@@ -5,14 +5,17 @@ import (
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
+	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	"github.com/casbin/casbin/v3"
 	"gorm.io/gorm"
 )
 
 type FarmModel struct {
-	ID         string `gorm:"primaryKey"`
+	ID         uint64 `gorm:"primaryKey;autoIncrement"`
 	Name       string
 	Location   string
 	Area       float64
@@ -52,48 +55,47 @@ func FromDomain(f *domain.Farm) *FarmModel {
 	}
 }
 
-type FarmRepository interface {
-	Create(ctx context.Context, farm *domain.Farm) error
-	GetByID(ctx context.Context, id string) (*domain.Farm, error)
-	List(ctx context.Context) ([]*domain.Farm, error)
-	Update(ctx context.Context, farm *domain.Farm) error
-	Delete(ctx context.Context, id string) error
-}
-
 type farmRepository struct {
-	db *database.DB
+	db     *database.DB
+	scoper *rr_casbin.GormScoper
 }
 
-func NewFarmRepository(db *database.DB) FarmRepository {
-	return &farmRepository{db: db}
+func NewFarmRepository(db *database.DB, enforcer *casbin.SyncedEnforcer) usecase.FarmRepository {
+	return &farmRepository{
+		db:     db,
+		scoper: rr_casbin.NewGormScoper(enforcer),
+	}
 }
 
 func (r *farmRepository) Create(ctx context.Context, farm *domain.Farm) error {
-	id, ok := identity.FromContext(ctx)
+	user, ok := identity.FromContext(ctx)
 	if !ok {
 		return errs.ErrUnauthorized
 	}
 
-	// If caller is admin/farm_admin and OwnerID is explicitly provided, we honor it.
-	// Otherwise, we force ownership to the caller.
-	if (id.Role == "admin" || id.Role == "farm_admin") && farm.OwnerID != "" {
-		// Use provided OwnerID
+	// Logic for forced ownership or admin override
+	if (user.Role == "ADMIN" || user.Role == "FARM_ADMIN") && farm.OwnerID != "" {
+		// Admin can specify owner
 	} else {
-		farm.OwnerID = id.Subject
+		farm.OwnerID = user.Subject
 	}
 
 	model := FromDomain(farm)
 	return r.db.WithContext(ctx).Create(model).Error
 }
 
-func (r *farmRepository) GetByID(ctx context.Context, id string) (*domain.Farm, error) {
-	userId, ok := identity.FromContext(ctx)
+func (r *farmRepository) GetByID(ctx context.Context, id uint64) (*domain.Farm, error) {
+	user, ok := identity.FromContext(ctx)
 	if !ok {
 		return nil, errs.ErrUnauthorized
 	}
 
 	var model FarmModel
-	err := r.db.WithContext(ctx).Where("id = ? AND owner_id = ?", id, userId.Subject).First(&model).Error
+	err := r.db.WithContext(ctx).
+		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "read", "owner_id")).
+		Where("id = ?", id).
+		First(&model).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, errs.ErrNotFound
@@ -105,13 +107,16 @@ func (r *farmRepository) GetByID(ctx context.Context, id string) (*domain.Farm, 
 }
 
 func (r *farmRepository) List(ctx context.Context) ([]*domain.Farm, error) {
-	userId, ok := identity.FromContext(ctx)
+	user, ok := identity.FromContext(ctx)
 	if !ok {
 		return nil, errs.ErrUnauthorized
 	}
 
 	var models []FarmModel
-	err := r.db.WithContext(ctx).Where("owner_id = ?", userId.Subject).Find(&models).Error
+	err := r.db.WithContext(ctx).
+		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "read", "owner_id")).
+		Find(&models).Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -125,14 +130,15 @@ func (r *farmRepository) List(ctx context.Context) ([]*domain.Farm, error) {
 }
 
 func (r *farmRepository) Update(ctx context.Context, farm *domain.Farm) error {
-	userId, ok := identity.FromContext(ctx)
+	user, ok := identity.FromContext(ctx)
 	if !ok {
 		return errs.ErrUnauthorized
 	}
 
 	model := FromDomain(farm)
 	result := r.db.WithContext(ctx).
-		Where("id = ? AND owner_id = ?", model.ID, userId.Subject).
+		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "write", "owner_id")).
+		Where("id = ?", model.ID).
 		Updates(model)
 
 	if result.Error != nil {
@@ -146,14 +152,15 @@ func (r *farmRepository) Update(ctx context.Context, farm *domain.Farm) error {
 	return nil
 }
 
-func (r *farmRepository) Delete(ctx context.Context, id string) error {
-	userId, ok := identity.FromContext(ctx)
+func (r *farmRepository) Delete(ctx context.Context, id uint64) error {
+	user, ok := identity.FromContext(ctx)
 	if !ok {
 		return errs.ErrUnauthorized
 	}
 
 	result := r.db.WithContext(ctx).
-		Where("id = ? AND owner_id = ?", id, userId.Subject).
+		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "delete", "owner_id")).
+		Where("id = ?", id).
 		Delete(&FarmModel{})
 
 	if result.Error != nil {

@@ -5,18 +5,22 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
+	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/usecase"
 	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
 )
 
 type Handler struct {
 	authv1.UnimplementedAuthServiceServer
 	enforcer *casbin.Enforcer
+	usecase  usecase.UserUsecase
 }
 
-func NewHandler(enforcer *casbin.Enforcer) *Handler {
+func NewHandler(enforcer *casbin.Enforcer, u usecase.UserUsecase) *Handler {
 	return &Handler{
 		enforcer: enforcer,
+		usecase:  u,
 	}
 }
 
@@ -38,5 +42,21 @@ func (h *Handler) GetFullSnapshot(ctx context.Context, req *authv1.GetFullSnapsh
 
 	return &authv1.GetFullSnapshotResponse{
 		Policies: result,
+	}, nil
+}
+
+func (h *Handler) AcceptLogin(ctx context.Context, req *authv1.AcceptLoginRequest) (*authv1.AcceptLoginResponse, error) {
+	res, err := h.usecase.AcceptHydraLogin(ctx, domain.AcceptLoginRequest{
+		LoginChallenge: req.LoginChallenge,
+		Subject:        req.Subject,
+		Remember:       req.Remember,
+		RememberFor:    req.RememberFor,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &authv1.AcceptLoginResponse{
+		RedirectTo: res.RedirectTo,
 	}, nil
 }

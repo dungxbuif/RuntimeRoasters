@@ -33,18 +33,19 @@ export interface Farm {
 
 class AdminService {
   async createUser(data: CreateUserRequest): Promise<User> {
-    const res = await api.post("/v1/admin/users", data);
+    const res = await api.post("/v1/users", data);
     return res.data.user;
   }
 
   async listUsers(): Promise<User[]> {
-    const res = await api.get("/v1/admin/users");
+    const res = await api.get("/v1/users");
     return res.data.users;
   }
 
   async listManagers(): Promise<User[]> {
     const users = await this.listUsers();
-    return users.filter(u => u.role === 'farm_manager');
+    const managerRoles = ['FARM_MANAGER', 'FARM_ADMIN', 'ADMIN'];
+    return users.filter(u => managerRoles.includes(u.role.toUpperCase()));
   }
 
   async createFarm(data: CreateFarmRequest): Promise<Farm> {

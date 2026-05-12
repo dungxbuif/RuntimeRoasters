@@ -1,66 +1,70 @@
-# Technical Design: Sprint 6 — Inventory Consistency & Saga Lite (Reference Aligned)
+# Technical Design: Sprint 6 — Warehouse Service
 
-Mục tiêu: Hoàn thiện luồng Saga Choreography (Retail <-> Warehouse) sử dụng các pattern từ dự án UrbanX: **Soft Reservations**, **Exactly-once Consumer**, và **Transactional Inbox**.
+**Tác giả:** Tech Lead
+**Trạng thái:** Approved
+**Mục tiêu:** Quản lý tồn kho vật lý và cung cấp cơ chế giữ chỗ hàng (Reservation) an toàn, chuẩn bị cho luồng Saga điều phối đơn hàng.
 
 ---
 
-## 1. Cơ chế Tạm giữ hàng (Inventory Reservations)
-*Tham chiếu: UrbanX Inventory Service logic*
+## 1. Kiến trúc Dịch vụ (Service Architecture)
 
-Để chống bán lố (Over-selling) và đảm bảo tính nhất quán, Warehouse Service áp dụng mô hình 2 chỉ số:
+`warehouse-service` quản lý số lượng tồn kho thực tế của các `Batch ID` thành phẩm. Service này đóng vai trò là **Saga Participant**.
 
-### 1.1. Cấu trúc bảng `inventory`
-- `quantity_available`: Số lượng thực tế trong kho.
-- `quantity_reserved`: Số lượng đang bị tạm giữ cho các đơn hàng chưa thanh toán.
+### Luồng nghiệp vụ chính (Saga Steps):
+1. **Reserve Stock**: Giữ chỗ hàng khi có đơn hàng mới. Giảm `available`, tăng `reserved`.
+2. **Confirm Stock**: Trừ kho thật khi thanh toán thành công. Giảm `reserved`, giảm `total`.
+3. **Release Stock**: Giải phóng hàng giữ chỗ nếu đơn hàng bị hủy. Tăng `available`, giảm `reserved`.
 
-**Công thức khả dụng**: `AvailableForSale = quantity_available - quantity_reserved`.
+---
 
-### 1.2. Logic Reservation (Soft Commit)
-Khi nhận `OrderCreated`:
-1. Kiểm tra: `IF (quantity_available - quantity_reserved) >= req.quantity`.
-2. Tạm giữ: `UPDATE inventory SET quantity_reserved = quantity_reserved + req.quantity WHERE id = ...`.
-3. Ghi nhật ký: `INSERT INTO inventory_reservations (order_id, quantity, status='RESERVED')`.
+## 2. Concurrency Control (Distributed Locking)
 
-### 1.3. Chốt chặn an toàn (Defensive Check)
-Khi giải phóng hàng (Release/Rollback), áp dụng logic tương tự `Math.Max(0, ...)` để tránh số lượng bị âm:
-```go
-newReserved := inventory.QuantityReserved - reservation.Quantity
-if newReserved < 0 {
-    newReserved = 0 // "Phòng vệ dữ liệu" tránh lỗi làm lệch kho
-}
+Để tránh tình trạng "Bán quá số lượng" (Overselling) trong môi trường phân tán, chúng ta sử dụng **Valkey Distributed Lock** (Redlock).
+
+### Thuật toán Reserve:
+1. `Lock(batch_id)` trong Valkey với TTL (ví dụ: 5s).
+2. Kiểm tra `available_qty >= requested_qty`.
+3. Nếu OK: Thực hiện cập nhật DB và lưu vào bảng `reservations` status `PENDING`.
+4. `Unlock(batch_id)`.
+
+---
+
+## 3. Defensive Programming: Chốt chặn số âm
+
+Mọi câu lệnh Update kho phải có điều kiện bảo vệ ở tầng SQL để tránh lỗi logic ứng dụng:
+```sql
+UPDATE inventories 
+SET available_qty = available_qty - ?, 
+    reserved_qty = reserved_qty + ?
+WHERE batch_id = ? 
+AND available_qty >= ?; -- Chốt chặn cuối cùng
 ```
 
 ---
 
-## 2. Exactly-once Consumer (Inbox Pattern)
-*Tham chiếu: UrbanX Transactional Inbox*
+## 4. Thiết kế Cơ sở dữ liệu (Database Schema)
 
-Đảm bảo mỗi sự kiện đặt hàng chỉ được trừ kho đúng một lần duy nhất, kể cả khi Kafka gửi lặp tin nhắn.
+### 4.1. Bảng `inventories`
+| Cột | Kiểu dữ liệu | Mô tả |
+| :--- | :--- | :--- |
+| `batch_id` | VARCHAR(50) (PK) | |
+| `available_qty` | DECIMAL | Số lượng có sẵn để bán. |
+| `reserved_qty` | DECIMAL | Số lượng đang chờ thanh toán. |
+| `total_qty` | DECIMAL | Tổng thực tế (`available + reserved`). |
 
-### 2.1. Transactional Inbox
-Mọi thao tác thay đổi kho PHẢI nằm trong cùng 1 DB Transaction với việc ghi vào bảng `inbox_events`:
-1. `BEGIN TRANSACTION`
-2. `INSERT INTO inbox_events (id) VALUES (kafka_message_id)` -> Nếu trùng ID, DB sẽ báo lỗi Unique Constraint và rollback toàn bộ.
-3. Thực hiện `Update Inventory`.
-4. `COMMIT`
-
----
-
-## 3. Saga Choreography & Compensation
-*Tham chiếu: UrbanX Saga Flow*
-
-- **Happy Path**: `OrderCreated` -> `StockReserved` -> `PaymentSucceeded` (Mock) -> `OrderConfirmed`.
-- **Compensation Path**: `OrderCreated` -> `StockReserved` -> `PaymentFailed` (Mock) -> `OrderCancelledEvent` -> **Warehouse nhả kho (Release Reserved)**.
+### 4.2. Bảng `reservations`
+| Cột | Kiểu dữ liệu | Mô tả |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Thường là `order_id`. |
+| `batch_id` | VARCHAR(50) | |
+| `status` | VARCHAR(20) | PENDING, CONFIRMED, CANCELLED. |
 
 ---
 
-## 4. Anti-Corruption Layer (ACL) cho Mock Payment
-*Tham chiếu: UrbanX Payment Gateways*
+## 5. Failure Scenarios & Self-Healing
 
-Ngay từ giai đoạn Mock, chúng ta sẽ thiết kế lớp ACL để bảo vệ core logic:
-- Định nghĩa interface `IPaymentGateway` trong `payment-service`.
-- Triển khai `MockGateway` thực thi interface này.
-- Giúp việc chuyển sang **Stripe thật** ở Sprint 11 chỉ là việc thay thế lớp thực thi (Implementation), không sửa đổi UseCase.
+- **Orchestrator "quên" confirm/release**: Job quét bảng `reservations` quá 15 phút chưa confirm -> Tự động Release (TTL logic).
+- **Valkey Lock sập**: Fallback về DB Row Locking (`SELECT FOR UPDATE`).
 
 ---
-*TechLead Signed-off: 2026-05-10*
+**Tech Lead Signature**

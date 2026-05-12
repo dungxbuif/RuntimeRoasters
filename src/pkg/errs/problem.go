@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -40,6 +41,31 @@ var (
 	ErrForbidden    = errors.New("forbidden")
 	ErrInternal     = errors.New("internal_error")
 )
+
+// ValidationProblem error type to hold field-specific errors
+type ValidationProblem struct {
+	Details []SubProblem
+}
+
+func (v *ValidationProblem) Error() string {
+	return ErrValidation.Error()
+}
+
+func NewValidationProblem(details []SubProblem) error {
+	return &ValidationProblem{Details: details}
+}
+
+// MapValidationErrors converts a map of field errors into a ValidationProblem
+func MapValidationErrors(errs map[string]error) error {
+	details := make([]SubProblem, 0, len(errs))
+	for field, err := range errs {
+		details = append(details, SubProblem{
+			Pointer: field,
+			Detail:  err.Error(),
+		})
+	}
+	return NewValidationProblem(details)
+}
 
 // HTTPStatusMap mapping sentinel errors to HTTP status codes
 var HTTPStatusMap = map[error]int{
@@ -87,7 +113,28 @@ func ToGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
-	return status.Error(GRPCCode(err), err.Error())
+
+	code := GRPCCode(err)
+	st := status.New(code, err.Error())
+
+	// If it's a validation error, attach field-level details
+	var valErr *ValidationProblem
+	if errors.As(err, &valErr) {
+		v := &errdetails.BadRequest{}
+		for _, detail := range valErr.Details {
+			v.FieldViolations = append(v.FieldViolations, &errdetails.BadRequest_FieldViolation{
+				Field:       detail.Pointer,
+				Description: detail.Detail,
+			})
+		}
+		
+		stWithDetails, errDet := st.WithDetails(v)
+		if errDet == nil {
+			return stWithDetails.Err()
+		}
+	}
+
+	return st.Err()
 }
 
 // New builds a Problem with type defaulting to "about:blank" per RFC 9457
@@ -128,6 +175,12 @@ func GinErrorHandler() gin.HandlerFunc {
 			Detail:   err.Error(),
 			Instance: c.Request.URL.Path,
 			TraceID:  traceID,
+		}
+
+		// Attach validation details if present
+		var valErr *ValidationProblem
+		if errors.As(err, &valErr) {
+			p.Errors = valErr.Details
 		}
 
 		c.Render(status, problemRenderer{p})

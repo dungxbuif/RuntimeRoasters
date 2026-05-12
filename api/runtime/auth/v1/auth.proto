@@ -4,9 +4,37 @@ package runtime.auth.v1;
 
 option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1;authv1";
 
+import "google/api/annotations.proto";
+
 service AuthService {
   // GetFullSnapshot returns all policies for a given service
-  rpc GetFullSnapshot(GetFullSnapshotRequest) returns (GetFullSnapshotResponse);
+  rpc GetFullSnapshot(GetFullSnapshotRequest) returns (GetFullSnapshotResponse) {
+    option (google.api.http) = {
+      get: "/v1/auth/snapshot/{service_name}"
+    };
+  }
+
+  // AcceptLogin processes the login acceptance from Ory Kratos/Hydra
+  rpc AcceptLogin(AcceptLoginRequest) returns (AcceptLoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/login/accept"
+      body: "*"
+    };
+  }
+
+  // User Management
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+  }
+  
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+  }
 }
 
 message GetFullSnapshotRequest {
@@ -15,4 +43,39 @@ message GetFullSnapshotRequest {
 
 message GetFullSnapshotResponse {
   repeated string policies = 1; // CSV formatted lines: p, role, obj, act
+}
+
+message AcceptLoginRequest {
+  string login_challenge = 1;
+  string subject = 2;
+  bool remember = 3;
+  int64 remember_for = 4;
+}
+
+message AcceptLoginResponse {
+  string redirect_to = 1;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+  string role = 4;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
 }

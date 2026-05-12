@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS farms (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     location TEXT NOT NULL,
     area DECIMAL(10,2) NOT NULL CHECK (area > 0),
