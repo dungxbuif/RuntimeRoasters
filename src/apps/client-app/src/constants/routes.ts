@@ -5,6 +5,7 @@ export const APP_ROUTES = {
   DASHBOARD: {
     USERS: '/dashboard/users',
     FARMS: '/dashboard/farm-ops/registry',
+    HARVESTS: '/dashboard/farm-ops/harvests',
     FARM_TELEMETRY: '/dashboard/farm-ops/telemetry',
     BATCHES: '/dashboard/batches',
     LOGISTICS: '/dashboard/logistics',

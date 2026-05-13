@@ -7,4 +7,8 @@ export const API_ENDPOINTS = {
   DEMO: {
     PING: '/v1/demo/ping',
   },
+  FARM: {
+    FARMS: '/v1/farms',
+    HARVESTS: '/v1/harvests',
+  },
 } as const;

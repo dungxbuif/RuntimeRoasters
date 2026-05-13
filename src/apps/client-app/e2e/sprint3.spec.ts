@@ -34,6 +34,7 @@ const SELECTORS = {
   
   AUTH_LOADER: '[data-e2e="auth-loader"]',
   DASHBOARD_HEADER: '[data-e2e="dashboard-header"]',
+  LOGOUT_BTN: '[data-e2e="logout-btn"]',
 };
 
 test.describe('Sprint 3: High-Fidelity Flow & Role Constraints', () => {
@@ -46,10 +47,12 @@ test.describe('Sprint 3: High-Fidelity Flow & Role Constraints', () => {
     
     await test.step('Step 1: Admin Login', async () => {
       await page.goto('/login');
-      await page.fill('input[name="identifier"]', ADMIN_EMAIL);
-      await page.fill('input[name="password"]', ADMIN_PASS);
+      // Using generic input selectors as specific ones might be missing on login page
+      await page.fill('input[type="email"], input[name="identifier"]', ADMIN_EMAIL);
+      await page.fill('input[type="password"], input[name="password"]', ADMIN_PASS);
       await page.click(SELECTORS.LOGIN_SUBMIT);
       
+      // Admin defaults to /dashboard/users
       await expect(page).toHaveURL(/\/dashboard\/users/, { timeout: 15000 });
       await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
       await expect(page.locator(SELECTORS.DASHBOARD_HEADER)).toBeVisible();
@@ -80,13 +83,13 @@ test.describe('Sprint 3: High-Fidelity Flow & Role Constraints', () => {
     });
 
     await test.step('Step 4: Admin Logout', async () => {
-      await page.click('[title="Logout"]');
+      await page.click(SELECTORS.LOGOUT_BTN);
       await expect(page).toHaveURL(/\/login/);
     });
 
     await test.step('Step 5: Manager Login & Verify Isolation', async () => {
-      await page.fill('input[name="identifier"]', TEST_MANAGER_EMAIL);
-      await page.fill('input[name="password"]', TEST_MANAGER_PASS);
+      await page.fill('input[type="email"], input[name="identifier"]', TEST_MANAGER_EMAIL);
+      await page.fill('input[type="password"], input[name="password"]', TEST_MANAGER_PASS);
       await page.click(SELECTORS.LOGIN_SUBMIT);
 
       await expect(page).toHaveURL(/\/dashboard\/users/, { timeout: 15000 });

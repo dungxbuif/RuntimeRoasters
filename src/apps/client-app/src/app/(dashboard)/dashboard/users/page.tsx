@@ -4,15 +4,7 @@ import { adminService, User } from '@/services/admin.service';
 import React, { useState } from 'react';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-const ROLE_LABELS: Record<string, string> = {
-  'ADMIN': 'System Admin',
-  'FARM_ADMIN': 'Agri Admin',
-  'FARM_MANAGER': 'Farm Manager',
-  'FARMER': 'Field Farmer',
-  'PROCESSOR': 'Roast Master',
-  'DRIVER': 'Logistics Driver',
-};
+import { USER_ROLE_LABELS } from '@/constants/domain';
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
@@ -96,7 +88,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-3 py-1 rounded-full bg-surface-container-high text-[9px] font-black uppercase tracking-widest border border-outline-variant/10">
-                      {ROLE_LABELS[user.role] || user.role}
+                      {USER_ROLE_LABELS[user.role] || user.role}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -150,7 +142,7 @@ export default function AdminUsersPage() {
                   {...testId(e2eSelectors.USER_ROLE_SELECT)}
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
                 >
-                  {Object.entries(ROLE_LABELS).map(([id, label]) => (
+                  {Object.entries(USER_ROLE_LABELS).map(([id, label]) => (
                     <option key={id} value={id}>{label}</option>
                   ))}
                 </select>

@@ -16,6 +16,7 @@ export default function Sidebar() {
   ];
 
   const operationalLinks = [
+    { href: APP_ROUTES.DASHBOARD.HARVESTS, label: "Harvest Declaration", icon: "eco" },
     { href: APP_ROUTES.DASHBOARD.FARM_TELEMETRY, label: "Farm Telemetry", icon: "agriculture" },
     { href: APP_ROUTES.DASHBOARD.LOGISTICS, label: "Transit Monitor", icon: "local_shipping" },
     { href: APP_ROUTES.DASHBOARD.WAREHOUSE, label: "Stock Analytics", icon: "warehouse" },

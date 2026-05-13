@@ -6,6 +6,7 @@ import { farmService, Farm } from '@/services/farm.service';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
+import { FARM_LOCATIONS, COFFEE_TYPES } from '@/constants/domain';
 
 export default function AdminFarmsPage() {
   const queryClient = useQueryClient();
@@ -18,21 +19,6 @@ export default function AdminFarmsPage() {
     farm_type: 'ARABICA',
     owner_id: '',
   });
-
-  const locations = [
-    { code: 'CAU_DAT', name: 'Cầu Đất, Đà Lạt' },
-    { code: 'BUON_MA_THUOT', name: 'Buôn Ma Thuột, Đắk Lắk' },
-    { code: 'PLEIKU', name: 'Pleiku, Gia Lai' },
-    { code: 'GIA_NGHIA', name: 'Gia Nghĩa, Đắk Nông' },
-    { code: 'KON_TUM', name: 'Kon Tum' },
-  ];
-
-  const coffeeTypes = [
-    { code: 'ARABICA', name: 'Arabica' },
-    { code: 'ROBUSTA', name: 'Robusta' },
-    { code: 'CHERRY', name: 'Cherry' },
-    { code: 'CULI', name: 'Culi' },
-  ];
 
   // Queries
   const { data: farms = [], isLoading: isFarmsLoading } = useQuery({
@@ -133,7 +119,7 @@ export default function AdminFarmsPage() {
                     <p className="font-black text-on-surface uppercase tracking-tight text-xs">{farm.name}</p>
                   </td>
                   <td className="px-6 py-4 text-[10px] font-medium text-on-surface-variant italic">
-                    {locations.find(l => l.code === farm.location)?.name || farm.location}
+                    {FARM_LOCATIONS.find(l => l.code === farm.location)?.name || farm.location}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -204,7 +190,7 @@ export default function AdminFarmsPage() {
                     value={formData.farm_type}
                     onChange={(e) => setFormData({...formData, farm_type: e.target.value})}
                   >
-                    {coffeeTypes.map(ct => (
+                    {COFFEE_TYPES.map(ct => (
                       <option key={ct.code} value={ct.code}>{ct.name}</option>
                     ))}
                   </select>
@@ -217,7 +203,7 @@ export default function AdminFarmsPage() {
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
                 >
-                  {locations.map(loc => (
+                  {FARM_LOCATIONS.map(loc => (
                     <option key={loc.code} value={loc.code}>{loc.name}</option>
                   ))}
                 </select>

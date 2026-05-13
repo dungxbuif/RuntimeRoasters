@@ -35,6 +35,7 @@ export default function ManagementLayout({
                   onClick={() => logout()}
                   className="ml-2 p-1 text-slate-400 hover:text-error transition-colors"
                   title="Logout"
+                  data-e2e="logout-btn"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
