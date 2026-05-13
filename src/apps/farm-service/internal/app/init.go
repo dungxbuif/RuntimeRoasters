@@ -81,11 +81,16 @@ func InitializeApp() (*App, func(), error) {
 		GRPCServerOptions: grpcOpts,
 	})
 
-	// 4. App-specific Components
+	// 4. App-specific	// 5. Repositories
 	farmRepo := repository.NewFarmRepository(db, casbinEnforcer)
+	harvestRepo := repository.NewHarvestRepository(db, casbinEnforcer)
 
-	farmUsecase := usecase.NewFarmUsecase(farmRepo)
-	farmHandler := farmgrpc.NewFarmHandler(farmUsecase)
+	// 6. Use Cases
+	farmUC := usecase.NewFarmUsecase(farmRepo)
+	harvestUC := usecase.NewHarvestUsecase(harvestRepo, farmRepo)
+
+	// 7. Handlers & Server
+	farmHandler := farmgrpc.NewFarmHandler(farmUC, harvestUC)
 
 	// 5. Build App
 	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler)

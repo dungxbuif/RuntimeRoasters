@@ -19,11 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FarmService_CreateFarm_FullMethodName = "/runtime.farm.v1.FarmService/CreateFarm"
-	FarmService_GetFarm_FullMethodName    = "/runtime.farm.v1.FarmService/GetFarm"
-	FarmService_ListFarms_FullMethodName  = "/runtime.farm.v1.FarmService/ListFarms"
-	FarmService_UpdateFarm_FullMethodName = "/runtime.farm.v1.FarmService/UpdateFarm"
-	FarmService_DeleteFarm_FullMethodName = "/runtime.farm.v1.FarmService/DeleteFarm"
+	FarmService_CreateFarm_FullMethodName       = "/runtime.farm.v1.FarmService/CreateFarm"
+	FarmService_GetFarm_FullMethodName          = "/runtime.farm.v1.FarmService/GetFarm"
+	FarmService_ListFarms_FullMethodName        = "/runtime.farm.v1.FarmService/ListFarms"
+	FarmService_UpdateFarm_FullMethodName       = "/runtime.farm.v1.FarmService/UpdateFarm"
+	FarmService_DeleteFarm_FullMethodName       = "/runtime.farm.v1.FarmService/DeleteFarm"
+	FarmService_CreateHarvest_FullMethodName    = "/runtime.farm.v1.FarmService/CreateHarvest"
+	FarmService_GetHarvest_FullMethodName       = "/runtime.farm.v1.FarmService/GetHarvest"
+	FarmService_ListFarmHarvests_FullMethodName = "/runtime.farm.v1.FarmService/ListFarmHarvests"
 )
 
 // FarmServiceClient is the client API for FarmService service.
@@ -42,6 +45,12 @@ type FarmServiceClient interface {
 	UpdateFarm(ctx context.Context, in *UpdateFarmRequest, opts ...grpc.CallOption) (*UpdateFarmResponse, error)
 	// DeleteFarm removes a farm record.
 	DeleteFarm(ctx context.Context, in *DeleteFarmRequest, opts ...grpc.CallOption) (*DeleteFarmResponse, error)
+	// CreateHarvest records a new harvesting batch.
+	CreateHarvest(ctx context.Context, in *CreateHarvestRequest, opts ...grpc.CallOption) (*CreateHarvestResponse, error)
+	// GetHarvest retrieves details of a specific harvest batch.
+	GetHarvest(ctx context.Context, in *GetHarvestRequest, opts ...grpc.CallOption) (*GetHarvestResponse, error)
+	// ListFarmHarvests returns all harvest batches for a specific farm.
+	ListFarmHarvests(ctx context.Context, in *ListFarmHarvestsRequest, opts ...grpc.CallOption) (*ListFarmHarvestsResponse, error)
 }
 
 type farmServiceClient struct {
@@ -102,6 +111,36 @@ func (c *farmServiceClient) DeleteFarm(ctx context.Context, in *DeleteFarmReques
 	return out, nil
 }
 
+func (c *farmServiceClient) CreateHarvest(ctx context.Context, in *CreateHarvestRequest, opts ...grpc.CallOption) (*CreateHarvestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateHarvestResponse)
+	err := c.cc.Invoke(ctx, FarmService_CreateHarvest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) GetHarvest(ctx context.Context, in *GetHarvestRequest, opts ...grpc.CallOption) (*GetHarvestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetHarvestResponse)
+	err := c.cc.Invoke(ctx, FarmService_GetHarvest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *farmServiceClient) ListFarmHarvests(ctx context.Context, in *ListFarmHarvestsRequest, opts ...grpc.CallOption) (*ListFarmHarvestsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListFarmHarvestsResponse)
+	err := c.cc.Invoke(ctx, FarmService_ListFarmHarvests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FarmServiceServer is the server API for FarmService service.
 // All implementations must embed UnimplementedFarmServiceServer
 // for forward compatibility.
@@ -118,6 +157,12 @@ type FarmServiceServer interface {
 	UpdateFarm(context.Context, *UpdateFarmRequest) (*UpdateFarmResponse, error)
 	// DeleteFarm removes a farm record.
 	DeleteFarm(context.Context, *DeleteFarmRequest) (*DeleteFarmResponse, error)
+	// CreateHarvest records a new harvesting batch.
+	CreateHarvest(context.Context, *CreateHarvestRequest) (*CreateHarvestResponse, error)
+	// GetHarvest retrieves details of a specific harvest batch.
+	GetHarvest(context.Context, *GetHarvestRequest) (*GetHarvestResponse, error)
+	// ListFarmHarvests returns all harvest batches for a specific farm.
+	ListFarmHarvests(context.Context, *ListFarmHarvestsRequest) (*ListFarmHarvestsResponse, error)
 	mustEmbedUnimplementedFarmServiceServer()
 }
 
@@ -142,6 +187,15 @@ func (UnimplementedFarmServiceServer) UpdateFarm(context.Context, *UpdateFarmReq
 }
 func (UnimplementedFarmServiceServer) DeleteFarm(context.Context, *DeleteFarmRequest) (*DeleteFarmResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFarm not implemented")
+}
+func (UnimplementedFarmServiceServer) CreateHarvest(context.Context, *CreateHarvestRequest) (*CreateHarvestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateHarvest not implemented")
+}
+func (UnimplementedFarmServiceServer) GetHarvest(context.Context, *GetHarvestRequest) (*GetHarvestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetHarvest not implemented")
+}
+func (UnimplementedFarmServiceServer) ListFarmHarvests(context.Context, *ListFarmHarvestsRequest) (*ListFarmHarvestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListFarmHarvests not implemented")
 }
 func (UnimplementedFarmServiceServer) mustEmbedUnimplementedFarmServiceServer() {}
 func (UnimplementedFarmServiceServer) testEmbeddedByValue()                     {}
@@ -254,6 +308,60 @@ func _FarmService_DeleteFarm_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FarmService_CreateHarvest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateHarvestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).CreateHarvest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_CreateHarvest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).CreateHarvest(ctx, req.(*CreateHarvestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_GetHarvest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHarvestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).GetHarvest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_GetHarvest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).GetHarvest(ctx, req.(*GetHarvestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FarmService_ListFarmHarvests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFarmHarvestsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FarmServiceServer).ListFarmHarvests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FarmService_ListFarmHarvests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FarmServiceServer).ListFarmHarvests(ctx, req.(*ListFarmHarvestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FarmService_ServiceDesc is the grpc.ServiceDesc for FarmService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +388,18 @@ var FarmService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteFarm",
 			Handler:    _FarmService_DeleteFarm_Handler,
+		},
+		{
+			MethodName: "CreateHarvest",
+			Handler:    _FarmService_CreateHarvest_Handler,
+		},
+		{
+			MethodName: "GetHarvest",
+			Handler:    _FarmService_GetHarvest_Handler,
+		},
+		{
+			MethodName: "ListFarmHarvests",
+			Handler:    _FarmService_ListFarmHarvests_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

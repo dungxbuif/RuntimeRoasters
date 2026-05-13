@@ -9,24 +9,24 @@ Tài liệu này mô tả chi tiết các bước thực thi kỹ thuật cho t�
 Đây là luồng minh chứng cho **CQRS** và **Transactional Outbox**.
 
 ### Bước 1: Client gửi yêu cầu thu hoạch
-*   **Action:** UI gửi `POST /api/v1/batches` tới API Gateway.
+*   **Action:** UI gửi `POST /v1/harvests` tới API Gateway.
 *   **Auth:** Gateway kiểm tra JWT, thêm `X-User-Role: Farmer` vào header.
 
 ### Bước 2: Xử lý tại Farm Service (Write Side)
-1.  **Delivery layer:** Nhận JSON, validate cấu hình (variety, weight).
-2.  **UseCase layer:** Gọi `CreateBatch`.
-3.  **Repository layer:** Mở một Database Transaction:
-    *   `INSERT INTO harvest_batches (...)`
-    *   `INSERT INTO outbox (event_type, payload) VALUES ('BatchCreated', '...')`
+1.  **Delivery layer:** Nhận JSON, validate cấu hình (coffee_type, quantity).
+2.  **UseCase layer:** Gọi `CreateHarvest`.
+3.  **Repository layer:** Mở một Database Transaction (Kế hoạch RR-4.2):
+    *   `INSERT INTO harvests (...)`
+    *   `INSERT INTO outbox_events (event_type, payload) VALUES ('farm.harvest.created.v1', '...')`
 4.  **Commit Transaction:** Dữ liệu được lưu vĩnh viễn vào Postgres.
 
 ### Bước 3: Đẩy sự kiện lên Kafka (Asynchronous)
-1.  **Outbox Worker** (Goroutine ngầm): Quét bảng `outbox` mỗi 500ms.
-2.  **Publisher:** Đẩy message lên Kafka topic `farm.batch.events`.
-3.  **Action:** Đánh dấu record outbox là `processed` hoặc xóa đi.
+1.  **Relay Worker** (Goroutine ngầm): Quét bảng `outbox_events` nơi status là `PENDING`.
+2.  **Publisher:** Đẩy message theo chuẩn CloudEvents lên Kafka topic `farm.harvest.events`.
+3.  **Action:** Cập nhật record outbox thành `COMPLETED`.
 
 ### Bước 4: Cập nhật Read-Model tại Trace Service (Read Side)
-1.  **Consumer:** Trace Service lắng nghe topic `farm.batch.events`.
+1.  **Consumer:** Trace Service lắng nghe topic `farm.harvest.events`.
 2.  **Idempotency Check:** Kiểm tra `Message_ID` đã xử lý chưa (Inbox Pattern).
 3.  **Indexing:** Thực hiện **Upsert** vào Elasticsearch index `coffee_traces`.
 4.  **Status:** Dữ liệu sẵn sàng để tìm kiếm full-text.

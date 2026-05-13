@@ -44,6 +44,30 @@ service FarmService {
       delete: "/v1/farms/{id}"
     };
   }
+
+  // --- Harvesting Operations ---
+
+  // CreateHarvest records a new harvesting batch.
+  rpc CreateHarvest(CreateHarvestRequest) returns (CreateHarvestResponse) {
+    option (google.api.http) = {
+      post: "/v1/harvests"
+      body: "*"
+    };
+  }
+
+  // GetHarvest retrieves details of a specific harvest batch.
+  rpc GetHarvest(GetHarvestRequest) returns (GetHarvestResponse) {
+    option (google.api.http) = {
+      get: "/v1/harvests/{id}"
+    };
+  }
+
+  // ListFarmHarvests returns all harvest batches for a specific farm.
+  rpc ListFarmHarvests(ListFarmHarvestsRequest) returns (ListFarmHarvestsResponse) {
+    option (google.api.http) = {
+      get: "/v1/farms/{farm_id}/harvests"
+    };
+  }
 }
 
 // --- Messages ---
@@ -104,3 +128,44 @@ message DeleteFarmRequest {
 message DeleteFarmResponse {
   bool success = 1;
 }
+
+message Harvest {
+  uint64 id = 1;
+  uint64 farm_id = 2;
+  string owner_id = 3;
+  string coffee_type = 4;
+  double quantity = 5;
+  int64 harvest_date = 6;
+  string status = 7;
+  string notes = 8;
+  int64 created_at = 9;
+  int64 updated_at = 10;
+}
+
+message CreateHarvestRequest {
+  uint64 farm_id = 1;
+  string coffee_type = 2;
+  double quantity = 3;
+  string notes = 4;
+}
+
+message CreateHarvestResponse {
+  Harvest harvest = 1;
+}
+
+message GetHarvestRequest {
+  uint64 id = 1;
+}
+
+message GetHarvestResponse {
+  Harvest harvest = 1;
+}
+
+message ListFarmHarvestsRequest {
+  uint64 farm_id = 1;
+}
+
+message ListFarmHarvestsResponse {
+  repeated Harvest harvests = 1;
+}
+

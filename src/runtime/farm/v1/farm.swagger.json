@@ -70,6 +70,38 @@
         ]
       }
     },
+    "/v1/farms/{farmId}/harvests": {
+      "get": {
+        "summary": "ListFarmHarvests returns all harvest batches for a specific farm.",
+        "operationId": "FarmService_ListFarmHarvests",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListFarmHarvestsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "farmId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
+      }
+    },
     "/v1/farms/{id}": {
       "get": {
         "summary": "GetFarm retrieves a single farm by ID.",
@@ -169,6 +201,71 @@
           "FarmService"
         ]
       }
+    },
+    "/v1/harvests": {
+      "post": {
+        "summary": "CreateHarvest records a new harvesting batch.",
+        "operationId": "FarmService_CreateHarvest",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateHarvestResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateHarvestRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
+      }
+    },
+    "/v1/harvests/{id}": {
+      "get": {
+        "summary": "GetHarvest retrieves details of a specific harvest batch.",
+        "operationId": "FarmService_GetHarvest",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetHarvestResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "FarmService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -247,6 +344,33 @@
         }
       }
     },
+    "v1CreateHarvestRequest": {
+      "type": "object",
+      "properties": {
+        "farmId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "coffeeType": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateHarvestResponse": {
+      "type": "object",
+      "properties": {
+        "harvest": {
+          "$ref": "#/definitions/v1Harvest"
+        }
+      }
+    },
     "v1DeleteFarmResponse": {
       "type": "object",
       "properties": {
@@ -293,6 +417,67 @@
       "properties": {
         "farm": {
           "$ref": "#/definitions/v1Farm"
+        }
+      }
+    },
+    "v1GetHarvestResponse": {
+      "type": "object",
+      "properties": {
+        "harvest": {
+          "$ref": "#/definitions/v1Harvest"
+        }
+      }
+    },
+    "v1Harvest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "farmId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "coffeeType": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double"
+        },
+        "harvestDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "status": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1ListFarmHarvestsResponse": {
+      "type": "object",
+      "properties": {
+        "harvests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Harvest"
+          }
         }
       }
     },

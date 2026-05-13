@@ -13,3 +13,14 @@ type FarmRepository interface {
 	Update(ctx context.Context, farm *domain.Farm) error
 	Delete(ctx context.Context, id uint64) error
 }
+
+type HarvestRepository interface {
+	Create(ctx context.Context, harvest *domain.Harvest) error
+	GetByID(ctx context.Context, id uint64) (*domain.Harvest, error)
+	ListByFarm(ctx context.Context, farmID uint64) ([]*domain.Harvest, error)
+	Update(ctx context.Context, harvest *domain.Harvest) error
+	Delete(ctx context.Context, id uint64) error
+}
+
+
+

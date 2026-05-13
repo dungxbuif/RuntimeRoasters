@@ -166,18 +166,19 @@ main.go         ← Composition Root. Only place that knows all concrete types.
 
 # Thiết kế Telemetry — Aspire-like Observability cho Go
 
-Mang lại trải nghiệm "zero-config" với Tracing, Metrics, và Log Correlation tự động.
+Mang lại trải nghiệm "zero-config" với Tracing, Metrics, và Log Correlation tự động dựa trên OpenTelemetry (OTel).
 
 ### 1. Trụ cột chính (The Four Pillars)
 - **Auto-Instrumentation:** HTTP, gRPC, SQL, Valkey.
 - **Context Propagation:** Trace-ID lan truyền qua HTTP, gRPC, và Kafka Headers.
 - **Log Correlation:** Tự động đính `trace_id` vào mọi dòng log.
-- **Centralized Hub:** Sử dụng **SigNoz** làm nền tảng giám sát tập trung.
+- **Unified Sink:** Sử dụng các chuẩn OTLP để gửi dữ liệu tới các backend giám sát (Jaeger, Prometheus hoặc các bộ thu thập tập trung).
 
 ### 2. Implementation details
 - Tích hợp qua package `pkg/telemetry`.
-- Sử dụng `otelgin` và `otelgrpc` middlewares.
-- Logger tích hợp `zap` và OpenTelemetry.
+- Sử dụng `otelgin` (Gin) và `otelgrpc` (gRPC) middlewares để tự động tạo spans.
+- Logger tích hợp `zap` và `go.opentelemetry.io/otel/trace` để liên kết log với traces.
+- Hỗ trợ xuất dữ liệu qua OTLP gRPC/HTTP endpoint.
 
 ---
 

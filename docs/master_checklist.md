@@ -32,6 +32,8 @@ Tài liệu này là "Single Source of Truth" để rà soát toàn bộ hệ th
 - [ ] **Fail-Fast & Retry**: Code fetch dữ liệu khởi động (như JWKS) đã có Exponential Backoff Retry.
 - [ ] **Error Handling**: Đã sử dụng chuẩn RFC 9457 (Problem Details), không leak thông tin lỗi nội bộ.
 - [ ] **Input Validation**: Mọi API endpoint đã có validation cho request body/params.
+- [ ] **Transactional Outbox**: Các sự kiện quan trọng (Event) phải được lưu cùng transaction với dữ liệu nghiệp vụ.
+- [ ] **Idempotency (Inbox)**: Hệ thống phải có cơ chế chống xử lý trùng lặp (Inbox Pattern) cho Kafka Consumers và Webhooks.
 
 ### 2.2. Network Security
 - [ ] **CORS**: Chỉ whitelist các domain chính thống.
@@ -70,10 +72,7 @@ Các bước cuối cùng trước khi "Go Live".
 - [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).
 
 ---
-*Cập nhật lần cuối: 2026-05-07 bởi Antigravity*
 - [ ] **Unit Tests**: Đã pass 100% trước khi merge.
 - [ ] **Linter**: Không còn lỗi linting nghiêm trọng.
 - [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).
-
----
-*Cập nhật lần cuối: 2026-05-07 bởi Antigravity*
+*Cập nhật lần cuối: 2026-05-13 bởi TechLead Agent*
