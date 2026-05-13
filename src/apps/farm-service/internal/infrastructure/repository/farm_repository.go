@@ -17,9 +17,9 @@ import (
 type FarmModel struct {
 	ID         uint64 `gorm:"primaryKey;autoIncrement"`
 	Name       string
-	Location   string
+	Location   domain.Location
 	Area       float64
-	CoffeeType string
+	CoffeeType domain.CoffeeType
 	OwnerID    string `gorm:"index"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -68,20 +68,12 @@ func NewFarmRepository(db *database.DB, enforcer *casbin.SyncedEnforcer) usecase
 }
 
 func (r *farmRepository) Create(ctx context.Context, farm *domain.Farm) error {
-	user, ok := identity.FromContext(ctx)
-	if !ok {
-		return errs.ErrUnauthorized
-	}
-
-	// Logic for forced ownership or admin override
-	if (user.Role == "ADMIN" || user.Role == "FARM_ADMIN") && farm.OwnerID != "" {
-		// Admin can specify owner
-	} else {
-		farm.OwnerID = user.Subject
-	}
-
 	model := FromDomain(farm)
-	return r.db.WithContext(ctx).Create(model).Error
+	err := r.db.WithContext(ctx).Create(model).Error
+	if err == nil {
+		farm.ID = model.ID
+	}
+	return err
 }
 
 func (r *farmRepository) GetByID(ctx context.Context, id uint64) (*domain.Farm, error) {

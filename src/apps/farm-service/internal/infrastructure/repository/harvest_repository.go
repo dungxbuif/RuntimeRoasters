@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/casbin/casbin/v3"
-	"gorm.io/gorm"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
@@ -15,14 +14,14 @@ import (
 )
 
 type HarvestModel struct {
-	ID          uint64    `gorm:"primaryKey;autoIncrement"`
-	FarmID      uint64    `gorm:"not null"`
-	OwnerID     string    `gorm:"type:uuid;not null;index"`
-	CoffeeType  string    `gorm:"type:varchar(50);not null"`
-	Quantity    float64   `gorm:"type:decimal(10,2);not null"`
-	HarvestDate time.Time `gorm:"default:CURRENT_TIMESTAMP"`
-	Status      string    `gorm:"type:harvest_status_enum;not null;default:'NEW'"`
-	Notes       string    `gorm:"type:text"`
+	ID          uint64 `gorm:"primaryKey;autoIncrement"`
+	FarmID      uint64 `gorm:"not null"`
+	OwnerID     string `gorm:"type:uuid;not null;index"`
+	CoffeeType  domain.CoffeeType
+	Quantity    float64 `gorm:"type:decimal(10,2);not null"`
+	HarvestDate time.Time
+	Status      domain.HarvestStatus
+	Notes       string `gorm:"type:text"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -32,26 +31,20 @@ func (HarvestModel) TableName() string {
 }
 
 type harvestRepository struct {
-	db     *gorm.DB
+	db     *database.DB
 	scoper *rr_casbin.GormScoper
 }
 
 func NewHarvestRepository(db *database.DB, enforcer *casbin.SyncedEnforcer) usecase.HarvestRepository {
 	return &harvestRepository{
-		db:     db.DB,
+		db:     db,
 		scoper: rr_casbin.NewGormScoper(enforcer),
 	}
 }
 
 func (r *harvestRepository) Create(ctx context.Context, harvest *domain.Harvest) error {
-	user, ok := identity.FromContext(ctx)
-	if !ok {
-		return errs.ErrUnauthorized
-	}
-	harvest.OwnerID = user.Subject
-
 	model := toHarvestModel(harvest)
-	if err := r.db.WithContext(ctx).Create(model).Error; err != nil {
+	if err := r.db.GetTx(ctx).Create(model).Error; err != nil {
 		return err
 	}
 	harvest.ID = model.ID

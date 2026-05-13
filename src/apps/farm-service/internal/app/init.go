@@ -5,6 +5,7 @@ import (
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
 	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
@@ -84,16 +85,21 @@ func InitializeApp() (*App, func(), error) {
 	// 4. App-specific	// 5. Repositories
 	farmRepo := repository.NewFarmRepository(db, casbinEnforcer)
 	harvestRepo := repository.NewHarvestRepository(db, casbinEnforcer)
+	outboxRepo := repository.NewOutboxRepository(db)
 
 	// 6. Use Cases
+	publisher := event.NewMockPublisher()
 	farmUC := usecase.NewFarmUsecase(farmRepo)
-	harvestUC := usecase.NewHarvestUsecase(harvestRepo, farmRepo)
+	harvestUC := usecase.NewHarvestUsecase(db, harvestRepo, farmRepo, outboxRepo)
 
-	// 7. Handlers & Server
+	// 7. Workers
+	outboxRelay := event.NewOutboxRelay(outboxRepo, publisher, 5*time.Second)
+
+	// 8. Handlers & Server
 	farmHandler := farmgrpc.NewFarmHandler(farmUC, harvestUC)
 
 	// 5. Build App
-	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler)
+	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler, outboxRelay)
 
 	cleanup := func() {
 		// No manual cleanup required for db/rdb here as shutdown handles graceful termination

@@ -20,6 +20,12 @@ type DB struct {
 	*gorm.DB
 }
 
+type TxManager interface {
+	WithTx(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
+type txKey struct{}
+
 // NewPostgres initializes and returns a wrapped gorm.DB instance connected to Postgres
 func NewPostgres(cfg PostgresConfig) (*DB, error) {
 	gormCfg := &gorm.Config{
@@ -50,11 +56,22 @@ func NewPostgres(cfg PostgresConfig) (*DB, error) {
 	return &DB{db}, nil
 }
 
-// WithTx helps manage transactions in a GORM-idiomatic way
-func (db *DB) WithTx(ctx context.Context, fn func(tx *gorm.DB) error) error {
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return fn(tx)
+// WithTx helps manage transactions in a GORM-idiomatic way.
+// It wraps the context with the transaction instance so repositories can extract it.
+func (db *DB) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	return db.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txCtx := context.WithValue(ctx, txKey{}, tx)
+		return fn(txCtx)
 	})
+}
+
+// GetTx extracts the gorm.DB transaction from the context if it exists,
+// otherwise returns the default database instance with the original context.
+func (db *DB) GetTx(ctx context.Context) *gorm.DB {
+	if tx, ok := ctx.Value(txKey{}).(*gorm.DB); ok {
+		return tx
+	}
+	return db.DB.WithContext(ctx)
 }
 
 // Ping checks database availability

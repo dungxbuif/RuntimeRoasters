@@ -40,8 +40,8 @@ func TestFarmRepository_Integration(t *testing.T) {
 		return
 	}
 
-	// Clean up and migrate
-	db.Exec("DELETE FROM farms")
+	// Clean up and recreate table for testing isolation
+	db.Migrator().DropTable(&repository.FarmModel{})
 	err = db.AutoMigrate(&repository.FarmModel{})
 	assert.NoError(t, err)
 
@@ -50,21 +50,21 @@ func TestFarmRepository_Integration(t *testing.T) {
 
 	ctx := context.Background()
 	ownerID := "farmer-1"
-	ctx = identity.InjectContext(ctx, identity.Claims{Subject: ownerID, Role: "FARMER"})
+	ctx = identity.InjectContext(ctx, identity.Claims{Subject: ownerID, Role: domain.RoleFarmer})
 
 	// Setup Policies
-	enforcer.AddPolicy("FARMER", "farm", "read")
-	enforcer.AddPolicy("FARMER", "farm", "write")
-	enforcer.AddPolicy("FARMER", "farm", "delete")
-	enforcer.AddGroupingPolicy(ownerID, "FARMER")
+	enforcer.AddPolicy(domain.RoleFarmer, "farm", "read")
+	enforcer.AddPolicy(domain.RoleFarmer, "farm", "write")
+	enforcer.AddPolicy(domain.RoleFarmer, "farm", "delete")
+	enforcer.AddGroupingPolicy(ownerID, domain.RoleFarmer)
 	enforcer.AddGroupingPolicy("admin-user", "admin")
 
 	// 2. Test Create
 	farm := &domain.Farm{
 		Name:       "Cau Dat Specialty",
-		Location:   "CAU_DAT",
+		Location:   domain.LocationCauDat,
 		Area:       50.0,
-		CoffeeType: "ARABICA",
+		CoffeeType: domain.CoffeeTypeArabica,
 		OwnerID:    ownerID,
 	}
 	err = repo.Create(ctx, farm)
@@ -80,14 +80,14 @@ func TestFarmRepository_Integration(t *testing.T) {
 	assert.Equal(t, "Cau Dat Specialty", farms[0].Name)
 
 	// 4. Test List (Global for Admin)
-	adminCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "admin-user", Role: "ADMIN"})
+	adminCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "admin-user", Role: domain.RoleAdmin})
 	allFarms, err := repo.List(adminCtx)
 	assert.NoError(t, err)
 	assert.Len(t, allFarms, 1)
 
 	// 5. Test Isolation - Another farmer should see 0
-	otherFarmerCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "farmer-2", Role: "FARMER"})
-	enforcer.AddGroupingPolicy("farmer-2", "FARMER")
+	otherFarmerCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "farmer-2", Role: domain.RoleFarmer})
+	enforcer.AddGroupingPolicy("farmer-2", domain.RoleFarmer)
 	otherFarms, err := repo.List(otherFarmerCtx)
 	assert.NoError(t, err)
 	assert.Len(t, otherFarms, 0)

@@ -10,6 +10,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
 	realcasbin "github.com/casbin/casbin/v3"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -21,21 +22,38 @@ type App struct {
 	KeyProvider provider.KeyProvider
 	Enforcer    *realcasbin.SyncedEnforcer
 	FarmHandler *farmgrpc.FarmHandler
+	OutboxRelay *event.OutboxRelay
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, vdb *redis.Client, keyProvider provider.KeyProvider, enforcer *realcasbin.SyncedEnforcer, farmHandler *farmgrpc.FarmHandler) *App {
+func NewApp(
+	baseApp *base.App,
+	cfg *svcconfig.Config,
+	db *database.DB,
+	vdb *redis.Client,
+	keyProvider provider.KeyProvider,
+	enforcer *realcasbin.SyncedEnforcer,
+	farmHandler *farmgrpc.FarmHandler,
+	outboxRelay *event.OutboxRelay,
+) *App {
 	return &App{
-		Base:        baseApp,
-		Cfg:         cfg,
-		DB:          db,
-		VDB:         vdb,
-		KeyProvider: keyProvider,
-		Enforcer:    enforcer,
-		FarmHandler: farmHandler,
+		Base:         baseApp,
+		Cfg:          cfg,
+		DB:           db,
+		VDB:          vdb,
+		KeyProvider:  keyProvider,
+		Enforcer:     enforcer,
+		FarmHandler:  farmHandler,
+		OutboxRelay:  outboxRelay,
 	}
 }
 
 func (a *App) Run() {
+	// Start Outbox Relay
+	if a.OutboxRelay != nil {
+		ctx := context.Background() // Base app handles context cancellation for server, but we can pass one here too
+		go a.OutboxRelay.Start(ctx)
+	}
+
 	// Register gRPC
 	a.Base.RegisterGRPC(&farmv1.FarmService_ServiceDesc, a.FarmHandler)
 

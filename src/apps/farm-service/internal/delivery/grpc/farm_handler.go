@@ -29,9 +29,9 @@ func (h *FarmHandler) CreateFarm(ctx context.Context, req *farmv1.CreateFarmRequ
 
 	f := &domain.Farm{
 		Name:       req.Name,
-		Location:   req.Location,
+		Location:   domain.Location(req.Location),
 		Area:       req.Area,
-		CoffeeType: req.FarmType,
+		CoffeeType: domain.CoffeeType(req.FarmType),
 		OwnerID:    req.OwnerId,
 	}
 
@@ -85,9 +85,9 @@ func (h *FarmHandler) UpdateFarm(ctx context.Context, req *farmv1.UpdateFarmRequ
 	f := &domain.Farm{
 		ID:         req.Id,
 		Name:       req.Name,
-		Location:   req.Location,
+		Location:   domain.Location(req.Location),
 		Area:       req.Area,
-		CoffeeType: req.FarmType,
+		CoffeeType: domain.CoffeeType(req.FarmType),
 	}
 
 	res, err := h.usecase.UpdateFarm(ctx, f)
@@ -121,7 +121,7 @@ func (h *FarmHandler) CreateHarvest(ctx context.Context, req *farmv1.CreateHarve
 
 	harvest := &domain.Harvest{
 		FarmID:     req.FarmId,
-		CoffeeType: req.CoffeeType,
+		CoffeeType: domain.CoffeeType(req.CoffeeType),
 		Quantity:   req.Quantity,
 		Notes:      req.Notes,
 		Status:     domain.StatusNew,
@@ -176,9 +176,9 @@ func mapToProto(f *domain.Farm) *farmv1.Farm {
 	return &farmv1.Farm{
 		Id:        f.ID,
 		Name:      f.Name,
-		Location:  f.Location,
+		Location:  string(f.Location),
 		Area:      f.Area,
-		FarmType:  f.CoffeeType,
+		FarmType:  string(f.CoffeeType),
 		OwnerId:   f.OwnerID,
 		CreatedAt: f.CreatedAt.Unix(),
 		UpdatedAt: f.UpdatedAt.Unix(),
@@ -190,10 +190,10 @@ func mapHarvestToProto(h *domain.Harvest) *farmv1.Harvest {
 		Id:          h.ID,
 		FarmId:      h.FarmID,
 		OwnerId:     h.OwnerID,
-		CoffeeType:  h.CoffeeType,
+		CoffeeType:  string(h.CoffeeType),
 		Quantity:    h.Quantity,
 		HarvestDate: h.HarvestDate.Unix(),
-		Status:      h.Status,
+		Status:      string(h.Status),
 		Notes:       h.Notes,
 		CreatedAt:   h.CreatedAt.Unix(),
 		UpdatedAt:   h.UpdatedAt.Unix(),

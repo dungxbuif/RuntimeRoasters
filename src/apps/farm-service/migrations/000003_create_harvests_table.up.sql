@@ -5,11 +5,17 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+DO $$ BEGIN
+    CREATE TYPE coffee_type_enum AS ENUM ('ARABICA', 'ROBUSTA', 'CHERRY', 'CULI');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 CREATE TABLE IF NOT EXISTS harvests (
     id BIGSERIAL PRIMARY KEY,
     farm_id BIGINT NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
     owner_id UUID NOT NULL,
-    coffee_type VARCHAR(50) NOT NULL,
+    coffee_type coffee_type_enum NOT NULL,
     quantity DECIMAL(10,2) NOT NULL,
     harvest_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     status harvest_status_enum NOT NULL DEFAULT 'NEW',

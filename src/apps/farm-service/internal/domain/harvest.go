@@ -6,36 +6,30 @@ import (
 )
 
 var (
-	ErrInvalidFarmID   = errors.New("farm id is required")
-	ErrInvalidQuantity = errors.New("quantity must be greater than 0")
-	ErrInvalidCoffeeType = errors.New("invalid coffee type")
+	ErrInvalidFarmID     = errors.New("farm id is required")
+	ErrInvalidQuantity   = errors.New("quantity must be greater than 0")
+	ErrInvalidCoffeeType = errors.New("invalid or unsupported coffee type")
 )
+
+type HarvestStatus string
 
 const (
-	CoffeeTypeArabica = "ARABICA"
-	CoffeeTypeRobusta = "ROBUSTA"
-	CoffeeTypeCherry  = "CHERRY"
-	CoffeeTypeCuli    = "CULI"
+	StatusNew        HarvestStatus = "NEW"
+	StatusProcessing HarvestStatus = "PROCESSING"
+	StatusCompleted  HarvestStatus = "COMPLETED"
 )
 
-const (
-	StatusNew        = "NEW"
-	StatusProcessing = "PROCESSING"
-	StatusCompleted  = "COMPLETED"
-)
-
-// Harvest represents a coffee harvesting batch.
 type Harvest struct {
-	ID          uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
-	FarmID      uint64    `gorm:"not null" json:"farm_id"`
-	OwnerID     string    `gorm:"type:uuid;not null" json:"owner_id"`
-	CoffeeType  string    `gorm:"type:varchar(50);not null" json:"coffee_type"`
-	Quantity    float64   `gorm:"type:decimal(10,2);not null" json:"quantity"`
-	HarvestDate time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"harvest_date"`
-	Status      string    `gorm:"type:harvest_status_enum;not null;default:'NEW'" json:"status"`
-	Notes       string    `gorm:"type:text" json:"notes"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uint64        `gorm:"primaryKey;autoIncrement" json:"id"`
+	FarmID      uint64        `gorm:"not null" json:"farm_id"`
+	OwnerID     string        `gorm:"type:uuid;not null" json:"owner_id"`
+	CoffeeType  CoffeeType    `gorm:"type:varchar(50);not null" json:"coffee_type"`
+	Quantity    float64       `gorm:"type:decimal(10,2);not null" json:"quantity"`
+	HarvestDate time.Time     `gorm:"default:CURRENT_TIMESTAMP" json:"harvest_date"`
+	Status      HarvestStatus `gorm:"type:harvest_status_enum;not null;default:'NEW'" json:"status"`
+	Notes       string        `gorm:"type:text" json:"notes"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
 }
 
 func (h *Harvest) Validate() error {
@@ -47,7 +41,6 @@ func (h *Harvest) Validate() error {
 	}
 	switch h.CoffeeType {
 	case CoffeeTypeArabica, CoffeeTypeRobusta, CoffeeTypeCherry, CoffeeTypeCuli:
-		// valid
 	default:
 		return ErrInvalidCoffeeType
 	}
