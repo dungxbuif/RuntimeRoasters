@@ -12,7 +12,7 @@
 
 The system is developed 100% in `Golang`, adhering to `Domain-Driven Design` (`DDD`) principles and implementing sophisticated distributed patterns to ensure scalability and data integrity.
 
-> **Design Philosophy — HA from Design, not HA from Patch:** High Availability is not a feature added after the system is built — it is a set of architectural constraints enforced from the first line of code. Every service is designed so that scaling from 1 to N instances is purely an infrastructure operation: add a container, done. No logic changes, no coordination code, no sticky sessions to worry about. See [`docs/architecture/ha-design.md`](docs/architecture/ha-design.md) for the full HA checklist.
+> **Design Philosophy — HA from Design, not HA from Patch:** High Availability is not a feature added after the system is built — it is a set of architectural constraints enforced from the first line of code. Every service is designed so that scaling from 1 to N instances is purely an infrastructure operation: add a container, done. No logic changes, no coordination code, no sticky sessions to worry about. See [`docs/architecture/README.md`](docs/architecture/README.md) for the full HA checklist.
 
 ---
 
@@ -128,36 +128,11 @@ Every request gets a unique `Trace-ID` at the `Gateway`. This ID is injected int
 
 ---
 
-### 🖥️ Visual Experience: Control Plane Visualization Dashboard
-
-The project includes an `Isometric 3D` `Dashboard` that visualizes the system's "heartbeat" in real-time.
-
-#### The 3-Layer View
-
-1. **User Touchpoints:** Simulated mobile apps for Farmers/Drivers and `POS` for Stores.
-2. **The Core (Microservices):** An interactive map of `Go` `Services` and their connections.
-3. **Infrastructure:** Visual representation of `Kafka`, `Databases`, and `Valkey`.
-
-#### Visual Metaphors
-
-- **Green Beans:** Represent raw harvest events from the `Farm`.
-- **Roasted Beans:** Represent processed batch events.
-- **Truck Icons:** Real-time movement based on `GPS` pings.
-- **Kafka Pulse:** The central broker "pulses" visually; intensity reflects event volume.
-
-#### Chaos Control (Demo Scenarios)
-
-- **Broker Failure:** Toggle `Kafka` "Off" to see the `Outbox Pattern` in action (retries and eventual consistency).
-- **Saga Rollback:** Watch a supply request trigger a red "Failure" pulse followed by an automatic `Rollback` when inventory limits are hit.
-- **Time Machine (CQRS):** Use the time slider to trace a cup's history back through `Logistics` and `Processing` directly from the `Elasticsearch` `read-model`.
-
----
-
 ### 🚀 Getting Started
 
 #### Prerequisites
 
-- `Go` 1.22+
+- `Go` 1.25+
 - `Docker` & `Docker Compose`
 - `Apache Kafka` / `Redpanda`
 
@@ -177,7 +152,7 @@ The project includes an `Isometric 3D` `Dashboard` that visualizes the system's 
 
 Hệ thống được phát triển 100% bằng `Golang`, tuân thủ nghiêm ngặt các nguyên tắc `Domain-Driven Design` (`DDD`) và áp dụng các mẫu thiết kế phân tán phức tạp để đảm bảo tính mở rộng, độ tin cậy và khả năng truy xuất nguồn gốc minh bạch.
 
-> **Triết lý thiết kế — HA from Design, không phải HA from Patch:** Độ sẵn sàng cao (HA) không phải tính năng được bổ sung sau khi hệ thống đã chạy — đây là tập hợp các ràng buộc kiến trúc được áp đặt từ dòng code đầu tiên. Mỗi service được thiết kế để scale từ 1 lên N instances chỉ là thao tác hạ tầng thuần túy: thêm container, xong. Không thay đổi logic, không cần code điều phối, không lo sticky session. Xem [`docs/architecture/ha-design.md`](docs/architecture/ha-design.md) để biết đầy đủ HA checklist.
+> **Triết lý thiết kế — HA from Design, không phải HA from Patch:** Độ sẵn sàng cao (HA) không phải tính năng được bổ sung sau khi hệ thống đã chạy — đây là tập hợp các ràng buộc kiến trúc được áp đặt từ dòng code đầu tiên. Mỗi service được thiết kế để scale từ 1 lên N instances chỉ là thao tác hạ tầng thuần túy: thêm container, xong. Không thay đổi logic, không cần code điều phối, không lo sticky session. Xem [`docs/architecture/README.md`](docs/architecture/README.md) để biết đầy đủ HA checklist.
 
 ---
 
@@ -286,36 +261,11 @@ Mỗi yêu cầu được gán `Trace-ID` tại `Gateway`. ID này lan truyền 
 
 ---
 
-### 🖥️ Trải nghiệm Trực quan: Dashboard "Chế độ Chúa"
-
-Dự án bao gồm một `Isometric 3D` `Dashboard` trực quan hóa "nhịp đập" của hệ thống theo thời gian thực.
-
-#### Kiến trúc 3 lớp
-
-1. **User Touchpoints:** Giả lập app mobile cho Nông dân/Tài xế và máy `POS` cho Cửa hàng.
-2. **The Core (Microservices):** Bản đồ tương tác của các `Go` `Services` và kết nối giữa chúng.
-3. **Infrastructure:** Hiển thị vị trí của `Kafka`, `Databases` và `Valkey`.
-
-#### Ẩn dụ Hình ảnh
-
-- **Hạt xanh:** Đại diện cho sự kiện thu hoạch từ `Farm`.
-- **Hạt nâu:** Đại diện cho mẻ rang từ `Processing`.
-- **Icon Xe tải:** Di chuyển thực tế dựa trên tọa độ `GPS`.
-- **Nhịp đập Kafka:** `Broker` trung tâm co bóp theo nhịp; cường độ tỷ lệ thuận với khối lượng sự kiện.
-
-#### Kịch bản Demo (Chaos Control)
-
-- **Lỗi Broker:** Ngắt `Kafka` để thấy `Outbox Pattern` hoạt động (cơ chế `Retry` và tính nhất quán sau cùng).
-- **Saga Rollback:** Watch luồng đặt hàng bị từ chối và tự động kích hoạt sự kiện hoàn tác (`Rollback`) khi kho đạt giới hạn.
-- **Cỗ máy thời gian (CQRS):** Sử dụng thanh trượt thời gian để truy vết hành trình một tách cà phê ngược về `Logistics` và `Farm` trực tiếp từ `Elasticsearch` (`Read-model`).
-
----
-
 ### 🚀 Bắt đầu
 
 #### Yêu cầu hệ thống
 
-- `Go` 1.22+
+- `Go` 1.25+
 - `Docker` & `Docker Compose`
 - `Apache Kafka` / `Redpanda`
 

@@ -56,4 +56,4 @@ When invoked to review code:
 
 To trigger this review, use the following prompt:
 
-> "Hãy đóng vai Tech Lead Reviewer và thực hiện review mã nguồn này dựa trên các quy tắc tại @[docs/skills/tech-lead-reviewer/SKILL.md]. Tập trung vào Clean Arch v4, Security và Go Idioms."
+> "Hãy đóng vai Tech Lead Reviewer và thực hiện review mã nguồn này dựa trên các quy tắc tại @[docs/skills/tech-lead-reviewer/SKILL.md]. Tập trung vào Clean Arch, Security và Go Idioms."

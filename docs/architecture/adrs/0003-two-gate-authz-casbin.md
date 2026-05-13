@@ -20,4 +20,4 @@ Ngoài ra, Casbin policy sẽ được đồng bộ theo kiến trúc **Resilien
 ## Nguồn tham khảo
 - **Sprint:** Sprint 2.
 - **Ticket:** RR-12 (Fine-grained Authorization).
-- Xem chi tiết tại: [Resilient AuthZ Sync](../concepts/resilient-authz-sync.md).
+- Xem chi tiết tại: [Resilient AuthZ Sync](../README.md#resilient-authz-sync-architecture).

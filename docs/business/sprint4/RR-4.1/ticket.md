@@ -29,10 +29,11 @@ Dưới vai trò là một **Nông dân (Farmer)**, tôi muốn khai báo mẻ t
 ---
 
 ## 📊 Dữ liệu yêu cầu
-- `farm_id`: UUID (Bắt buộc)
-- `coffee_type`: String (Arabica, Robusta, Cherry, Culi)
+- `farm_id`: uint64 (Bắt buộc)
+- `coffee_type`: String Enum (ARABICA, ROBUSTA, CHERRY, CULI)
 - `quantity`: Decimal (kg)
-- `harvest_date`: ISO8601 Date
+- `harvest_date`: ISO8601 Date / Unix Timestamp
+- `status`: String Enum (NEW, PROCESSING, COMPLETED) - Hệ thống tự gán `NEW` khi khởi tạo.
 
 ## 🔗 Liên kết kỹ thuật
 - Xem Technical Design tại: [technical_design.md](../technical_design.md)

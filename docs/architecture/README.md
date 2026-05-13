@@ -2,45 +2,211 @@
 
 Welcome to the central hub for the RuntimeRoasters system architecture. This documentation is organized following Enterprise Big Tech standards (Diátaxis Framework + ADRs) to ensure maintainability, clear separation of concerns, and structured onboarding.
 
-## 📚 Organization Rules (How to maintain this doc)
+## 📚 Organization Rules
 
-To prevent this directory from becoming a chaotic "God Document" dump, all contributors MUST adhere to the following rules:
-
-1. **Diátaxis Framework (Separation of Concerns):**
-   - **`concepts/` (Lý thuyết / The WHY):** Dành cho các bài viết giải thích tư tưởng, triết lý thiết kế (e.g., *Tại sao dùng Clean Architecture? Chiến lược Observability là gì?*). Không chứa code chi tiết ở đây.
-   - **`reference/` (Tra cứu / The WHAT):** Dành cho tài liệu mang tính chất thông tin cứng (e.g., *Danh sách port, cấu hình `pkg/logger`, API Schema, Database Schema*).
-   - **`flows/` (Luồng nghiệp vụ / The HOW):** Chứa các sơ đồ Sequence, Data Flow mô tả cách các thành phần tương tác trong một Use Case cụ thể (e.g., *Luồng đăng nhập Kratos, Luồng checkout*).
-
-2. **ADRs (Architecture Decision Records):**
-   - **Bắt buộc:** Mọi thay đổi lớn về kiến trúc, công nghệ, hoặc quy trình (e.g., *Đổi từ MongoDB sang Postgres, chọn GORM thay vì sqlx*) ĐỀU PHẢI được ghi nhận bằng 1 file markdown trong `adrs/`.
-   - **Mục đích:** Tránh việc tranh cãi lại các quyết định cũ, và giúp Dev mới hiểu bối cảnh lịch sử của dự án.
-   - **Format:** Tuân thủ chuẩn `[Trạng thái] - [Bối cảnh] - [Quyết định] - [Hậu quả]`. Gắn tag rõ ràng tới Sprint hoặc Ticket liên quan.
-
-3. **No Duplication:**
-   - Nếu `blueprint.md` đã vẽ sơ đồ tổng thể, đừng vẽ lại nó ở file khác. Hãy trỏ link tới nó.
-   - Code snippet chỉ được dùng để minh họa, không copy toàn bộ source code vào tài liệu vì code sẽ out-of-date rất nhanh.
+1. **Architecture (High-Level):** This file and the subdirectories `adrs/` and `flows/`.
+2. **Engineering (Low-Level):** Located in `docs/engineering/`. Contains implementation details, schemas, and developer guides.
+3. **Business & Planning:** Located in `docs/business/`. Contains Sprints, PRDs, and Roadmaps.
 
 ---
 
-## 🗺️ Master Index
+# 🗺️ Master Index
 
-### 1. High-Level Overviews
-- [01_system_blueprint.md](./01_system_blueprint.md) - Sơ đồ kiến trúc tổng thể, hạ tầng và Roadmap.
+### 1. High-Level Overview & Blueprint
+- [System Architecture & Development Blueprint](#runtime-roasters-system-architecture--development-blueprint) (Below)
+- [ADRs (Architecture Decision Records)](./adrs/)
+- [Flows (Interaction Diagrams)](./flows/)
 
-### 2. 🧠 Concepts (Lý thuyết cốt lõi)
-- [clean-architecture.md](./concepts/clean-architecture.md) - Triết lý Clean Architecture, phân lớp và Directory Mapping.
-- [system-wide-standards.md](./concepts/system-wide-standards.md) - Thư viện dùng chung, Outbox, Idempotency và Manual DI.
-- [resilient-authz-sync.md](./concepts/resilient-authz-sync.md) - Kiến trúc đồng bộ quyền (Casbin + Kafka + gRPC).
-- [observability-strategy.md](./concepts/observability-strategy.md) - Chiến lược giám sát (SigNoz, 4 pillars).
+### 2. 🧠 Architectural Concepts (Consolidated)
+- [Clean Architecture Framework](#-clean-architecture-framework--runtimeroasters)
+- [High Availability (HA) & Kafka Messaging Strategy](#high-availability-ha--kafka-messaging-strategy)
+- [Observability Strategy (Telemetry)](#thiết-kế-telemetry--aspire-like-observability-cho-go)
+- [Resilient AuthZ Sync Architecture](#resilient-authz-sync-architecture)
+- [System-Wide Architectural Standards](#system-wide-architectural-standards-runtime-roasters)
 
-### 3. 📖 Reference (Tra cứu)
-- [core-framework-pkg.md](./reference/core-framework-pkg.md) - Hướng dẫn sử dụng `pkg/` (Config, Logger, Errs, Database).
-- [infrastructure-port-map.md](./reference/infrastructure-port-map.md) - Danh sách Port, môi trường.
-- [data-models.md](./reference/data-models.md) - Database schemas và models.
+### 3. 🛠️ Engineering & Developer Guides (External)
+- [Engineering Master Index](../engineering/README.md)
+- [Database Models & Schemas](../engineering/database/)
+- [Common Library (pkg) Reference](../engineering/reference/core-framework-pkg.md)
 
-### 4. 🔀 Flows (Luồng tương tác)
-- [identity-authentication.md](./flows/identity-authentication.md) - Luồng đăng nhập và xác thực.
-- [system-data-flow.md](./flows/system-data-flow.md) - Dòng chảy dữ liệu qua các services.
+### 4. 📅 Project Planning & Roadmap (External)
+- [Master Sprint Roadmap](../business/sprint-planning.md)
+- [Sprint 4: The Resilient Farm](../business/sprint4/main.md)
 
-### 5. 📜 ADRs (Nhật ký Quyết định Kiến trúc)
-- Xem thư mục: [`adrs/`](./adrs/)
+---
+
+# Runtime Roasters — System Architecture & Development Blueprint
+
+Mục tiêu là xây dựng một hệ thống Microservices **"Mạnh mẽ - Tin cậy - Quan sát được"**. Hệ thống không chỉ giải quyết bài toán nghiệp vụ Chuỗi cung ứng cà phê mà còn là một bản showcase về các mẫu thiết kế (Design Patterns) hiện đại nhất trong hệ sinh thái Go.
+
+### Nguyên tắc cốt lõi (Constitution):
+- **Abstraction First:** Mọi thành phần hạ tầng (DB, Queue, Cache) đều được trừu tượng hóa qua Interface.
+- **Calculated Consistency:** Sử dụng **Transactional Outbox** cho các luồng quan trọng và **Inbox Pattern** để nhận tin, triệt tiêu rủi ro mất dữ liệu.
+- **Dual Idempotency:** Bảo vệ 2 lớp: `Idempotency-Key` (API Level) và `Transactional Inbox` (Consumer Level).
+- **Observability by Design:** Mọi request mang dấu vết W3C Tracing xuyên suốt Gateway -> gRPC -> Kafka.
+- **Fail-Closed Security:** Ưu tiên an ninh hơn tính khả dụng trong các trường hợp kiểm tra quyền (VD: Valkey Blacklist).
+
+## Thiết kế High Availability (HA)
+
+Hệ thống được thiết kế để không có điểm yếu chí tử (No Single Point of Failure).
+
+- **Database HA**: PostgreSQL Master-Slave Replication với PgBouncer làm cổng kết nối tập trung.
+- **Messaging HA**: Cụm Kafka tối thiểu 3 Brokers, Replication Factor = 3.
+- **Gateway HA**: KrakenD chạy đa instance (stateless) phía sau External Load Balancer.
+- **Identity HA**: Ory Kratos/Hydra chạy đa instance với shared session store (Valkey).
+
+## Sơ đồ Hạ tầng Tổng thể
+
+```mermaid
+graph TB
+    subgraph "External World"
+        Browser([Browser / Mobile])
+    end
+
+    subgraph "Client App"
+        CA[client-app :3000]
+    end
+
+    subgraph "API Gateway (HA)"
+        GW[KrakenD :8081]
+    end
+
+    subgraph "Microservices (Stateless)"
+        DS[demo-service]
+        AS[auth-service]
+        FS[farm-service]
+        RS[retail-service]
+        WS[warehouse-service]
+    end
+
+    subgraph "Data Persistence (HA)"
+        PB[PgBouncer :6432]
+        PG[(PostgreSQL :54321)]
+        RD[(Valkey Sentinel :6379)]
+        PB --> PG
+    end
+
+    subgraph "Message Broker (HA)"
+        KF[Kafka Cluster :9094]
+        KUI[Kafka UI :8090]
+        KUI --- KF
+    end
+
+    Browser -->|:3000| CA
+    CA -->|REST :8081| GW
+    GW -->|gRPC+JWT| DS
+    GW -->|gRPC+JWT| AS
+    DS --> PB
+    AS --> PB
+    FS --> PB
+    RS --> PB
+    WS --> PB
+    DS -.->|Outbox/Inbox| KF
+    RS -.->|Outbox/Inbox| KF
+```
+
+## Chiến lược Kafka (Topic-per-Domain)
+
+| Nhóm Domain | Topic Kafka | Producer | Consumer |
+| :--- | :--- | :--- | :--- |
+| Identity | `auth.user.events` | Auth | Farm, Audit |
+| Commercial | `retail.order.events` | Retail | Warehouse, Trace |
+| Inventory | `warehouse.stock.events` | Warehouse | Retail, Logistics |
+| Logistics | `logistics.gps.events` | Logistics | Frontend (SSE) |
+
+## Mô hình Bảo mật 3 Tầng (Three-Gate Security)
+
+Hệ thống áp dụng mô hình Zero Trust nội bộ:
+1.  **Gate 1 (Gateway)**: KrakenD verify chữ ký JWT và kiểm tra `scope` claim.
+2.  **Gate 2 (Service)**: Casbin Enforcer tại từng Microservice kiểm tra `role` người dùng.
+3.  **Gate 3 (Internal)**: gRPC Interceptor tự động chuyển tiếp (propagate) JWT metadata.
+
+---
+
+# 🏗️ Clean Architecture Framework — RuntimeRoasters
+
+Triết lý cốt lõi là **Dependencies point INWARDS**. Tầng bên trong không được biết về sự tồn tại của tầng bên ngoài.
+
+```
+domain/         ← Pure entities + domain errors ONLY. Zero imports from this project.
+    ↑
+usecase/        ← Declares its OWN repository interfaces. Imports domain/ only.
+    ↑
+infrastructure/ ← Implements usecase interfaces. Imports usecase/ + domain/ + pkg/*
+
+main.go         ← Composition Root. Only place that knows all concrete types.
+```
+
+### Cấu trúc Thư mục & Ánh xạ (Directory Mapping)
+
+- **Tầng Domain (`internal/domain/`):** Lõi của ứng dụng (Entities, Value Objects).
+- **Tầng UseCase (`internal/usecase/`):** Điều phối luồng dữ liệu (Application Rules). Định nghĩa Repository Interfaces.
+- **Tầng Infrastructure (`internal/infrastructure/`):** Frameworks & Drivers. Implement interfaces.
+- **Tầng Delivery (`internal/delivery/`):** gRPC/HTTP handlers.
+- **Composition Root (`cmd/main.go`):** Khởi tạo và nối dây (Manual DI).
+
+---
+
+# High Availability (HA) & Kafka Messaging Strategy
+
+### 1. Chiến lược Kafka: Grouping & Scaling
+
+- **Phân nhóm Topic:** Theo Domain nghiệp vụ (auth, retail, warehouse, logistics).
+- **Consumer Group:** Mỗi service sử dụng một Consumer Group ID riêng để load balancing.
+- **Partitioning & Ordering:** Sử dụng **Business Key** (order_id, batch_id) làm Kafka Key để đảm bảo thứ tự.
+
+### 2. Thiết kế HA Toàn diện
+
+- **Persistence:** Postgres Master-Slave + PgBouncer. Valkey Sentinel/Cluster.
+- **Messaging:** 3 Brokers, Replication Factor = 3.
+- **Gateway:** KrakenD đa instance sau Load Balancer.
+- **Stateless Services:** Toàn bộ microservices đều là stateless để dễ dàng scale ngang.
+
+---
+
+# Thiết kế Telemetry — Aspire-like Observability cho Go
+
+Mang lại trải nghiệm "zero-config" với Tracing, Metrics, và Log Correlation tự động.
+
+### 1. Trụ cột chính (The Four Pillars)
+- **Auto-Instrumentation:** HTTP, gRPC, SQL, Valkey.
+- **Context Propagation:** Trace-ID lan truyền qua HTTP, gRPC, và Kafka Headers.
+- **Log Correlation:** Tự động đính `trace_id` vào mọi dòng log.
+- **Centralized Hub:** Sử dụng **SigNoz** làm nền tảng giám sát tập trung.
+
+### 2. Implementation details
+- Tích hợp qua package `pkg/telemetry`.
+- Sử dụng `otelgin` và `otelgrpc` middlewares.
+- Logger tích hợp `zap` và OpenTelemetry.
+
+---
+
+# Resilient AuthZ Sync Architecture
+
+Mô hình **Centralized Management, Distributed Enforcement** qua Casbin.
+
+1. **Centralized Auth Service:** Quản lý `casbin_rule` trong Postgres.
+2. **Kafka Bus:** Truyền tin thay đổi quyền thời gian thực (Phase 2).
+3. **In-memory Enforcer:** Các Microservices kiểm tra quyền trực tiếp trên RAM (Zero Latency).
+
+### Cơ chế Resilience:
+- **Bootstrapping (gRPC Snapshot):** Tải toàn bộ Snapshot quyền khi khởi động.
+- **Self-Healing (Polling):** Tự động đồng bộ lại sau mỗi 10-15 phút.
+
+---
+
+# System-Wide Architectural Standards: Runtime Roasters
+
+### 1. Tiêu chuẩn Thư viện Dùng chung (`pkg/`)
+- `pkg/database`: GORM Wrapper + TxManager.
+- `pkg/kafka`: CloudEvents Standard.
+- `pkg/errs`: RFC 9457 (Problem Details).
+
+### 2. Core Patterns
+- **Internal gRPC-Only:** Không dùng HTTP nội bộ giữa các services.
+- **Three-Gate Authorization:** Identity -> RPC Method -> Data-level (GormScoper).
+- **Selective Transactional Outbox:** Áp dụng cho các luồng quan trọng (Harvest, Order).
+- **Manual DI:** Khởi tạo thủ công tại Composition Root, không dùng DI framework.
+
+---
+*Cập nhật lần cuối: 2026-05-13 bởi TechLead*

@@ -19,4 +19,4 @@ Dự án RuntimeRoasters bắt đầu từ Sprint 1 với mục tiêu xây dựn
 
 ## Nguồn tham khảo
 - **Sprint:** Sprint 1 (Bootstrap Phase).
-- Xem chi tiết triển khai tại: [Clean Architecture Concepts](../concepts/clean-architecture.md).
+- Xem chi tiết triển khai tại: [Clean Architecture Concepts](../README.md#-clean-architecture-framework--runtimeroasters).
