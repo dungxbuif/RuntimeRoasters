@@ -2,7 +2,7 @@ import api from "@/lib/axios";
 import { API_ENDPOINTS } from "@/constants/api";
 
 export interface Farm {
-  id: string;
+  id: number;
   name: string;
   location: string;
   area: number;
@@ -16,8 +16,8 @@ export type CoffeeType = 'ARABICA' | 'ROBUSTA' | 'CHERRY' | 'CULI';
 export type HarvestStatus = 'NEW' | 'PROCESSING' | 'COMPLETED';
 
 export interface Harvest {
-  id: string;
-  farm_id: string;
+  id: number;
+  farm_id: number;
   coffee_type: CoffeeType;
   quantity: number;
   harvest_date: string;
@@ -27,7 +27,7 @@ export interface Harvest {
 }
 
 export interface CreateHarvestInput {
-  farm_id: string;
+  farm_id: number;
   coffee_type: CoffeeType;
   quantity: number;
   harvest_date: string;
@@ -39,12 +39,12 @@ class FarmService {
     return res.data.farms || [];
   }
 
-  async updateFarm(id: string, data: Partial<Farm>): Promise<Farm> {
+  async updateFarm(id: number | string, data: Partial<Farm>): Promise<Farm> {
     const res = await api.put(`${API_ENDPOINTS.FARM.FARMS}/${id}`, data);
     return res.data.farm;
   }
 
-  async deleteFarm(id: string): Promise<void> {
+  async deleteFarm(id: number | string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.FARM.FARMS}/${id}`);
   }
 

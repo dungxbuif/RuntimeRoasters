@@ -1,83 +1,54 @@
-# Technical Design: [RR-20] Warehouse Service Infrastructure & State Machine
+# Technical Design: [RR-20] Warehouse Service Architecture & Batch Logic
 
 **Role:** Tech Lead
-**Context:** Triển khai nền tảng kỹ thuật cho Warehouse Service (Unified), quản lý luồng từ Receipt -> Stocked.
+**Context:** Thiết kế hệ thống quản lý Kho tập trung vào luồng Batching (1 Batch - N Runs).
 
 ---
 
-## 1. Technical Strategy
+## 1. Data Model Strategy (1-N Relationship)
 
-### 1.1. Core Framework
-- **Language:** Go 1.22+.
-- **Architecture:** Clean Architecture (Domain-driven).
-- **Manual DI:** Sử dụng `cmd/main.go` để khởi tạo repository, usecase và handler. Không dùng wire nếu project chưa scale quá lớn (để dễ debug).
+Hệ thống tuân thủ mô hình **1 Production Batch = N Roast Runs** để đảm bảo tính ổn định (Consistency) và khả năng scale trong sản xuất.
 
-### 1.2. State Machine Implementation
-- **Library:** `github.com/looplab/fsm` (hoặc custom logic nếu đơn giản).
-- **Transitions:**
-    - `RECEIVED` -> `HULLING` (Event: `StartHulling`)
-    - `HULLING` -> `ROASTING` (Event: `StartRoasting`)
-    - `ROASTING` -> `STOCKED` (Event: `CompleteRoasting`)
-- **Validation:** Mọi thay đổi trạng thái phải đi qua phương thức `domain.Batch.TransitionTo(nextStatus)`.
+### 1.1. Bảng `production_batches` (Thực thể quản lý)
+- `id`: UUID.
+- `harvest_id`: Liên kết tới Farm Service (Nguồn gốc hạt thô).
+- `status`: `RECEIVED` (Mới nhập thô), `PROCESSING` (Đang rang), `STOCKED` (Đã hoàn thành lô).
+- `production_batch_id`: Mã thương mại (VD: `PROD-AR-20260514-001`).
+- `coffee_type`: Loại hạt (Arabica/Robusta).
+- `origin_code`: Vùng nguyên liệu.
+- `total_input_weight`: Tổng khối lượng thô đã dùng (kg).
+- `total_output_weight`: Tổng khối lượng chín thu được (kg).
 
----
-
-## 2. Database Schema (PostgreSQL)
-
-```sql
--- Quản lý vòng đời mẻ hàng
-CREATE TABLE processing_batches (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    harvest_id UUID NOT NULL, -- Tham chiếu từ Farm Service
-    batch_id VARCHAR(50) UNIQUE NOT NULL, -- Mã sinh theo BATCH_LOGIC.md
-    status VARCHAR(20) NOT NULL, -- RECEIVED, HULLING, ROASTING, STOCKED
-    coffee_type VARCHAR(20) NOT NULL,
-    origin_code VARCHAR(10) NOT NULL,
-    intake_weight DECIMAL(10,2) NOT NULL,
-    yield_weight DECIMAL(10,2) DEFAULT 0,
-    weight_loss_percent DECIMAL(5,2) DEFAULT 0,
-    quality_flag VARCHAR(20) DEFAULT 'NORMAL', -- NORMAL, QUALITY_WARNING
-    operator_id UUID,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Quản lý tồn kho SKU
-CREATE TABLE inventory_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    sku VARCHAR(50) UNIQUE NOT NULL, -- e.g., ARABICA-CD-ROASTED
-    coffee_type VARCHAR(20) NOT NULL,
-    origin_code VARCHAR(10) NOT NULL,
-    total_quantity DECIMAL(15,2) DEFAULT 0,
-    available_quantity DECIMAL(15,2) DEFAULT 0,
-    reserved_quantity DECIMAL(15,2) DEFAULT 0,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Inbox Pattern
-CREATE TABLE inbox_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    message_id VARCHAR(255) UNIQUE NOT NULL,
-    processed_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+### 1.2. Bảng `roast_runs` (Thực thể vật lý - "Mẻ")
+- `id`: UUID.
+- `batch_id`: FK trỏ tới `production_batches`.
+- `input_weight`: Khối lượng thô của mẻ rang này.
+- `output_weight`: Khối lượng chín của mẻ rang này.
+- `created_at`: Thời điểm rang.
 
 ---
 
-## 3. Implementation Steps
+## 2. Kafka HA & Scalability Strategy
 
-1.  **Scaffolding:** Tạo thư mục `apps/warehouse-service` và copy `pkg/` boilerplate.
-2.  **Domain Layer:** Định nghĩa `Batch` entity và interface cho `Repository`.
-3.  **UseCase Layer:**
-    - `ProcessHarvestEvent`: Nhận event từ Kafka, check Inbox, tạo Batch.
-    - `UpdateBatchStatus`: Xử lý chuyển trạng thái và tính toán `yield_weight`.
-4.  **Infrastructure Layer:**
-    - Implement GORM repository.
-    - Setup Kafka Consumer cho topic `farm.harvest.events`.
+Để đảm bảo hệ thống scale được nhiều Pods mà không lỗi dữ liệu:
+
+### 2.1. Partitioning & Key
+- **Topic:** `farm.harvest.events` (Partitions: 3).
+- **Partition Key:** Sử dụng `harvest_id`. Đảm bảo các event liên quan đến cùng 1 vụ thu hoạch luôn được xử lý bởi cùng 1 Pod, giữ đúng thứ tự.
+
+### 2.2. Idempotency (Inbox Pattern)
+- Mọi event nhận từ Kafka được lưu vào bảng `inbox_events` cùng với Business Logic trong 1 Transaction.
+- Nếu nhận trùng `message_id`, hệ thống tự động bỏ qua (Ignore).
+
+### 2.3. Distributed Locking (Valkey)
+- Khi thực hiện `FinalizeBatch` và cập nhật `inventory_items`, service phải lấy lock theo SKU: `lock:inventory:{sku}`.
+- Tránh tranh chấp dữ liệu khi nhiều Pods cùng nhập kho các Batch khác nhau cho cùng một loại sản phẩm.
 
 ---
 
-## 4. Verification Plan
-- **Unit Test:** `TestBatchStateMachine` để verify logic `CanTransitionTo`.
-- **SQL Test:** Kiểm tra transaction cập nhật đồng thời `processing_batches` và `inventory_items` khi chuyển sang `STOCKED`.
-- **Manual Check:** Dùng `grpcurl` gọi API `UpdateBatchStatus` và kiểm tra log.
+## 3. Inventory Integration
+
+Khi Batch chuyển sang `STOCKED`:
+1. Tính `Total_Output = Sum(Roast_Runs.output_weight)`.
+2. Update `inventory_items` (UPSERT).
+3. Emit event `warehouse.stock.updated`.

@@ -58,7 +58,7 @@ export default function AdminFarmsPage() {
   });
 
   const deleteFarmMutation = useMutation({
-    mutationFn: (id: string) => farmService.deleteFarm(id),
+    mutationFn: (id: number) => farmService.deleteFarm(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farms'] });
     },
@@ -72,7 +72,7 @@ export default function AdminFarmsPage() {
     createFarmMutation.mutate(formData);
   };
 
-  const handleDeleteFarm = (id: string) => {
+  const handleDeleteFarm = (id: number) => {
     if (!confirm('Are you sure you want to decommission this farm node?')) return;
     deleteFarmMutation.mutate(id);
   };

@@ -1,31 +1,53 @@
-# [RR-19] [Epic] Chuỗi cung ứng hạt: Từ Nông trại đến Kho thành phẩm
+# [RR-19] [BA] Quản lý Kho & Chuỗi giá trị (Intake to Batch)
 
 **User Story:**
-Dưới vai trò là **Giám đốc Vận hành (COO)**, tôi muốn có một hệ thống quản lý mẻ hàng xuyên suốt từ khi nhận nguyên liệu thô đến khi ra thành phẩm đóng gói, để tôi có thể kiểm soát chất lượng, tỷ lệ hao hụt và đảm bảo luôn có đủ hàng để bán.
+Dưới vai trò là **Quản lý Kho (Warehouse Manager)**, tôi muốn kiểm soát toàn bộ vòng đời của hàng hóa từ khi rời nông trại đến khi trở thành thành phẩm đóng gói, để tôi có thể đảm bảo số lượng tồn kho và khả năng truy xuất nguồn gốc.
 
 **Business Context:**
-Hiện tại, việc chuyển giao giữa nông trại và nhà máy đang được ghi chép thủ công, dẫn đến thất thoát dữ liệu và khó khăn khi truy vết nếu mẻ hàng gặp lỗi. Việc số hóa quy trình này là điều kiện tiên quyết để mở rộng quy mô sản xuất.
+Trong mô hình demo, chúng ta đơn giản hóa việc sản xuất nhưng vẫn giữ chặt chẽ tính nguyên tắc của kho bãi. Một **Lô hàng (Batch)** bán ra thị trường có thể được tạo thành từ nhiều **Mẻ rang (Roast Runs)** nhỏ để tối ưu công suất máy móc.
 
 ---
 
-## 📋 Danh sách Sub-tickets
+## 🔄 Luồng Nghiệp vụ (Workflow)
 
-| Ticket | Summary | Priority |
-| :--- | :--- | :--- |
-| [RR-19.1](./subtickets/RR-19.1/ticket.md) | Tiếp nhận mẻ thu hoạch & Khởi tạo mã Batch | `CRITICAL` |
-| [RR-19.2](./subtickets/RR-19.2/ticket.md) | Quản lý quy trình chế biến (Rang/Sấy) & Tính hao hụt | `HIGH` |
-| [RR-19.3](./subtickets/RR-19.3/ticket.md) | Nhập kho thành phẩm & Cập nhật tồn kho tự động | `CRITICAL` |
+1.  **Nhập kho (Intake):**
+    - Hệ thống nhận `Harvest_Created` event.
+    - Tạo bản ghi `Intake_Batch` (Trạng thái: `RECEIVED`).
+2.  **Chế biến (Processing - High Level):**
+    - Thủ kho chuyển trạng thái Batch sang `PROCESSING`.
+    - Thợ rang thực hiện N mẻ rang (Run). Với mỗi mẻ, chỉ ghi nhận: `Input_Weight` và `Output_Weight`.
+3.  **Hoàn tất & Cấp mã (Finalize & Stocking):**
+    - Khi đủ số lượng hoặc kết thúc ca, Quản lý bấm "Finalize Batch".
+    - Hệ thống tổng hợp: `Total_Output = Sum(Run_Outputs)`.
+    - Cấp mã **Production Batch ID** (theo chuẩn thương mại).
+    - Cập nhật tồn kho thành phẩm (Roasted Coffee SKU).
 
 ---
 
-## 🛠️ Quy tắc Nghiệp vụ Chung (Business Rules)
-- Mọi mẻ hàng khi chuyển trạng thái phải ghi lại **Timestamp** và **Operator ID**.
-- Mã Batch ID phải tuân thủ đúng định dạng tại `docs/business/BATCH_LOGIC.md`.
-- Hệ thống không cho phép xóa Batch đã có dữ liệu chế biến (Chỉ cho phép Cancel với lý do cụ thể).
+## 🛠️ Quy tắc Nghiệp vụ (Business Rules)
+
+- **Mối quan hệ 1-N:** 1 Intake/Production Batch chứa 0..N Roast Runs.
+- **Tính toán hao hụt:** Hệ thống tự động tính `% Loss` tổng thể của cả Batch dựa trên tổng Input và tổng Output.
+- **Trạng thái hợp lệ:** Chỉ được phép Finalize Batch khi đã có ít nhất 1 Roast Run được ghi nhận.
+- **Traceability:** Phải truy xuất được từ Production Batch ID ngược về mã Harvest ID ban đầu.
 
 ---
 
-## ✅ Acceptance Criteria (Epic Level)
-1. **End-to-End Traceability:** Từ một gói cà phê bất kỳ, hệ thống phải truy ngược được về mẻ rang tương ứng và mẻ thu hoạch gốc tại nông trại nào.
-2. **Weight Integrity:** Tổng trọng lượng thành phẩm cộng với hao hụt phải khớp với trọng lượng đầu vào (sai số cho phép < 1%).
-3. **Inventory Sync:** Số lượng tồn kho trên Dashboard phải cập nhật ngay lập tức khi một mẻ hàng chuyển sang trạng thái `STOCKED`.
+## ✅ Acceptance Criteria (AC)
+
+### Scenario 1: Tiếp nhận hàng từ Farm
+- **Given:** Farm Service vừa gửi event mẻ thu hoạch 500kg.
+- **When:** Hệ thống xử lý event.
+- **Then:** Một bản ghi "Lô chờ chế biến" xuất hiện trong kho với khối lượng 500kg thô.
+
+### Scenario 2: Ghi nhận mẻ rang (Roast Run)
+- **Given:** Một Batch đang ở trạng thái `PROCESSING`.
+- **When:** Thợ rang nhập: Run #1 - In: 12kg, Out: 10kg.
+- **Then:** Hệ thống lưu nhật ký mẻ rang và hiển thị tổng sản lượng hiện tại là 10kg.
+
+### Scenario 3: Đóng lô thành phẩm
+- **When:** Quản lý chọn "Finalize Batch".
+- **Then:**
+    - Trạng thái Batch đổi thành `STOCKED`.
+    - Hệ thống sinh mã `PROD-ARABICA-20260514-001`.
+    - Tồn kho SKU tương ứng tăng lên.

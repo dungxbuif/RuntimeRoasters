@@ -12,7 +12,7 @@ export default function HarvestsPage() {
   const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<CreateHarvestInput>({
-    farm_id: '',
+    farm_id: 0,
     coffee_type: 'ARABICA',
     quantity: 0,
     harvest_date: new Date().toISOString().split('T')[0],
@@ -42,7 +42,7 @@ export default function HarvestsPage() {
       queryClient.invalidateQueries({ queryKey: ['harvests'] });
       setShowModal(false);
       setFormData({
-        farm_id: farms[0]?.id || '',
+        farm_id: farms[0]?.id || 0,
         coffee_type: 'ARABICA',
         quantity: 0,
         harvest_date: new Date().toISOString().split('T')[0],
@@ -102,7 +102,7 @@ export default function HarvestsPage() {
                 {harvests.map((harvest: Harvest) => (
                   <tr key={harvest.id} className="hover:bg-surface-container-low/30 transition-colors">
                     <td className="px-6 py-4">
-                      <code className="text-[10px] text-on-surface-variant/60 font-mono">#{harvest.id.split('-')[0].toUpperCase()}</code>
+                      <code className="text-[10px] text-on-surface-variant/60 font-mono">#{harvest.id.toString().padStart(4, '0')}</code>
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-black text-on-surface uppercase tracking-tight text-xs">
@@ -162,8 +162,8 @@ export default function HarvestsPage() {
                 <select 
                   required
                   className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold uppercase tracking-tight"
-                  value={formData.farm_id}
-                  onChange={(e) => setFormData({...formData, farm_id: e.target.value})}
+                  value={formData.farm_id || ''}
+                  onChange={(e) => setFormData({...formData, farm_id: Number(e.target.value)})}
                 >
                   {farms.map(farm => (
                     <option key={farm.id} value={farm.id}>{farm.name}</option>

@@ -23,7 +23,7 @@ export interface CreateFarmRequest {
 }
 
 export interface Farm {
-  id: string;
+  id: number;
   name: string;
   location: string;
   area: number;
