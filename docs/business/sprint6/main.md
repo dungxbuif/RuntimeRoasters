@@ -1,6 +1,6 @@
-# Sprint 6: Warehouse Inventory
+# Sprint 6: Retail & Order Saga
 
-**Epic Goal:** Quản lý kho trung tâm và cung cấp cơ chế giữ chỗ hàng (Reservation) an toàn cho các đơn hàng.
+**Epic Goal:** Xây dựng hệ thống đặt hàng và điều phối chuỗi cung ứng tự động qua Saga Pattern.
 
 ---
 
@@ -8,12 +8,12 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-6.1](./RR-6.1/ticket.md) | [BA] Quản lý tồn kho thành phẩm | 🕒 To Do | Warehouse Keeper |
-| [RR-6.2](./RR-6.2/ticket.md) | [Tech] Saga Participant: Stock Reservation & Locking | 🕒 To Do | Tech Lead |
+| [RR-22](./RR-22.md) | [BA] Hệ thống đặt hàng tại quầy (POS) | 🕒 To Do | Store Manager |
+| [RR-23](./RR-23.md) | [Tech] Retail Service & Saga Orchestrator | 🕒 To Do | Tech Lead |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Distributed Locking:** Sử dụng Valkey để tránh bán quá số lượng (Overselling).
-- **Saga Participant:** Hỗ trợ các API `Reserve`, `Confirm`, `Cancel` cho luồng Saga.
-- **Inventory Snapshot:** Tối ưu hóa việc đọc tồn kho thực tế.
+- **Saga Choreography:** Điều phối luồng qua Kafka Events (Order -> Warehouse -> Logistics).
+- **Transactional Outbox:** Đảm bảo lưu Order và bắn Event là một Transaction.
+- **Idempotency:** Sử dụng `Idempotency-Key` cho API và `Message_ID` cho Consumer.

@@ -1,6 +1,6 @@
-# Sprint 11: Observability & Audit
+# Sprint 11: Hardening & Grand Finale
 
-**Epic Goal:** Giám sát "sức khỏe" hệ thống và lưu trữ bằng chứng giao dịch không thể sửa đổi.
+**Epic Goal:** Bảo mật tối đa và tối ưu hóa hiệu năng hệ thống.
 
 ---
 
@@ -8,12 +8,13 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-11.1](./RR-11.1/ticket.md) | [BA] Hệ thống giám sát và Audit Trail | 🕒 To Do | Auditor |
-| [RR-11.2](./RR-11.2/ticket.md) | [Tech] Audit Service with Apache Cassandra | 🕒 To Do | Tech Lead |
+| [RR-33](./RR-33.md) | [Tech] mTLS Zero Trust | 🕒 To Do | Security Eng |
+| [RR-34](./RR-34.md) | [Tech] Token Revocation & Security Audit | 🕒 To Do | Tech Lead |
+| [RR-35](./RR-35.md) | [Tech] Load Testing & Performance Tuning | 🕒 To Do | SRE |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Apache Cassandra:** Lưu trữ Event Log khổng lồ với khả năng write-heavy.
-- **Hash-chained Events:** Đảm bảo tính toàn vẹn của Audit Log (chống sửa đổi).
-- **Unified Dashboard:** Tích hợp Prometheus, Grafana và Signoz.
+- **mTLS:** Mã hóa giao tiếp giữa các Microservices.
+- **Valkey:** Sử dụng để quản lý danh sách token bị thu hồi (Blacklist).
+- **Chaos Engineering:** Thử nghiệm độ bền của hệ thống khi có service bị die.

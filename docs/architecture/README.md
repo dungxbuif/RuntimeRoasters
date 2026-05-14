@@ -68,40 +68,44 @@ graph TB
     end
 
     subgraph "API Gateway (HA)"
-        GW[KrakenD :8081]
+        GW[KrakenD :8080]
     end
 
     subgraph "Microservices (Stateless)"
-        DS[demo-service]
-        AS[auth-service]
-        FS[farm-service]
-        RS[retail-service]
-        WS[warehouse-service]
+        AS[auth-service :8081]
+        FS[farm-service :8082]
+        WS[warehouse-service :8083]
+        RS[retail-service :8084]
+        LS[logistics-service :8085]
     end
 
     subgraph "Data Persistence (HA)"
         PB[PgBouncer :6432]
-        PG[(PostgreSQL :54321)]
-        RD[(Valkey Sentinel :6379)]
+        PG[(PostgreSQL :5432)]
+        RD[(Valkey/Redis :6379)]
         PB --> PG
     end
 
     subgraph "Message Broker (HA)"
-        KF[Kafka Cluster :9094]
+        KF[Kafka Cluster :9092]
         KUI[Kafka UI :8090]
         KUI --- KF
     end
 
     Browser -->|:3000| CA
-    CA -->|REST :8081| GW
-    GW -->|gRPC+JWT| DS
+    CA -->|REST :8080| GW
     GW -->|gRPC+JWT| AS
-    DS --> PB
+    GW -->|gRPC+JWT| FS
+    GW -->|gRPC+JWT| WS
+    GW -->|gRPC+JWT| RS
+    GW -->|gRPC+JWT| LS
     AS --> PB
     FS --> PB
-    RS --> PB
     WS --> PB
-    DS -.->|Outbox/Inbox| KF
+    RS --> PB
+    LS --> PB
+    FS -.->|Outbox/Inbox| KF
+    WS -.->|Outbox/Inbox| KF
     RS -.->|Outbox/Inbox| KF
 ```
 
@@ -110,9 +114,10 @@ graph TB
 | Nhóm Domain | Topic Kafka | Producer | Consumer |
 | :--- | :--- | :--- | :--- |
 | Identity | `auth.user.events` | Auth | Farm, Audit |
+| Farm | `farm.harvest.events` | Farm | Warehouse, Trace |
+| Inventory | `warehouse.stock.events` | Warehouse | Retail, Trace |
 | Commercial | `retail.order.events` | Retail | Warehouse, Trace |
-| Inventory | `warehouse.stock.events` | Warehouse | Retail, Logistics |
-| Logistics | `logistics.gps.events` | Logistics | Frontend (SSE) |
+| Logistics | `logistics.shipment.events`| Logistics | Retail, Trace |
 
 ## Mô hình Bảo mật 3 Tầng (Three-Gate Security)
 

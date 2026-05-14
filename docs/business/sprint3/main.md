@@ -1,42 +1,27 @@
-# Sprint 3: Farm Service Business Logic (Vertical Slice)
+# Sprint 3: Farm Service & Vertical Slice
 
-**Goal:** Hoàn thiện dịch vụ Quản lý Nông trại (Farm Service) với đầy đủ tính năng CRUD và logic nghiệp vụ, áp dụng phong cách Vertical Slice (đi theo luồng tính năng) kết hợp với Clean Architecture.
-
----
-
-## 📅 Roadmap & Flows
-
-Sprint này tập trung vào 3 luồng dữ liệu chính:
-
-### 1. Bootstrapping & Foundation
-- Dựng khung sườn service mới dựa trên `demo-service`.
-- Nối dây (wiring) cơ sở hạ tầng (DB, Valkey, Gateway).
-- **Patterns:** Composition Root, Dependency Injection (Wire).
-
-### 2. Flow 1: Quản lý Danh sách & Tạo mới Nông trại
-- Đi từ UI Form/Table -> KrakenD -> Farm Service -> Postgres.
-- **Patterns:** Rich Domain Model, Repository Pattern, DTO, BFF.
-
-### 3. Flow 2: Chi tiết, Cập nhật & Xóa
-- Hoàn thiện các thao tác quản lý vòng đời nông trại.
-- **Patterns:** Optimistic Locking, Unit of Work (WithTx).
-
-### 4. Flow 3: Quản lý Lô hàng (Batch Management)
-- Thiết kế quan hệ Aggregate Root giữa Farm và Batch.
-- Chuẩn bị sẵn cấu trúc cho Outbox Pattern.
-
-### 4. Flow 4: Roles & Permissions (RBAC)
-- **FARM_ADMIN**: Quản lý tài khoản Manager và Nông trại thông qua Admin Portal.
-- **FARM_MANAGER**: Quản lý Nông trại được chỉ định.
-- **Patterns**: Distributed CASBIN, Local Identity Scoping.
+**Trạng thái:** ✅ Hoàn thành (Completed)
+**Mục tiêu:** Hoàn thiện dịch vụ Quản lý Nông trại (Farm Service) với đầy đủ tính năng nghiệp vụ, áp dụng phong cách Vertical Slice kết hợp với Clean Architecture để đảm bảo tính sẵn sàng cho quy trình thu hoạch.
 
 ---
 
-## 🎫 Tickets
+## 📋 Trạng thái Ticket (Kanban)
 
-| Ticket | Summary | Status |
-| :--- | :--- | :--- |
-| [RR-15](./RR-15/ticket.md) | Farm Service Bootstrapping | 🕒 To Do |
-| [RR-16](./RR-16/ticket.md) | Flow 1: Create & List Farm | 🕒 To Do |
-| [RR-17](./RR-17/ticket.md) | Flow 2: Update & Delete Farm | 🕒 To Do |
-| [RR-18](./RR-18/ticket.md) | Flow 3: Batch Management | 🕒 To Do |
+| Ticket | Summary | Status | Role |
+| :--- | :--- | :--- | :--- |
+| [RR-15](./RR-15/ticket.md) | [Tech] Farm Service: Scaffolding & Composition Root | ✅ Done | Tech Lead |
+| [RR-16](./RR-16/ticket.md) | [BA] Quản lý Danh mục Nông trại (Create & List) | ✅ Done | Product Owner |
+| [RR-17](./RR-17/ticket.md) | [Tech] Farm CRUD: Update & Delete Logic | ✅ Done | Backend |
+| [RR-18](./RR-18/ticket.md) | [BA] Quản lý Lô đất & Quy hoạch Vùng trồng | ✅ Done | Farmer |
+
+---
+
+## 💡 Tầm nhìn Nghiệp vụ (Business Vision)
+- **Digital Farm Twin:** Mỗi nông trại thực tế phải được phản ánh chính xác trên hệ thống với các thông số về diện tích, độ cao và loại cà phê chủ đạo.
+- **Resource Management:** Giúp người quản lý nắm bắt được năng lực sản xuất của từng vùng nguyên liệu (Cầu Đất, Buôn Ma Thuột,...).
+- **Foundation for Traceability:** Thông tin nông trại là "gốc" của toàn bộ chuỗi truy xuất nguồn gốc phía sau.
+
+## 📊 Kết quả đạt được (Sprint Result)
+- Khởi tạo thành công Farm Service với đầy đủ các tầng Clean Architecture.
+- Hoàn thiện bộ API quản lý Nông trại (CRUD).
+- Tích hợp phân quyền Casbin: Chỉ Farmer/FarmAdmin mới được quản lý dữ liệu nông trại của họ.

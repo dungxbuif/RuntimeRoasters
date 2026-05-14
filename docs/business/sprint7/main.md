@@ -1,6 +1,6 @@
-# Sprint 7: Retail & Order Saga
+# Sprint 7: Real-time Logistics
 
-**Epic Goal:** Xây dựng hệ thống đặt hàng và điều phối chuỗi cung ứng tự động qua Saga Pattern.
+**Epic Goal:** Quản lý vận chuyển và theo dõi chuyến hàng thời gian thực.
 
 ---
 
@@ -8,12 +8,12 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-7.1](./RR-7.1/ticket.md) | [BA] Hệ thống đặt hàng tại quầy (POS) | 🕒 To Do | Store Manager |
-| [RR-7.2](./RR-7.2/ticket.md) | [Tech] Saga Orchestrator (Choreography) | 🕒 To Do | Tech Lead |
+| [RR-24](./RR-24.md) | [BA] Quy trình điều phối vận chuyển | 🕒 To Do | Logistics Manager |
+| [RR-25](./RR-25.md) | [Tech] Logistics Service & Driver Tracking | 🕒 To Do | Tech Lead |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Saga Choreography:** Điều phối luồng qua Kafka Events (Order -> Warehouse -> Logistics).
-- **Idempotent Consumer:** Đảm bảo mỗi sự kiện chỉ được xử lý đúng một lần.
-- **Compensating Actions:** Cơ chế hoàn tác nếu một bước trong chuỗi thất bại.
+- **Valkey GEO:** Lưu trữ và truy vấn vị trí tài xế theo thời gian thực.
+- **Service Integration:** Lắng nghe sự kiện từ Warehouse để kích hoạt chuyến hàng.
+- **State Machine:** Quản lý trạng thái chuyến hàng (Pending -> In Transit -> Delivered).

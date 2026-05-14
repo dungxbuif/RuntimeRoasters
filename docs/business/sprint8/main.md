@@ -1,6 +1,6 @@
-# Sprint 8: Real-time Logistics
+# Sprint 8: Financial Integrity
 
-**Epic Goal:** Theo dõi hành trình vận chuyển và cập nhật vị trí tài xế theo thời gian thực.
+**Epic Goal:** Thanh toán và quản lý giao dịch tài chính minh bạch.
 
 ---
 
@@ -8,12 +8,12 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-8.1](./RR-8.1/ticket.md) | [BA] Điều phối và Theo dõi chuyến xe | 🕒 To Do | Logistics Manager |
-| [RR-8.2](./RR-8.2/ticket.md) | [Tech] Real-time GPS Tracking with Valkey GEO | 🕒 To Do | Tech Lead |
+| [RR-26](./RR-26.md) | [BA] Quy trình thanh toán & Hoàn tiền | 🕒 To Do | Accountant |
+| [RR-27](./RR-27.md) | [Tech] Payment Service & Stripe Integration | 🕒 To Do | Tech Lead |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Valkey GEO:** Lưu trữ và tính toán khoảng cách tọa độ GPS tốc độ cao.
-- **Webhook Ingress:** Tiếp nhận dữ liệu GPS từ Simulator/App qua Webhook Service.
-- **SSE/Websocket:** Đẩy vị trí trực tiếp lên dashboard quản trị.
+- **External API:** Tích hợp Stripe/VNPay.
+- **Webhook Security:** Xử lý chữ ký HMAC để bảo vệ endpoint Webhook.
+- **Idempotency:** Đảm bảo không thanh toán trùng lặp cho một đơn hàng.

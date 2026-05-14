@@ -1,47 +1,31 @@
-# Sprint 1: Complete Infrastructure — Kanban Board
+# Sprint 1: Infrastructure Foundation & Baseline
 
-**Status:** `IN_PROGRESS` | **Goal:** Toàn bộ infra sẵn sàng. Sprint 2 chỉ viết business logic.
-
----
-
-## Kanban Board
-
-| 🕒 To Do | 🚧 In Progress | ✅ Done |
-| :--- | :--- | :--- |
-| [RR-4: Proto + Wire + KrakenD + Apps Shell](./RR-4/ticket.md) | [RR-4-1: buf toolchain](./RR-4/subtickets/RR-4-1/ticket.md) | [RR-1: Infra Kick-off](./RR-1/ticket.md) |
-| [RR-5: Docker Complete — Jaeger](./RR-5/ticket.md) | | [RR-2: Config & Logger](./RR-2/ticket.md) |
-| [RR-6: Demo Service — Clean Arch + Full Slice](./RR-6/ticket.md) | | [RR-3: Base & Errs](./RR-3/ticket.md) |
-| [RR-7: Control App — Jaeger Tracing](./RR-7/ticket.md) | | |
-| [RR-8: Client App — Business UI + API Explorer](./RR-8/ticket.md) | | |
+**Trạng thái:** ✅ Hoàn thành (Completed)
+**Mục tiêu:** Thiết lập nền tảng hạ tầng kỹ thuật (Infrastructure) vững chắc, đảm bảo môi trường phát triển đồng nhất cho toàn bộ hệ sinh thái Microservices.
 
 ---
 
-## Sprint Goal
+## 📋 Trạng thái Ticket (Kanban)
 
-Sau Sprint 1, toàn bộ infrastructure chạy được end-to-end:
-- `docker compose up -d` khởi động mọi thứ (Postgres, Valkey, Jaeger, KrakenD)
-- `GET localhost:8081/v1/demo/ping` trả về JSON qua KrakenD → grpc-gateway → gRPC handler
-- Trace visible trong Jaeger tại `localhost:16686` (Control Plane)
-- API Explorer (Swagger) tích hợp trong `client-app`, load contract qua KrakenD
-- `apps/demo-service/` là canonical template — mọi service Sprint 2+ copy từ đây
+| Ticket | Summary | Status | Role |
+| :--- | :--- | :--- | :--- |
+| [RR-1](./RR-1/ticket.md) | [Tech] Infrastructure Kick-off (Docker Compose) | ✅ Done | DevOps |
+| [RR-2](./RR-2/ticket.md) | [Tech] Base Framework: Config & Logger | ✅ Done | Tech Lead |
+| [RR-3](./RR-3/ticket.md) | [Tech] Common Packages: Base & Errs | ✅ Done | Backend |
+| [RR-4](./RR-4/ticket.md) | [Epic] Service Toolchain & API Gateway (KrakenD) | ✅ Done | Tech Lead |
+| [RR-5](./RR-5/ticket.md) | [Tech] Observability Stack (Jaeger Setup) | ✅ Done | DevOps |
+| [RR-6](./RR-6/ticket.md) | [Tech] Demo Service: Clean Architecture Template | ✅ Done | Backend |
+| [RR-7](./RR-7/ticket.md) | [Tech] Control Plane UI: Jaeger Integration | ✅ Done | Frontend |
+| [RR-8](./RR-8/ticket.md) | [BA] Client App: Core Shell & API Explorer | ✅ Done | Product Owner |
 
 ---
 
-## Dependency Order
+## 💡 Tầm nhìn Kỹ thuật (Technical Vision)
+- **Zero-Config Onboarding:** Một lệnh `docker compose up` khởi động toàn bộ vũ trụ RuntimeRoasters.
+- **Canonical Template:** `demo-service` là mẫu mực để các service sau copy theo (Clean Arch, DI, OTel).
+- **Early Observability:** Tracing phải hoạt động ngay từ ngày đầu tiên để debug luồng gRPC.
 
-```
-RR-4 (proto + wire + krakend + app shells)
-  └─ RR-4-1: buf toolchain
-  └─ RR-4-2: grpc-gateway scaffold
-  └─ RR-4-3: Google Wire
-  └─ RR-4-4: KrakenD config + apps shell (client)
-  └─ RR-4-5: GetDemo handler (E2E verify)
-
-RR-5 (docker complete) — Jaeger setup
-
-RR-6 (demo-service) — Clean Arch + OTel
-
-RR-7 (control-app: Jaeger) — Observability Dashboard
-
-RR-8 (client-app: Business UI) — Layout + API Explorer
-```
+## 📊 Kết quả đạt được (Sprint Result)
+- Toàn bộ hạ tầng (Postgres, Valkey, Kafka, Jaeger) đã sẵn sàng.
+- Luồng gRPC-Gateway qua KrakenD hoạt động ổn định.
+- Framework chung (`pkg/`) đã được kiểm chứng qua Demo Service.

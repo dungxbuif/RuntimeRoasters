@@ -1,6 +1,6 @@
-# Sprint 9: Financial Integrity
+# Sprint 9: Traceability (CQRS)
 
-**Epic Goal:** Tích hợp thanh toán thực tế và tự động hóa quy trình hoàn tiền (Refund).
+**Epic Goal:** Xây dựng hệ thống truy xuất nguồn gốc 360 độ sử dụng CQRS.
 
 ---
 
@@ -8,12 +8,13 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-9.1](./RR-9.1/ticket.md) | [BA] Thanh toán đơn hàng qua Stripe | 🕒 To Do | Customer |
-| [RR-9.2](./RR-9.2/ticket.md) | [Tech] Stripe Webhook & Automated Refund Saga | 🕒 To Do | Tech Lead |
+| [RR-28](./RR-28.md) | [Tech] Trace Service Initialization | 🕒 To Do | Tech Lead |
+| [RR-29](./Tech) | [Tech] Elasticsearch Integration (Read Model) | 🕒 To Do | Tech Lead |
+| [RR-30](./RR-30.md) | [BA] Traceability Dashboard Requirements | 🕒 To Do | Product Owner |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Stripe API Integration:** Xử lý PaymentIntents và Webhooks.
-- **HMAC Validation:** Xác thực chữ ký tin nhắn từ Payment Gateway.
-- **Full Saga Rollback:** Hoàn tiền tự động nếu chuỗi cung ứng gặp sự cố sau khi đã trừ tiền.
+- **CQRS Pattern:** Tách biệt luồng ghi (Events) và luồng đọc (Traceability API).
+- **Elasticsearch:** Lưu trữ dữ liệu dạng document để tìm kiếm và aggregate nhanh.
+- **Data Denormalization:** Tổng hợp dữ liệu từ nhiều service về một model duy nhất.

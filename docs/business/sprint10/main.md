@@ -1,6 +1,6 @@
-# Sprint 10: Traceability (CQRS)
+# Sprint 10: Observability & Audit
 
-**Epic Goal:** Cung cấp khả năng truy xuất nguồn gốc 360 độ từ hạt cà phê đến tách cà phê với tốc độ tối ưu.
+**Epic Goal:** Giám sát toàn diện hệ thống và lưu trữ Audit Log bất biến.
 
 ---
 
@@ -8,12 +8,11 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-10.1](./RR-10.1/ticket.md) | [BA] Dashboard truy xuất nguồn gốc (Bean Journey) | 🕒 To Do | End User |
-| [RR-10.2](./RR-10.2/ticket.md) | [Tech] CQRS Read-Model with Elasticsearch | 🕒 To Do | Tech Lead |
+| [RR-31](./RR-31.md) | [Tech] Audit Service (Cassandra) | 🕒 To Do | Tech Lead |
+| [RR-32](./RR-32.md) | [Tech] System Health Dashboards (SigNoz) | 🕒 To Do | DevOps |
 
 ---
 
 ## 🛠️ Technical Focus
-- **CQRS Pattern:** Tách biệt luồng ghi (Postgres) và luồng đọc (Elasticsearch).
-- **Denormalization:** Tổng hợp dữ liệu từ nhiều service vào một document duy nhất.
-- **Trace Propagation:** Sử dụng OpenTelemetry để gắn kết các bước trong chuỗi.
+- **Cassandra:** Lưu trữ dữ liệu Audit Log khổng lồ với khả năng ghi cực nhanh.
+- **SigNoz/OTEL:** Thu thập Trace và Metrics để giám sát performance từng service.

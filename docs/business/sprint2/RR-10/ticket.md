@@ -1,45 +1,42 @@
-# [RR-10] Client-Side Auth & Login Flow
+# [RR-10] [BA] Client Auth Flow: Login/Consent UI
 
-- **Summary:** Xây dựng luồng đăng nhập qua Ory Kratos, quản lý JWT bằng HttpOnly Cookie, và bảo vệ route với Next.js Middleware.
-- **Priority:** `HIGH`
-- **Type:** Feature
-- **ADR Reference:** `ADR-2026-05-04-AUTH` — Session 8, 9, 13
+**User Story:**
+Dưới vai trò là **Người dùng hệ thống**, tôi muốn có một giao diện đăng nhập hiện đại và an toàn để tôi có thể truy cập vào các tính năng quản lý của RuntimeRoasters.
+
+**Business Context:**
+Giao diện đăng nhập là điểm tiếp xúc đầu tiên của người dùng với hệ thống. Nó cần đảm bảo tính chuyên nghiệp, an toàn và hỗ trợ đầy đủ các tính năng như Quên mật khẩu, Đăng ký và Quản lý phiên làm việc.
 
 ---
 
-## 📖 User Story
-> As a user, I want to log in with my credentials through the Identity Server so that I receive a JWT stored securely, and every subsequent API request is automatically authorized through KrakenD's scope validation.
+## 🔄 Luồng Nghiệp vụ (Workflow)
+1. **Truy cập:** Người dùng truy cập vào Client App.
+2. **Chuyển hướng:** Hệ thống nhận thấy chưa đăng nhập, chuyển hướng sang Login Page (Ory Kratos).
+3. **Xác thực:** Người dùng nhập Email/Password.
+4. **Cấp quyền (Consent):** Nếu ứng dụng yêu cầu quyền mới, hiển thị màn hình Consent (Ory Hydra).
+5. **Hoàn tất:** Chuyển hướng về Client App với Access Token hợp lệ.
 
-## 🔍 Acceptance Criteria
+---
 
-### Scenario 1: Login Page & Form
-- **Given:** I navigate to `/login`.
-- **Then:** I see a login form styled according to the Design System (Industrial Style).
+## 🛠️ Quy tắc Nghiệp vụ (Business Rules)
+- **Password Strength:** Mật khẩu tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường và số.
+- **Session Timeout:** Phiên làm việc kéo dài 24h. Sau 24h yêu cầu đăng nhập lại.
+- **Multi-device:** Hỗ trợ đăng nhập trên nhiều thiết bị đồng thời.
 
-### Scenario 2: Successful Login & Secure Token Storage
-- **Given:** I enter valid credentials and submit.
-- **When:** The Identity Server (Kratos) issues a JWT.
-- **Then:** The token is stored in an `HttpOnly Cookie` (not localStorage).
-- **And:** I am redirected to `/` (dashboard).
+---
 
-### Scenario 3: App Scope Validation at Gateway (Gate 1)
-- **Given:** I am logged in and my Client App holds a valid JWT with required scopes.
-- **When:** I call any protected API endpoint via KrakenD.
-- **Then:** KrakenD's Native Validator checks the App's `scopes` claim.
-- **And:** If the scope is missing, the request is rejected at the gateway with `403 Forbidden` before reaching any microservice.
+## ✅ Acceptance Criteria (AC)
+### Scenario 1: Đăng nhập thành công
+- **Given:** Tôi có tài khoản hợp lệ `admin@runtimeroasters.com`.
+- **When:** Tôi nhập đúng thông tin tại màn hình Login.
+- **Then:** Hệ thống hiển thị thông báo "Chào mừng quay trở lại" và chuyển tôi vào Dashboard.
 
-### Scenario 4: Authenticated Request with Automatic Token Injection
-- **Given:** I am logged in.
-- **When:** I perform any action (e.g., Trigger Ping on the Control Plane).
-- **Then:** The Axios interceptor automatically attaches the `Authorization: Bearer <token>` header.
-- **And:** KrakenD passes the raw JWT through to the backend service unchanged (Pass-through mode).
+### Scenario 2: Đăng nhập thất bại (Sai pass)
+- **When:** Tôi nhập sai mật khẩu 3 lần.
+- **Then:** Hệ thống hiển thị cảnh báo và yêu cầu chờ 30s trước khi thử lại (Security policy).
 
-### Scenario 5: Route Protection for Unauthenticated Users
-- **Given:** I am not logged in.
-- **When:** I navigate to any protected route (e.g., `/dashboard`).
-- **Then:** Next.js Middleware intercepts the request and redirects me to `/login`.
+---
 
-### Scenario 6: Logout
-- **Given:** I am logged in.
-- **When:** I click logout.
-- **Then:** The HttpOnly Cookie is cleared and I am redirected to `/login`.
+## 📊 Yêu cầu Dữ liệu
+- `Email` (Required)
+- `Password` (Required)
+- `Remember Me` (Boolean)

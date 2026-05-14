@@ -39,15 +39,15 @@ Tài liệu này mô tả chi tiết các bước thực thi kỹ thuật cho t�
 *   Tạo Order với trạng thái `PENDING`.
 *   Ghi Outbox sự kiện `OrderCreated`.
 
-### Bước 2: Warehouse Service giữ hàng
+### Bước 2: Warehouse Service (Unified) giữ hàng
 *   Nghe `OrderCreated`.
-*   Dùng **Valkey Distributed Lock** để khóa mã hàng.
-*   Trừ tồn kho tạm thời (Reserve).
+*   Dùng **Valkey Distributed Lock** để khóa mã hàng (`SKU` hoặc `Batch_ID`).
+*   Trừ tồn kho tạm thời (Reserve): Giảm `available_quantity` và tăng `reserved_quantity`.
 *   Ghi Outbox `InventoryReserved`.
 
 ### Bước 3: Webhook Service nhận tiền
 *   Stripe gửi Webhook `payment_intent.succeeded`.
-*   Webhook Service verify **HMAC signature**.
+*   Payment Service verify **HMAC signature**.
 *   Ghi Inbox (tránh duplicate) -> Publish `PaymentCompleted`.
 
 ### Bước 4: Saga Kết thúc

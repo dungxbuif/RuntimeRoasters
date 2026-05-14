@@ -1,25 +1,30 @@
 # [RR-1] Infrastructure Kick-off
 
-- **Goal:** Thiết lập hạ tầng môi trường chạy đa dịch vụ (Multi-services).
-- **Business Value:** Đảm bảo môi trường phát triển đồng nhất cho tất cả các microservices, hỗ trợ việc tích hợp và kiểm thử dễ dàng.
-- **Priority:** `CRITICAL`
+**User Story:**
+Dưới vai trò là **DevOps Engineer**, tôi muốn thiết lập một bộ cấu hình hạ tầng tập trung để toàn bộ đội ngũ phát triển có thể khởi động mọi thành phần cần thiết chỉ bằng một câu lệnh duy nhất.
 
-## 📝 Description
-Xây dựng file cấu hình Docker Compose bao gồm tất cả các thành phần data persistence, messaging và observability cho toàn hệ thống.
+**Business Context:**
+Tính nhất quán của môi trường phát triển (Local Consistency) là yếu tố sống còn để giảm thiểu lỗi "Works on my machine". Hạ tầng vững chắc giúp đẩy nhanh tiến độ ở các Sprint sau.
 
-## 🔍 Acceptance Criteria (BDD Specification)
+---
 
-### Scenario 1: Khởi tạo hạ tầng cơ bản
-- **Given:** Tôi đã cấu hình file `docker-compose.yaml` với Postgres, Redpanda, Elasticsearch, Valkey, Cassandra, và Jaeger.
-- **When:** Tôi thực hiện lệnh `docker-compose up -d` tại thư mục `deployments/`.
-- **Then:** Toàn bộ 7 containers phải ở trạng thái "Running" và không có lỗi khởi động.
+## 🔍 Phạm vi Thực hiện (Scope)
+Xây dựng hệ thống `docker-compose.yaml` tại thư mục `deployments/`, bao gồm:
+- **Persistence:** PostgreSQL (với script khởi tạo database tự động), Valkey (Redis), Cassandra.
+- **Messaging:** Kafka Cluster & Kafka UI.
+- **Observability:** Jaeger, Elasticsearch.
+- **API Gateway:** KrakenD.
 
-### Scenario 2: Kiểm tra tính sẵn sàng của Database
-- **Given:** Container Postgres đã khởi động thành công.
-- **When:** Tôi kết nối vào Postgres instance.
-- **Then:** Tôi phải thấy các cơ sở dữ liệu `farm_db`, `warehouse_db`, `retail_db`,... đã được tạo sẵn từ script khởi tạo.
+---
 
-### Scenario 3: Kiểm tra giao diện quản trị hạ tầng
-- **Given:** Toàn bộ hệ thống hạ tầng đang chạy.
-- **When:** Tôi truy cập `localhost:8080` (Redpanda) và `localhost:16686` (Jaeger).
-- **Then:** Giao diện quản trị phải hiển thị và sẵn sàng để giám sát dữ liệu.
+## 🛠️ Quy tắc Kỹ thuật (Tech Rules)
+- Sử dụng **Docker Networks** để cô lập traffic giữa các tầng.
+- **Volume Persistence:** Phải mount volume ra host để không mất dữ liệu khi restart container.
+- **Healthchecks:** Mọi container phải có healthcheck script để đảm bảo thứ tự khởi động.
+
+---
+
+## ✅ Acceptance Criteria (AC)
+1. **End-to-End Startup:** Chạy `docker compose up -d` không báo lỗi, mọi service đều `healthy`.
+2. **Database Auto-init:** Postgres tự động tạo `farm_db`, `auth_db`, `warehouse_db` khi khởi động lần đầu.
+3. **UI Accessibility:** Truy cập được Kafka UI (:8080) và Jaeger UI (:16686) từ trình duyệt.
