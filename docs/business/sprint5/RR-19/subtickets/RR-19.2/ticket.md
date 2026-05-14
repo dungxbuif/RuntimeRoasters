@@ -1,46 +1,45 @@
-# [RR-19.2] Quản lý quy trình chế biến (Rang/Sấy) & Tính hao hụt
+# [RR-19.2] Nhật ký Mẻ rang (Roast Runs) & Quản lý Gom lô
 
 **User Story:**
-Dưới vai trò là **Thợ rang (Roaster Operator)**, tôi muốn ghi lại từng bước chế biến và trọng lượng sau khi rang để hệ thống tự động tính toán hiệu suất và chất lượng của mẻ hàng.
+Dưới vai trò là **Thợ rang (Roaster)**, tôi muốn ghi nhận kết quả của từng mẻ rang (Run) vào trong một **Lô sản xuất (Batch)** để hệ thống tự động cộng dồn sản lượng và tính toán hao hụt tổng thể.
 
 **Business Context:**
-Chế biến là giai đoạn hạt cà phê thay đổi giá trị nhiều nhất. Việc theo dõi hao hụt giúp quản lý biết được máy rang có đang hoạt động ổn định hay không và mẻ hàng có đạt chuẩn hay không.
+Trong Specialty Coffee, máy rang thường có công suất nhỏ hơn so với nhu cầu một đơn hàng. Việc cho phép một Lô hàng (Batch) chứa nhiều mẻ rang (Run) giúp linh hoạt trong sản xuất nhưng vẫn đảm bảo tính đồng nhất chất lượng của cả lô.
 
 ---
 
 ## 🔄 Luồng Nghiệp vụ (Workflow)
-1. **Bắt đầu Chế biến:** Thợ rang chọn một Batch đang ở trạng thái `RECEIVED`.
-2. **Cập nhật Công đoạn:**
-    - Chuyển sang `HULLING` (Xát vỏ).
-    - Chuyển sang `ROASTING` (Đang rang).
-3. **Kết thúc & Cân đầu ra:**
-    - Sau khi rang xong, thợ rang nhập `Yield Weight` (Trọng lượng đầu ra).
-    - Hệ thống tính toán `% Hao hụt` = `(1 - Yield/Intake) * 100`.
+1. **Chọn Lô:** Thợ rang chọn một Batch đang ở trạng thái `PROCESSING`.
+2. **Thực hiện Mẻ rang:** Chạy máy rang cho 1 lượng hạt thô (VD: 12kg).
+3. **Ghi nhật ký (Run Log):** Nhập `Input_Weight` (thô) và `Output_Weight` (chín) của mẻ đó.
+4. **Cộng dồn:** Hệ thống tự động cập nhật `Total_Output` hiện tại của cả Batch.
+5. **Tiếp tục:** Thợ rang làm tiếp các mẻ khác cho đến khi đủ số lượng yêu cầu của Batch.
 
 ---
 
 ## 🛠️ Quy tắc Nghiệp vụ (Business Rules)
-- **Hao hụt Tiêu chuẩn:** Hệ thống mặc định dải hao hụt là 12% - 20%.
-- **Cảnh báo Chất lượng:** Nếu hao hụt < 10% (Chưa chín/ẩm) hoặc > 25% (Cháy/Thất thoát), hệ thống đánh dấu mẻ hàng là `QUALITY_WARNING`.
-- **Thứ tự Trạng thái:** Không cho phép nhảy thẳng từ `RECEIVED` lên `STOCKED` mà không qua bước `ROASTING`.
+- **Mối quan hệ 1-N:** 1 Production Batch có thể chứa nhiều Roast Runs.
+- **Tính toán tự động:** `% Loss (Batch) = (1 - Sum(Run_Outputs) / Sum(Run_Inputs)) * 100`.
+- **Cảnh báo:** Nếu mẻ rang nào có hao hụt > 25%, hệ thống cảnh báo "Quality Deviation" cho quản lý.
 
 ---
 
 ## ✅ Acceptance Criteria (AC)
-### Scenario 1: Rang đạt chuẩn
-- **Given:** Mẻ hàng có `Intake Weight` = 100kg.
-- **When:** Tôi nhập `Yield Weight` = 85kg (Hao hụt 15%).
-- **Then:** Hệ thống cho phép hoàn tất và chuyển trạng thái sang `PROCESSED`.
+### Scenario 1: Ghi nhận mẻ rang đầu tiên
+- **Given:** Batch `A` mới chuyển sang `PROCESSING`.
+- **When:** Tôi thêm Run #1 (In: 12kg, Out: 10kg).
+- **Then:** Hệ thống lưu Run #1 và hiển thị Batch sản lượng là 10kg.
 
-### Scenario 2: Rang cháy (Hao hụt quá cao)
-- **Given:** `Intake Weight` = 100kg.
-- **When:** Tôi nhập `Yield Weight` = 70kg (Hao hụt 30%).
-- **Then:** Hệ thống yêu cầu nhập "Anomaly Note" và gắn flag `QUALITY_WARNING` cho mẻ hàng này.
+### Scenario 2: Gom nhiều mẻ vào 1 lô
+- **Given:** Batch `A` đã có Run #1 (10kg chín).
+- **When:** Tôi thêm Run #2 (In: 12kg, Out: 10.2kg).
+- **Then:** Tổng sản lượng Batch `A` hiển thị là 20.2kg.
 
 ---
 
 ## 📊 Yêu cầu Dữ liệu
-- `Batch_ID` (Mã tham chiếu)
-- `Processing_Type` (Rang/Sấy)
-- `Yield_Weight` (Trọng lượng đầu ra)
-- `Anomaly_Note` (Ghi chú nếu hao hụt bất thường)
+- `Run_ID` (Auto)
+- `Batch_ID` (FK)
+- `Input_Weight`
+- `Output_Weight`
+- `Roaster_Name`

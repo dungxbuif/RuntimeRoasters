@@ -11,4 +11,9 @@ export const API_ENDPOINTS = {
     FARMS: '/v1/farms',
     HARVESTS: '/v1/harvests',
   },
+  WAREHOUSE: {
+    BATCHES: '/v1/warehouse/batches',
+    ROAST_RUNS: '/v1/warehouse/runs',
+    INVENTORY: '/v1/warehouse/inventory',
+  },
 } as const;

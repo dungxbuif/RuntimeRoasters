@@ -8,13 +8,6 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type Handler func(ctx context.Context, msg kafka.Message) error
-
-type Consumer interface {
-	Listen(ctx context.Context, handler Handler) error
-	Close() error
-}
-
 type consumer struct {
 	reader *kafka.Reader
 }
@@ -35,7 +28,7 @@ func NewConsumer(brokers []string, groupID string, topic string) Consumer {
 }
 
 func (c *consumer) Listen(ctx context.Context, handler Handler) error {
-	fmt.Printf("[KAFKA] Consumer listening...\n")
+	fmt.Printf("[KAFKA] Consumer listening on topic: %s\n", c.reader.Config().Topic)
 
 	for {
 		m, err := c.reader.ReadMessage(ctx)
@@ -51,7 +44,6 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 
 		if err := handler(ctx, m); err != nil {
 			fmt.Printf("failed to handle message: %v\n", err)
-			// In production, we might want to retry or move to DLQ
 			continue
 		}
 	}

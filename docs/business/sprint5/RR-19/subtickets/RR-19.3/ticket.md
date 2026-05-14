@@ -1,40 +1,45 @@
-# [RR-19.3] Nhập kho thành phẩm & Cập nhật tồn kho tự động
+# [RR-19.3] Đóng lô & Nhập kho Thành phẩm SKU
 
 **User Story:**
-Dưới vai trò là **Thủ kho (Warehouse Keeper)**, tôi muốn hệ thống tự động cập nhật số lượng tồn kho ngay khi mẻ rang hoàn tất, để bộ phận bán hàng biết chính xác lượng hàng sẵn có.
+Dưới vai trò là **Quản lý Kho (Warehouse Manager)**, tôi muốn thực hiện chốt sổ Lô sản xuất (Finalize Batch) để hệ thống tự động sinh mã Production Batch ID chính thức và cập nhật số lượng tồn kho thành phẩm.
 
 **Business Context:**
-Đây là bước cuối cùng trong chuỗi cung ứng nội bộ. Dữ liệu ở đây sẽ được phơi bày trực tiếp cho khách hàng (Retail), vì vậy tính chính xác là tuyệt đối.
+Khi toàn bộ các mẻ rang nhỏ hoàn tất, hàng hóa được đóng bao và dán nhãn Batch thương mại để xuất bán cho Retail. Việc Finalize sẽ "khóa" dữ liệu sản xuất và chính thức đưa hàng vào kho.
 
 ---
 
 ## 🔄 Luồng Nghiệp vụ (Workflow)
-1. **Hoàn tất Đóng gói:** Sau khi rang và để nguội, mẻ hàng được đóng thành các gói/bao theo chuẩn.
-2. **Xác nhận Nhập kho:**
-    - Thủ kho kiểm tra lần cuối số lượng bao và mã Batch.
-    - Bấm "Move to Stock".
-3. **Cập nhật Tồn kho:**
-    - Hệ thống chuyển mã từ `RR-P-...` (Processing) sang `RR-S-...` (Stocked).
-    - Tăng số lượng `Available Quantity` trong bảng Inventory cho loại cà phê/vùng tương ứng.
+1. **Yêu cầu Đóng lô:** Quản lý chọn Batch đã hoàn tất rang.
+2. **Xác nhận số lượng:** Hệ thống hiển thị tổng sản lượng (Sum of Runs). Quản lý bấm "Finalize".
+3. **Sinh mã Batch ID:** Hệ thống cấp mã chính thức (VD: `PROD-CD-20260514-001`).
+4. **Nhập kho (Auto Stock-in):**
+    - Trạng thái Batch thành `STOCKED`.
+    - Tồn kho SKU tương ứng (VD: `CD-ARABICA-ROASTED`) tăng thêm đúng bằng sản lượng Batch.
+5. **Thông báo:** Bắn event `Warehouse_Stock_Updated` qua Kafka.
 
 ---
 
 ## 🛠️ Quy tắc Nghiệp vụ (Business Rules)
-- **FIFO:** Hệ thống phải gắn nhãn ngày nhập kho để sau này gợi ý xuất kho theo thứ tự cũ trước mới sau.
-- **Stock Limit:** Cảnh báo nếu tổng tồn kho vượt quá dung tích kho vật lý (Cấu hình trong setting).
+- **Tính bất biến:** Sau khi Finalize, không được phép thêm Roast Run vào Batch đó nữa.
+- **Traceability:** Mã Production Batch ID phải ánh xạ được về danh sách các Run IDs đã tạo ra nó.
+- **SKU Mapping:** Tự động xác định SKU dựa trên `Coffee_Type` và `Origin_Code`.
 
 ---
 
 ## ✅ Acceptance Criteria (AC)
-### Scenario 1: Nhập kho thành công
-- **Given:** Mẻ hàng `RR-P-CD-001` rang xong đạt 85kg.
-- **When:** Tôi xác nhận nhập kho.
-- **Then:** Trạng thái mẻ hàng thành `STOCKED`.
-- **And:** Tồn kho cà phê Cầu Đất (Arabica) tăng thêm 85kg.
+### Scenario 1: Đóng lô và sinh mã ID
+- **Given:** Batch đang có 50kg thành phẩm từ 5 mẻ rang.
+- **When:** Tôi nhấn "Finalize".
+- **Then:** Hệ thống sinh mã `PROD-AR-20260514-001`.
+- **And:** Batch chuyển sang `STOCKED`.
+
+### Scenario 2: Cập nhật kho tự động
+- **When:** Lô hàng 50kg được chốt.
+- **Then:** Số lượng `Available Quantity` trong kho tăng thêm 50kg ngay lập tức.
 
 ---
 
 ## 📊 Yêu cầu Dữ liệu
-- `Batch_ID`
-- `Warehouse_Slot` (Vị trí kệ kho)
-- `Stock_In_Date` (Mặc định là thời điểm xác nhận)
+- `Production_Batch_ID` (Generated)
+- `Final_Yield` (Auto-sum)
+- `Stock_Location` (Vị trí kho)

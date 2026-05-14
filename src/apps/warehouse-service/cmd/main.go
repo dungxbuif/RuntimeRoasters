@@ -17,10 +17,19 @@ import (
 )
 
 func main() {
-	// 1. Config (Hardcoded for demo, usually from env)
-	dsn := "host=localhost user=user password=password dbname=warehouse_db port=54321 sslmode=disable"
-	brokers := []string{"localhost:9094"}
-	groupID := "warehouse-service-group"
+	// 1. Config from environment variables
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbPort := getEnv("DB_PORT", "54321")
+	dbUser := getEnv("DB_USER", "user")
+	dbPass := getEnv("DB_PASSWORD", "password")
+	dbName := getEnv("DB_NAME", "warehouse_db")
+	
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", 
+		dbHost, dbUser, dbPass, dbName, dbPort)
+	
+	kafkaBrokers := getEnv("KAFKA_BROKERS", "localhost:9094")
+	brokers := []string{kafkaBrokers}
+	groupID := getEnv("KAFKA_GROUP_ID", "warehouse-service-group")
 
 	// 2. Database Connection
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -30,10 +39,14 @@ func main() {
 
 	// 3. Auto Migration
 	fmt.Println("[WAREHOUSE] Running database migrations...")
-	db.AutoMigrate(&domain.ProductionBatch{}, &domain.InboxEvent{})
+	db.AutoMigrate(&domain.ProductionBatch{}, &domain.RoastRun{}, &domain.Inventory{}, &domain.InboxEvent{})
 
 	// 4. Manual Dependency Injection
+	// producer := kafka.NewProducer(brokers)
 	intakeUseCase := usecase.NewIntakeUseCase(db)
+	// processingUseCase := usecase.NewProcessingUseCase(db)
+	// inventoryUseCase := usecase.NewInventoryUseCase(db, producer)
+	
 	consumer := kafka.NewConsumer(brokers, groupID, "farm.harvest.events")
 	harvestWorker := worker.NewHarvestWorker(consumer, intakeUseCase)
 
@@ -56,4 +69,11 @@ func main() {
 	fmt.Println("[WAREHOUSE] Shutting down...")
 	cancel()
 	consumer.Close()
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }

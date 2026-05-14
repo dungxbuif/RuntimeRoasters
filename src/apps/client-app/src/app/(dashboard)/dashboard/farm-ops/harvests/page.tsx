@@ -71,7 +71,7 @@ export default function HarvestsPage() {
           <h1 className="text-4xl font-black font-headline text-on-surface uppercase italic tracking-tighter">
             Harvest <span className="text-tertiary">Declaration</span>
           </h1>
-          <p className="text-on-surface-variant font-medium">Record and track your origin coffee harvests.</p>
+          <p className="text-on-surface-variant font-medium">Record harvests and broadcast to <span className="text-primary font-black italic">Warehouse Service</span> via Kafka.</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}

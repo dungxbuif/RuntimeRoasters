@@ -33,6 +33,12 @@ tasks:
     cmds:
       - air -c .air.toml
 
+  warehouse:
+    desc: Start Warehouse Service with hot-reload
+    dir: src/apps/warehouse-service
+    cmds:
+      - air -c .air.toml
+
   fe:
     desc: Start Frontend Client App
     dir: src/apps/client-app
@@ -41,11 +47,11 @@ tasks:
 
   be:
     desc: Start all backend services in parallel
-    deps: [auth, farm]
+    deps: [auth, farm, warehouse]
 
   dev:
     desc: Start full system (BE + FE)
-    deps: [auth, farm, fe]
+    deps: [auth, farm, warehouse, fe]
 
   stop:
     desc: Stop all containers and background tasks
