@@ -65,10 +65,28 @@ func (u *farmUsecase) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 		return nil, errs.ErrUnauthorized
 	}
 
+	current, err := u.repo.GetByID(ctx, farm.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if farm.Name == "" {
+		farm.Name = current.Name
+	}
+	if farm.Location == "" {
+		farm.Location = current.Location
+	}
+	if farm.Area == 0 {
+		farm.Area = current.Area
+	}
+	if farm.CoffeeType == "" {
+		farm.CoffeeType = current.CoffeeType
+	}
+
 	if (user.Role == domain.RoleAdmin || user.Role == domain.RoleFarmAdmin) && farm.OwnerID != "" {
 		// Admin can specify owner
 	} else {
-		farm.OwnerID = user.Subject
+		farm.OwnerID = current.OwnerID
 	}
 
 	if err := farm.Validate(); err != nil {

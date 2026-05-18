@@ -1,18 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/app"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
-	fmt.Println("Starting...")
-	application, _, err := app.InitializeApp()
+	application, cleanup, err := app.InitializeApp()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		panic(err)
+		logger.GetLogger().Fatal("failed to initialize demo service", zap.Error(err))
 	}
-
-	fmt.Println("Running...")
+	defer cleanup()
 	application.Run()
 }

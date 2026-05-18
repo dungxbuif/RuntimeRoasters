@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/config"
@@ -11,7 +10,9 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
+	"go.uber.org/zap"
 )
 
 type App struct {
@@ -35,16 +36,30 @@ func NewApp(baseApp *base.App, cfg *svcconfig.Config, enforcer *casbin.Enforcer,
 }
 
 func (a *App) Run() {
+	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
 	// 0. Bootstrapping Sync (Kratos -> Casbin)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		defer cancel()
-		
-		fmt.Println("Waiting for Kratos to be ready for sync...")
-		time.Sleep(10 * time.Second)
 
-		if err := a.UseCase.SyncCasbinWithKratos(ctx); err != nil {
-			fmt.Printf("Initial bootstrapping sync FAILED: %v\n", err)
+		log.Info("starting bootstrap sync with Kratos")
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			if err := a.UseCase.SyncCasbinWithKratos(ctx); err == nil {
+				log.Info("bootstrap sync completed")
+				return
+			} else {
+				log.Warn("bootstrap sync attempt failed", zap.Error(err))
+			}
+
+			select {
+			case <-ctx.Done():
+				log.Warn("bootstrap sync deadline exceeded", zap.Error(ctx.Err()))
+				return
+			case <-ticker.C:
+			}
 		}
 	}()
 
@@ -56,6 +71,6 @@ func (a *App) Run() {
 
 	a.Base.FinalizeRoutes()
 
-	fmt.Println("Auth Service is running (gRPC + Gateway)...")
+	log.Info("auth service is running")
 	a.Base.Run(a.Cfg.AppPort, a.Cfg.GRPCPort)
 }

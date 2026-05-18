@@ -14,6 +14,12 @@ import (
 
 func InitializeApp() (*App, func(), error) {
 	cfg := config.Load()
+	if cfg.HydraAdminURL == "" {
+		cfg.HydraAdminURL = "http://localhost:4445"
+	}
+	if cfg.KafkaPolicyTopic == "" {
+		cfg.KafkaPolicyTopic = "auth.policy.changed"
+	}
 
 	// 1. Casbin Enforcer (Centralized Writer)
 	enforcer, err := authcasbin.NewEnforcer(cfg.DatabaseURL)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
@@ -28,6 +29,13 @@ type harvestUsecase struct {
 	outboxRepo OutboxRepository
 }
 
+type harvestCreatedEvent struct {
+	HarvestID  string  `json:"harvest_id"`
+	CoffeeType string  `json:"coffee_type"`
+	OriginCode string  `json:"origin_code"`
+	Quantity   float64 `json:"quantity"`
+}
+
 func NewHarvestUsecase(
 	db *database.DB,
 	repo HarvestRepository,
@@ -43,7 +51,7 @@ func NewHarvestUsecase(
 }
 
 func (u *harvestUsecase) CreateHarvest(ctx context.Context, harvest *domain.Harvest) (*domain.Harvest, error) {
-	_, err := u.farmRepo.GetByID(ctx, harvest.FarmID)
+	farm, err := u.farmRepo.GetByID(ctx, harvest.FarmID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +80,12 @@ func (u *harvestUsecase) CreateHarvest(ctx context.Context, harvest *domain.Harv
 		traceID := trace.SpanFromContext(ctx).SpanContext().TraceID().String()
 		eventID := uuid.NewString()
 
-		payload, _ := json.Marshal(harvest)
+		payload, _ := json.Marshal(harvestCreatedEvent{
+			HarvestID:  strconv.FormatUint(harvest.ID, 10),
+			CoffeeType: string(harvest.CoffeeType),
+			OriginCode: string(farm.Location),
+			Quantity:   harvest.Quantity,
+		})
 
 		metadata := map[string]interface{}{
 			"trace_id": traceID,

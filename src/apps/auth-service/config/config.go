@@ -1,18 +1,17 @@
 package config
 
-import (
-	"fmt"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/config"
-)
+import "github.com/dungxbuif/RuntimeRoasters/pkg/config"
 
 type Config struct {
 	config.BaseConfig `mapstructure:",squash"`
 	// Kafka Config
-	KafkaBrokers []string `mapstructure:"KAFKA_BROKERS"`
-	KafkaTopic   string   `mapstructure:"KAFKA_AUTH_TOPIC"`
+	KafkaBrokers     []string `mapstructure:"KAFKA_BROKERS"`
+	KafkaTopic       string   `mapstructure:"KAFKA_AUTH_TOPIC"`
+	KafkaPolicyTopic string   `mapstructure:"KAFKA_AUTH_POLICY_TOPIC"`
 
 	// Ory Kratos Admin
 	KratosAdminURL string `mapstructure:"KRATOS_ADMIN_URL"`
+	HydraAdminURL  string `mapstructure:"HYDRA_ADMIN_URL"`
 
 	// Security
 	InternalSecret string `mapstructure:"INTERNAL_SECRET"`
@@ -25,14 +24,8 @@ type Config struct {
 func Load() Config {
 	var cfg Config
 	paths := []string{".", "..", "../..", "../../.."}
-	for _, p := range paths {
-		fmt.Printf("Trying config path: %s\n", p)
-		if err := config.LoadConfig(p, ".env", &cfg); err == nil {
-			if cfg.DatabaseURL != "" {
-				fmt.Printf("Found valid config at: %s\n", p)
-				break
-			}
-		}
+	if err := config.LoadFirstConfig(paths, ".env", &cfg, func() bool { return cfg.DatabaseURL != "" }); err != nil {
+		panic(err)
 	}
 	return cfg
 }

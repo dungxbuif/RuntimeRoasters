@@ -5,12 +5,12 @@ import (
 
 	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
 	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	rrcasbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
-	realcasbin "github.com/casbin/casbin/v3"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,7 +20,7 @@ type App struct {
 	DB          *database.DB
 	VDB         *redis.Client
 	KeyProvider provider.KeyProvider
-	Enforcer    *realcasbin.SyncedEnforcer
+	Enforcer    rrcasbin.Engine
 	FarmHandler *farmgrpc.FarmHandler
 	OutboxRelay *event.OutboxRelay
 }
@@ -31,19 +31,19 @@ func NewApp(
 	db *database.DB,
 	vdb *redis.Client,
 	keyProvider provider.KeyProvider,
-	enforcer *realcasbin.SyncedEnforcer,
+	enforcer rrcasbin.Engine,
 	farmHandler *farmgrpc.FarmHandler,
 	outboxRelay *event.OutboxRelay,
 ) *App {
 	return &App{
-		Base:         baseApp,
-		Cfg:          cfg,
-		DB:           db,
-		VDB:          vdb,
-		KeyProvider:  keyProvider,
-		Enforcer:     enforcer,
-		FarmHandler:  farmHandler,
-		OutboxRelay:  outboxRelay,
+		Base:        baseApp,
+		Cfg:         cfg,
+		DB:          db,
+		VDB:         vdb,
+		KeyProvider: keyProvider,
+		Enforcer:    enforcer,
+		FarmHandler: farmHandler,
+		OutboxRelay: outboxRelay,
 	}
 }
 

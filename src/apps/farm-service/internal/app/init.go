@@ -1,12 +1,10 @@
 package app
 
 import (
-	"bufio"
+	"context"
 	"os"
-	"strings"
 	"time"
 
-	realcasbin "github.com/casbin/casbin/v3"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
 	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
@@ -17,8 +15,8 @@ import (
 	authgrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/watcher"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
@@ -26,7 +24,8 @@ import (
 
 func connnectDB(cfg *config.Config) (*database.DB, error) {
 	return database.NewPostgres(database.PostgresConfig{
-		URL: cfg.DatabaseURL,
+		URL:      cfg.DatabaseURL,
+		LogLevel: cfg.DBLogLevel,
 	})
 }
 
@@ -38,6 +37,15 @@ func connectVakey(cfg *config.Config) *redis.Client {
 
 func InitializeApp() (*App, func(), error) {
 	cfg := config.Load()
+	if cfg.DBLogLevel == "" {
+		cfg.DBLogLevel = "warn"
+	}
+	if cfg.KafkaHarvestTopic == "" {
+		cfg.KafkaHarvestTopic = "farm.harvest.events"
+	}
+	if cfg.KafkaPolicyTopic == "" {
+		cfg.KafkaPolicyTopic = "auth.policy.changed"
+	}
 
 	db, err := connnectDB(&cfg)
 
@@ -55,19 +63,26 @@ func InitializeApp() (*App, func(), error) {
 
 	// 2. Auth & Casbin
 	modelPath := "configs/rbac_model.conf"
-	policyPath := "configs/rbac_policy.csv"
-
-	casbinEnforcer, err := casbin.NewGormAdapterEnforcer(db.DB, modelPath)
+	modelBytes, err := os.ReadFile(modelPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	watcher.WatchCasbinFiles(casbinEnforcer, modelPath, policyPath)
-
-	if err := seedCasbinPolicies(casbinEnforcer, policyPath); err != nil {
+	authSnapshotClient, err := casbingrpc.NewAuthSnapshotClient(cfg.AuthServiceAddr, cfg.AppName)
+	if err != nil {
 		return nil, nil, err
 	}
 
+	policyConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.AppName+"-auth-policy", cfg.KafkaPolicyTopic)
+	casbinEnforcer, err := casbin.NewResilientReader(authSnapshotClient, casbin.ReaderOptions{
+		ModelText:            string(modelBytes),
+		SyncInterval:         5 * time.Minute,
+		RetryInterval:        2 * time.Second,
+		PolicyChangeConsumer: policyConsumer,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
 	// 3. Server Options & Base App
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
@@ -81,6 +96,7 @@ func InitializeApp() (*App, func(), error) {
 		Config:            cfg.BaseConfig,
 		GRPCServerOptions: grpcOpts,
 	})
+	casbinEnforcer.StartBackgroundSync(context.Background())
 
 	// 4. App-specific	// 5. Repositories
 	farmRepo := repository.NewFarmRepository(db, casbinEnforcer)
@@ -88,7 +104,8 @@ func InitializeApp() (*App, func(), error) {
 	outboxRepo := repository.NewOutboxRepository(db)
 
 	// 6. Use Cases
-	publisher := event.NewMockPublisher()
+	producer := kafka.NewProducer(cfg.KafkaBrokers)
+	publisher := event.NewKafkaPublisher(producer, cfg.KafkaHarvestTopic)
 	farmUC := usecase.NewFarmUsecase(farmRepo)
 	harvestUC := usecase.NewHarvestUsecase(db, harvestRepo, farmRepo, outboxRepo)
 
@@ -102,63 +119,12 @@ func InitializeApp() (*App, func(), error) {
 	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler, outboxRelay)
 
 	cleanup := func() {
-		// No manual cleanup required for db/rdb here as shutdown handles graceful termination
+		_ = producer.Close()
+		_ = vdb.Close()
+		if sqlDB, sqlErr := db.DB.DB(); sqlErr == nil {
+			_ = sqlDB.Close()
+		}
 	}
 
 	return app, cleanup, nil
-}
-
-func seedCasbinPolicies(enforcer *realcasbin.SyncedEnforcer, policyPath string) error {
-	policies, err := enforcer.GetPolicy()
-	if err != nil {
-		return err
-	}
-	groupingPolicies, err := enforcer.GetGroupingPolicy()
-	if err != nil {
-		return err
-	}
-	if len(policies) > 0 || len(groupingPolicies) > 0 {
-		return nil
-	}
-
-	file, err := os.Open(policyPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		parts := strings.Split(line, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
-		}
-		if len(parts) < 3 {
-			continue
-		}
-
-		switch parts[0] {
-		case "p":
-			if len(parts) < 4 {
-				continue
-			}
-			if _, err := enforcer.AddPolicy(parts[1], parts[2], parts[3]); err != nil {
-				return err
-			}
-		case "g":
-			if _, err := enforcer.AddGroupingPolicy(parts[1], parts[2]); err != nil {
-				return err
-			}
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return enforcer.SavePolicy()
 }

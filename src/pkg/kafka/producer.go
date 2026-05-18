@@ -14,6 +14,7 @@ type producer struct {
 }
 
 func NewProducer(brokers []string) Producer {
+	brokers = normalizeBrokers(brokers)
 	return &producer{
 		writer: &kafka.Writer{
 			Addr:                   kafka.TCP(brokers...),

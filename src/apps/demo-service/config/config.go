@@ -1,9 +1,6 @@
 package config
 
-import (
-	"fmt"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/config"
-)
+import "github.com/dungxbuif/RuntimeRoasters/pkg/config"
 
 type Config struct {
 	config.BaseConfig `mapstructure:",squash"`
@@ -18,14 +15,8 @@ type Config struct {
 func Load() Config {
 	var cfg Config
 	paths := []string{".", "..", "../..", "../../.."}
-	for _, p := range paths {
-		fmt.Printf("Trying config path: %s\n", p)
-		if err := config.LoadConfig(p, ".env", &cfg); err == nil {
-			if cfg.DatabaseURL != "" {
-				fmt.Printf("Found valid config at: %s\n", p)
-				break
-			}
-		}
+	if err := config.LoadFirstConfig(paths, ".env", &cfg, func() bool { return cfg.DatabaseURL != "" }); err != nil {
+		panic(err)
 	}
 	return cfg
 }

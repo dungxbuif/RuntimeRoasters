@@ -12,7 +12,8 @@ export default function AdminFarmsPage() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
+  const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
+  const [formData, setFormData] = useState<CreateFarmRequest>({
     name: '',
     location: 'CAU_DAT',
     area: 0,
@@ -43,17 +44,21 @@ export default function AdminFarmsPage() {
     mutationFn: (data: CreateFarmRequest) => adminService.createFarm(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farms'] });
-      setShowModal(false);
-      setFormData({
-        name: '',
-        location: 'CAU_DAT',
-        area: 0,
-        farm_type: 'ARABICA',
-        owner_id: managers[0]?.id || '',
-      });
+      closeModal();
     },
     onError: () => {
       alert('Failed to create farm. Ensure you have ownership permissions.');
+    }
+  });
+
+  const updateFarmMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateFarmRequest }) => farmService.updateFarm(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farms'] });
+      closeModal();
+    },
+    onError: () => {
+      alert('Failed to update farm. Ensure you have ownership permissions.');
     }
   });
 
@@ -67,8 +72,45 @@ export default function AdminFarmsPage() {
     }
   });
 
-  const handleCreateFarm = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setEditingFarm(null);
+    setFormData({
+      name: '',
+      location: 'CAU_DAT',
+      area: 0,
+      farm_type: 'ARABICA',
+      owner_id: managers[0]?.id || '',
+    });
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (farm: Farm) => {
+    setEditingFarm(farm);
+    setFormData({
+      name: farm.name,
+      location: farm.location,
+      area: farm.area,
+      farm_type: farm.farm_type,
+      owner_id: farm.owner_id,
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmitFarm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingFarm) {
+      updateFarmMutation.mutate({ id: editingFarm.id, data: formData });
+      return;
+    }
     createFarmMutation.mutate(formData);
   };
 
@@ -90,7 +132,7 @@ export default function AdminFarmsPage() {
           <p className="text-on-surface-variant font-medium">Manage and provision origin coffee nodes.</p>
         </div>
         <button 
-          onClick={() => setShowModal(true)}
+          onClick={openCreateModal}
           {...testId(e2eSelectors.CREATE_FARM_BTN)}
           className="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2"
         >
@@ -131,7 +173,11 @@ export default function AdminFarmsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="text-on-surface-variant hover:text-primary p-2 rounded-lg transition-colors" {...testId(e2eSelectors.FARM_EDIT_BTN)}>
+                      <button
+                        onClick={() => openEditModal(farm)}
+                        className="text-on-surface-variant hover:text-primary p-2 rounded-lg transition-colors"
+                        {...testId(e2eSelectors.FARM_EDIT_BTN)}
+                      >
                         <span className="material-symbols-outlined !text-sm">edit</span>
                       </button>
                       
@@ -157,8 +203,18 @@ export default function AdminFarmsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" {...testId(e2eSelectors.FARM_MODAL)}>
           <div className="bg-surface-container-lowest w-full max-w-md rounded-[2rem] border border-outline-variant/20 shadow-2xl p-8">
-            <h2 className="text-2xl font-black font-headline uppercase italic tracking-tighter mb-6">Provision <span className="text-primary">New Farm</span></h2>
-            <form onSubmit={handleCreateFarm} className="space-y-4">
+            <h2 className="text-2xl font-black font-headline uppercase italic tracking-tighter mb-6">
+              {editingFarm ? (
+                <>
+                  Update <span className="text-primary">Farm</span>
+                </>
+              ) : (
+                <>
+                  Provision <span className="text-primary">New Farm</span>
+                </>
+              )}
+            </h2>
+            <form onSubmit={handleSubmitFarm} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-60">Farm Name</label>
                 <input 
@@ -226,18 +282,20 @@ export default function AdminFarmsPage() {
               <div className="flex gap-4 pt-4">
                 <button 
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="flex-1 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest border border-outline-variant/20 hover:bg-surface-container-low transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  disabled={createFarmMutation.isPending}
+                  disabled={createFarmMutation.isPending || updateFarmMutation.isPending}
                   {...testId(e2eSelectors.FARM_SUBMIT_BTN)}
                   className="flex-1 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20 disabled:opacity-50"
                 >
-                  {createFarmMutation.isPending ? 'Provisioning...' : 'Provision Farm'}
+                  {editingFarm
+                    ? (updateFarmMutation.isPending ? 'Updating...' : 'Update Farm')
+                    : (createFarmMutation.isPending ? 'Provisioning...' : 'Provision Farm')}
                 </button>
               </div>
             </form>

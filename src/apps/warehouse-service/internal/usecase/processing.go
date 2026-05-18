@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
-	"fmt"
+	"math/rand"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -17,59 +19,62 @@ func NewProcessingUseCase(db *gorm.DB) *ProcessingUseCase {
 	return &ProcessingUseCase{db: db}
 }
 
-func (uc *ProcessingUseCase) StartProcessing(ctx context.Context, batchID string) error {
-	return uc.db.Model(&domain.ProductionBatch{}).
-		Where("batch_id = ?", batchID).
+func (uc *ProcessingUseCase) StartSimulation(ctx context.Context, internalID string) error {
+	// 1. Set to PROCESSING
+	err := uc.db.Model(&domain.ProductionBatch{}).
+		Where("id = ? AND status = ?", internalID, domain.BatchStatusDraft).
 		Update("status", domain.BatchStatusProcessing).Error
+	if err != nil {
+		return err
+	}
+
+	// 2. Launch Async Simulation
+	go uc.simulateRoasting(internalID)
+
+	return nil
 }
 
-func (uc *ProcessingUseCase) AddRoastRun(ctx context.Context, batchID string, input, output float64, roaster string) error {
-	return uc.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Get Batch
-		var batch domain.ProductionBatch
-		if err := tx.Where("batch_id = ?", batchID).First(&batch).Error; err != nil {
-			return err
-		}
+func (uc *ProcessingUseCase) simulateRoasting(internalID string) {
+	ctx := context.Background()
+	log := logger.FromContext(ctx).With(zap.String("batch_internal_id", internalID))
+	log.Info("Starting async roasting simulation...")
 
-		if batch.Status != domain.BatchStatusProcessing {
-			return fmt.Errorf("batch must be in PROCESSING status to add runs")
-		}
+	var batch domain.ProductionBatch
+	if err := uc.db.Preload("Intakes").Where("id = ?", internalID).First(&batch).Error; err != nil {
+		log.Error("failed to find batch for simulation", zap.Error(err))
+		return
+	}
 
-		// 2. Count existing runs to get next number
-		var count int64
-		tx.Model(&domain.RoastRun{}).Where("batch_id = ?", batchID).Count(&count)
+	// Simulate 3 Runs
+	numRuns := 3
+	runWeight := batch.TotalInputWeight / float64(numRuns)
+	var totalOutput float64
 
-		// 3. Create Run
-		loss := (1 - output/input) * 100
+	for i := 1; i <= numRuns; i++ {
+		time.Sleep(2 * time.Second) // Simulated roast time
+
+		loss := 12.0 + rand.Float64()*6.0 // 12-18% loss
+		output := runWeight * (1 - loss/100)
+		totalOutput += output
+
 		run := domain.RoastRun{
-			ID:           uuid.New().String(),
-			BatchID:      batchID,
-			RunNumber:    int(count) + 1,
-			InputWeight:  input,
+			BatchID:      batch.ID,
+			RunNumber:    i,
+			InputWeight:  runWeight,
 			OutputWeight: output,
-			LossPercent:  loss,
-			RoasterName:  roaster,
+			Status:       "COMPLETED",
 		}
+		uc.db.Create(&run)
+		log.Info("Roast run completed", zap.Int("run", i), zap.Float64("loss", loss))
+	}
 
-		if err := tx.Create(&run).Error; err != nil {
-			return err
-		}
-
-		// 4. Update Batch Aggregates
-		newTotalInput := batch.TotalInputWeight + input
-		newTotalOutput := batch.TotalOutputWeight + output
-		newBatchLoss := (1 - newTotalOutput/newTotalInput) * 100
-
-		qualityFlag := "NORMAL"
-		if loss > 25.0 || loss < 10.0 {
-			qualityFlag = "QUALITY_WARNING"
-		}
-
-		return tx.Model(&batch).Updates(map[string]interface{}{
-			"total_input_weight":  newTotalInput,
-			"total_output_weight": newTotalOutput,
-			"weight_loss_percent": newBatchLoss,
-			"quality_flag":        qualityFlag,
-		}).Error
+	// Finalize Simulation Results
+	finalLoss := (1 - totalOutput/batch.TotalInputWeight) * 100
+	uc.db.Model(&batch).Updates(map[string]interface{}{
+		"status":              domain.BatchStatusReady,
+		"total_output_weight": totalOutput,
+		"weight_loss_percent": finalLoss,
 	})
+
+	log.Info("Simulation finished. Batch ready to stock.", zap.Float64("total_output", totalOutput))
 }

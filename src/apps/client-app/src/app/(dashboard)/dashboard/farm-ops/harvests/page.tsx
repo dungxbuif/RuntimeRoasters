@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services/farm.service';
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
+import { e2eSelectors, testId } from '@/lib/utils/test-id';
 
 type ApiError = {
   response?: { data?: { message?: string } };
@@ -77,6 +78,7 @@ export default function HarvestsPage() {
         </div>
         <button 
           onClick={() => setShowModal(true)}
+          {...testId(e2eSelectors.CREATE_HARVEST_BTN)}
           className="bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 flex items-center gap-2"
         >
           <span className="material-symbols-outlined !text-sm">add_circle</span>
@@ -89,7 +91,7 @@ export default function HarvestsPage() {
           <div className="p-12 text-center text-on-surface-variant animate-pulse font-bold uppercase tracking-widest text-xs">Syncing Harvest Ledger...</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse" {...testId(e2eSelectors.HARVEST_LIST_TABLE)}>
               <thead className="bg-surface-container-low border-b border-outline-variant/10">
                 <tr>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Harvest ID</th>
@@ -149,7 +151,7 @@ export default function HarvestsPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" {...testId(e2eSelectors.HARVEST_MODAL)}>
           <div className="bg-surface-container-lowest w-full max-w-md rounded-[2rem] border border-outline-variant/20 shadow-2xl p-8 relative overflow-hidden">
             {/* Background Accent */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-tertiary/10 rounded-full blur-3xl"></div>
@@ -163,6 +165,7 @@ export default function HarvestsPage() {
                 <label className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-60">Origin Farm</label>
                 <select 
                   required
+                  {...testId(e2eSelectors.HARVEST_FARM_SELECT)}
                   className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold uppercase tracking-tight"
                   value={formData.farm_id || ''}
                   onChange={(e) => setFormData({...formData, farm_id: Number(e.target.value)})}
@@ -177,9 +180,10 @@ export default function HarvestsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-60">Coffee Variety</label>
-                  <select 
-                    className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold"
-                    value={formData.coffee_type}
+                <select 
+                  {...testId(e2eSelectors.HARVEST_TYPE_SELECT)}
+                  className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold"
+                  value={formData.coffee_type}
                     onChange={(e) => setFormData({...formData, coffee_type: e.target.value as CoffeeType})}
                   >
                     {COFFEE_TYPES.map(ct => (
@@ -189,14 +193,15 @@ export default function HarvestsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-widest ml-1 opacity-60">Yield (KG)</label>
-                  <input 
-                    type="number"
-                    required
-                    step="0.1"
-                    min="0.1"
-                    placeholder="0.0"
-                    className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold italic"
-                    value={formData.quantity || ''}
+                <input 
+                  type="number"
+                  required
+                  step="0.1"
+                  min="0.1"
+                  placeholder="0.0"
+                  {...testId(e2eSelectors.HARVEST_QUANTITY_INPUT)}
+                  className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold italic"
+                  value={formData.quantity || ''}
                     onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})}
                   />
                 </div>
@@ -207,6 +212,7 @@ export default function HarvestsPage() {
                 <input 
                   type="date"
                   required
+                  {...testId(e2eSelectors.HARVEST_DATE_INPUT)}
                   className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tertiary transition-colors font-bold"
                   value={formData.harvest_date}
                   onChange={(e) => setFormData({...formData, harvest_date: e.target.value})}
@@ -224,6 +230,7 @@ export default function HarvestsPage() {
                 <button 
                   type="submit"
                   disabled={createHarvestMutation.isPending}
+                  {...testId(e2eSelectors.HARVEST_SUBMIT_BTN)}
                   className="flex-1 bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {createHarvestMutation.isPending ? (

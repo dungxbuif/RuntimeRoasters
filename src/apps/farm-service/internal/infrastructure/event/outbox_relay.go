@@ -56,11 +56,9 @@ func (w *OutboxRelay) processEvents(ctx context.Context, log *zap.Logger) {
 	for _, event := range events {
 		log.Info("Processing outbox event", zap.String("id", event.ID), zap.String("type", event.EventType))
 
-		// Mark as processing
 		event.Status = domain.OutboxStatusProcessing
 		_ = w.outboxRepo.Update(ctx, event)
 
-		// Mock Publish
 		err = w.publisher.Publish(ctx, event)
 		if err != nil {
 			log.Error("failed to publish event", zap.Error(err), zap.String("id", event.ID))
@@ -74,7 +72,6 @@ func (w *OutboxRelay) processEvents(ctx context.Context, log *zap.Logger) {
 			continue
 		}
 
-		// Mark as completed
 		now := time.Now()
 		event.Status = domain.OutboxStatusCompleted
 		event.ProcessedAt = &now

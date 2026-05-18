@@ -1,89 +1,53 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { loginViaUi } from './helpers';
 
-/**
- * Sprint 4 E2E Test: Smart Harvest Declaration
- * Rules:
- * - Admin logs in
- * - Admin navigates to Harvest Declaration
- * - Admin records a new harvest
- * - Verification: Harvest appears in ledger
- * - Verification: Validation prevents invalid (0 quantity) harvest
- */
-
-const ADMIN_EMAIL = 'admin@runtimeroasters.com';
-const ADMIN_PASS = 'Hello@123';
-const TEST_QUANTITY = Math.floor(Math.random() * 1000) + 1;
-
-const SELECTORS = {
-  LOGIN_SUBMIT: '[data-e2e="login-submit"]',
-  AUTH_LOADER: '[data-e2e="auth-loader"]',
-  DASHBOARD_HEADER: '[data-e2e="dashboard-header"]',
-  
-  // Harvest Page
-  DECLARE_HARVEST_BTN: 'button:has-text("Declare New Harvest")',
-  HARVEST_FARM_SELECT: 'select', // First select is farm
-  HARVEST_TYPE_SELECT: 'select:nth-of-type(2)', // Second select is type
-  HARVEST_QUANTITY_INPUT: 'input[type="number"]',
-  HARVEST_SUBMIT_BTN: 'button:has-text("Record Harvest")',
-  HARVEST_LEDGER_TABLE: 'table',
-};
+const TEST_FARM_NAME = `Harvest Farm ${Date.now()}`;
+const TEST_QUANTITY = Math.floor(Math.random() * 1000) + 100;
 
 test.describe('Sprint 4: Smart Harvest Declaration', () => {
+  test('admin can declare harvest, downstream warehouse batch is created, and validation blocks zero quantity', async ({ page, request }) => {
+    await loginViaUi(page);
 
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-  });
+    await page.goto('/dashboard/farm-ops/registry');
+    const farmRow = page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`);
+    if (await farmRow.count() === 0) {
+      await page.locator('[data-e2e="create-farm-btn"]').click();
+      await page.locator('[data-e2e="farm-name-input"]').fill(TEST_FARM_NAME);
+      await page.locator('[data-e2e="farm-area-input"]').fill('88');
+      await page.locator('[data-e2e="farm-submit-btn"]').click();
+      await expect(page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`)).toBeVisible({ timeout: 15000 });
+    }
 
-  test('Should declare harvest successfully', async ({ page }) => {
-    await test.step('Step 1: Admin Login', async () => {
-      await page.goto('/login');
-      await page.fill('input[type="email"], input[name="identifier"]', ADMIN_EMAIL);
-      await page.fill('input[type="password"], input[name="password"]', ADMIN_PASS);
-      await page.click(SELECTORS.LOGIN_SUBMIT);
-      
-      await expect(page).toHaveURL(/\/dashboard\/users/, { timeout: 15000 });
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
+    await page.goto('/dashboard/farm-ops/harvests');
+    await expect(page.getByRole('heading', { name: /harvest/i })).toBeVisible();
+
+    await page.locator('[data-e2e="create-harvest-btn"]').click();
+    const harvestCreateResponse = page.waitForResponse((response) =>
+      response.request().method() === 'POST' && response.url().includes('/v1/harvests')
+    );
+    await page.locator('[data-e2e="harvest-quantity-input"]').fill(TEST_QUANTITY.toString());
+    await page.locator('[data-e2e="harvest-submit-btn"]').click();
+    const harvestCreatePayload = await (await harvestCreateResponse).json();
+    const harvestId = String(harvestCreatePayload.harvest.id);
+
+    await expect(page.locator('[data-e2e="harvest-modal"]')).toHaveCount(0, { timeout: 15000 });
+    await expect(page.locator('[data-e2e="harvest-list-table"]')).toContainText(`${TEST_QUANTITY} KG`);
+    await expect.poll(async () => {
+      const res = await request.get(`/api/e2e/warehouse/batches?harvestId=${harvestId}`);
+      if (!res.ok()) {
+        return null;
+      }
+      const body = await res.json();
+      return body.batch?.harvest_id ?? null;
+    }, { timeout: 20000 }).toBe(harvestId);
+
+    await page.locator('[data-e2e="create-harvest-btn"]').click();
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('greater than 0');
+      await dialog.dismiss();
     });
-
-    await test.step('Step 2: Navigate to Harvest Declaration', async () => {
-      await page.goto('/dashboard/farm-ops/harvests');
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
-      await expect(page.locator('h1')).toContainText('Harvest Declaration');
-    });
-
-    await test.step('Step 3: Record New Harvest', async () => {
-      await page.click(SELECTORS.DECLARE_HARVEST_BTN);
-      
-      // Select first farm if not selected
-      const farmSelect = page.locator('select').first();
-      await farmSelect.waitFor({ state: 'visible' });
-      
-      await page.fill(SELECTORS.HARVEST_QUANTITY_INPUT, TEST_QUANTITY.toString());
-      
-      // Record
-      await page.click(SELECTORS.HARVEST_SUBMIT_BTN);
-      
-      // Modal should close
-      await expect(page.locator(SELECTORS.HARVEST_SUBMIT_BTN)).not.toBeVisible();
-      
-      // Should see the quantity in the table
-      await expect(page.locator(SELECTORS.HARVEST_LEDGER_TABLE)).toContainText(`${TEST_QUANTITY} KG`);
-    });
-
-    await test.step('Step 4: Verify Validation (Zero Quantity)', async () => {
-      await page.click(SELECTORS.DECLARE_HARVEST_BTN);
-      await page.fill(SELECTORS.HARVEST_QUANTITY_INPUT, '0');
-      
-      // Intercept alert
-      page.once('dialog', async dialog => {
-        expect(dialog.message()).toContain('greater than 0');
-        await dialog.dismiss();
-      });
-      
-      await page.click(SELECTORS.HARVEST_SUBMIT_BTN);
-      
-      // Modal should still be open
-      await expect(page.locator(SELECTORS.HARVEST_SUBMIT_BTN)).toBeVisible();
-    });
+    await page.locator('[data-e2e="harvest-quantity-input"]').fill('0');
+    await page.locator('[data-e2e="harvest-submit-btn"]').click();
+    await expect(page.locator('[data-e2e="harvest-modal"]')).toBeVisible();
   });
 });

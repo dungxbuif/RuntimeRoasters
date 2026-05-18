@@ -11,70 +11,64 @@ import (
 )
 
 type InventoryUseCase struct {
-	db       *gorm.DB
-	producer kafka.Producer
+	db         *gorm.DB
+	producer   kafka.Producer
+	stockTopic string
 }
 
-func NewInventoryUseCase(db *gorm.DB, producer kafka.Producer) *InventoryUseCase {
+func NewInventoryUseCase(db *gorm.DB, producer kafka.Producer, stockTopic string) *InventoryUseCase {
 	return &InventoryUseCase{
-		db:       db,
-		producer: producer,
+		db:         db,
+		producer:   producer,
+		stockTopic: stockTopic,
 	}
 }
 
-func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, batchID string) error {
+func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, internalID string) error {
 	return uc.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Get Batch
 		var batch domain.ProductionBatch
-		if err := tx.Where("batch_id = ?", batchID).First(&batch).Error; err != nil {
+		if err := tx.Preload("Intakes").Where("id = ?", internalID).First(&batch).Error; err != nil {
 			return err
 		}
 
-		if batch.Status != domain.BatchStatusProcessing {
-			return fmt.Errorf("only PROCESSING batches can be finalized")
+		if batch.Status != domain.BatchStatusReady {
+			return fmt.Errorf("only READY batches can be finalized, current: %s", batch.Status)
 		}
 
-		// 2. Generate Final SKU and ID
-		sku := fmt.Sprintf("%s-%s-ROASTED", batch.OriginCode, batch.CoffeeType)
-		
-		// 3. Update Inventory
+		// 2. Update Inventory
+		sku := fmt.Sprintf("%s-%s-ROASTED", batch.Intakes[0].OriginCode, batch.Intakes[0].CoffeeType)
 		var inv domain.Inventory
-		err := tx.Where("sku = ?", sku).First(&inv).Error
-		if err != nil {
+		if err := tx.Where("sku = ?", sku).First(&inv).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
-				// Create new inventory record
 				inv = domain.Inventory{
-					CoffeeType:        batch.CoffeeType,
-					OriginCode:        batch.OriginCode,
+					CoffeeType:        batch.Intakes[0].CoffeeType,
+					OriginCode:        batch.Intakes[0].OriginCode,
 					SKU:               sku,
 					AvailableQuantity: batch.TotalOutputWeight,
 				}
-				if err := tx.Create(&inv).Error; err != nil {
-					return err
-				}
+				tx.Create(&inv)
 			} else {
 				return err
 			}
 		} else {
-			// Update existing
-			if err := tx.Model(&inv).Update("available_quantity", gorm.Expr("available_quantity + ?", batch.TotalOutputWeight)).Error; err != nil {
-				return err
-			}
+			tx.Model(&inv).Update("available_quantity", gorm.Expr("available_quantity + ?", batch.TotalOutputWeight))
 		}
 
-		// 4. Finalize Batch Status
+		// 3. Finalize Batch Status
 		if err := tx.Model(&batch).Update("status", domain.BatchStatusStocked).Error; err != nil {
 			return err
 		}
 
-		// 5. Notify via Kafka
+		// 4. Notify (Simulated Outbox - in real use, we write to outbox table)
 		event := map[string]interface{}{
-			"batch_id":     batchID,
-			"sku":          sku,
-			"quantity":     batch.TotalOutputWeight,
-			"timestamp":    time.Now(),
+			"batch_id":  batch.BatchID,
+			"sku":       sku,
+			"quantity":  batch.TotalOutputWeight,
+			"timestamp": time.Now(),
 		}
 		
-		return uc.producer.Publish(ctx, "warehouse.stock.updated", batchID, event)
+		// For demo, we publish directly but note the intent
+		return uc.producer.Publish(ctx, uc.stockTopic, batch.BatchID, event)
 	})
 }

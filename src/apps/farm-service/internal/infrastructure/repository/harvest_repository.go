@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/casbin/casbin/v3"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
@@ -35,7 +34,7 @@ type harvestRepository struct {
 	scoper *rr_casbin.GormScoper
 }
 
-func NewHarvestRepository(db *database.DB, enforcer *casbin.SyncedEnforcer) usecase.HarvestRepository {
+func NewHarvestRepository(db *database.DB, enforcer rr_casbin.PolicyEnforcer) usecase.HarvestRepository {
 	return &harvestRepository{
 		db:     db,
 		scoper: rr_casbin.NewGormScoper(enforcer),

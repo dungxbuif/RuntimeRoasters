@@ -1,18 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/app"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
-	fmt.Println("Initializing Auth Service...")
-	application, _, err := app.InitializeApp()
+	application, cleanup, err := app.InitializeApp()
 	if err != nil {
-		fmt.Printf("Error during initialization: %v\n", err)
-		panic(err)
+		logger.GetLogger().Fatal("failed to initialize auth service", zap.Error(err))
 	}
-
-	fmt.Println("Running Auth Service...")
+	defer cleanup()
 	application.Run()
 }

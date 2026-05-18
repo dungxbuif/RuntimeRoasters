@@ -1,4 +1,5 @@
 import { hydraAdmin } from "@/lib/ory/hydra";
+import { resolveIdentityRole } from "@/lib/ory/identity-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -15,10 +16,12 @@ export async function POST(req: NextRequest) {
     const { data: consentRequest } = await hydraAdmin.getOAuth2ConsentRequest({
       consentChallenge: consent_challenge,
     });
+    const role = await resolveIdentityRole(consentRequest.subject);
 
     console.log('[CONSENT/ACCEPT] consent request', {
       client_id: consentRequest.client?.client_id,
       requested_scope: consentRequest.requested_scope,
+      role,
     });
 
     const { data: acceptResponse } = await hydraAdmin.acceptOAuth2ConsentRequest({
@@ -27,8 +30,8 @@ export async function POST(req: NextRequest) {
         grant_scope: consentRequest.requested_scope,
         grant_access_token_audience: consentRequest.requested_access_token_audience,
         session: {
-          id_token: { role: "admin", org_id: "org-root-001" },
-          access_token: { role: "admin", org_id: "org-root-001" },
+          id_token: { role, org_id: "org-root-001" },
+          access_token: { role, org_id: "org-root-001" },
         },
       },
     });

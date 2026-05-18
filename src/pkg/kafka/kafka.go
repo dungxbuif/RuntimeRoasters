@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"strings"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -34,4 +35,16 @@ type Config struct {
 	Brokers []string
 	GroupID string
 	Topic   string
+}
+
+func normalizeBrokers(brokers []string) []string {
+	normalized := make([]string, len(brokers))
+	for i, broker := range brokers {
+		if strings.HasPrefix(broker, "localhost:") {
+			normalized[i] = strings.Replace(broker, "localhost:", "127.0.0.1:", 1)
+			continue
+		}
+		normalized[i] = broker
+	}
+	return normalized
 }

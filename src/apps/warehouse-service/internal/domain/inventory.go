@@ -5,7 +5,7 @@ import (
 )
 
 type Inventory struct {
-	ID                string  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ID                string  `gorm:"type:uuid;primaryKey"`
 	CoffeeType        string  `gorm:"size:20;not null"`
 	OriginCode        string  `gorm:"size:10;not null"`
 	SKU               string  `gorm:"uniqueIndex;not null"`

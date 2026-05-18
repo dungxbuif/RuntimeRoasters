@@ -1,84 +1,118 @@
-# 🤖 PROJECT AGENT CONTEXT: Runtime Roasters
+# PROJECT AGENT CONTEXT: Runtime Roasters
 
-Tài liệu này là "nguồn sự thật duy nhất" (Single Source of Truth) dành cho AI Agents khi làm việc trên dự án **Runtime Roasters**. Mọi hành động, thiết kế và review code PHẢI tuân thủ các chỉ dẫn dưới đây.
+This is the working context for AI agents in this repository. Treat it as the first file to read before changing code.
 
----
+Last updated: 2026-05-15
 
-## ☕ 1. Tầm nhìn & Sứ mệnh (Project Mission)
-**Runtime Roasters** là một nền tảng quản lý chuỗi cung ứng cà phê (Farm-to-Cup) mô phỏng production-grade.
-- **Mục tiêu:** Showcase kiến trúc Microservices phức tạp trong hệ sinh thái Go.
-- **Giá trị cốt lõi:** Minh bạch, Tin cậy, Quan sát được (Observability).
+## Mission
 
----
+Runtime Roasters is a production-grade Farm-to-Cup supply-chain showcase built as a Go microservices monorepo with a Next.js control-plane UI. The project demonstrates distributed systems patterns: OIDC login, centralized authorization, gRPC/REST gatewaying, Kafka events, transactional outbox, service-local enforcement, and dashboard visualization.
 
-## 🏗️ 2. Trụ cột Kiến trúc (Architectural Pillars)
+## Current App Shape
 
-### 2.1 Microservices Monorepo
-- **Cấu trúc:** `api/` (Proto), `pkg/` (Shared Libs), `src/apps/` (Services).
-- **Giao tiếp:** gRPC (Nội bộ), REST/KrakenD (Bên ngoài), Kafka (Bất đồng bộ).
+- Source root is `src/`.
+- Contracts live in `api/runtime/...` and generated Go lives in `src/runtime/...`.
+- Services live under `src/apps/`.
+- Shared backend packages live under `src/pkg/`.
+- Frontend app is `src/apps/client-app`.
+- Local infrastructure lives in `deployments/docker-compose.dev.yaml`.
 
-### 2.2 Clean Architecture (Mandatory)
-Tuân thủ **ADR 0001** và triết lý **Go Clean Arch**:
-- **Domain:** Pure Go, không import package ngoài Standard Library.
-- **UseCase:** Định nghĩa logic nghiệp vụ. **QUAN TRỌNG:** Interface thuộc về Consumer (định nghĩa tại UseCase, thực thi tại Infra).
-- **Infrastructure:** Chi tiết thực thi (DB, API, Broker).
-- **Composition Root:** Manual DI tại `cmd/main.go` hoặc `internal/app/init.go`. **KHÔNG dùng DI Framework.**
+Local ports:
 
-### 2.3 Event-Driven & Consistency
-- **Saga Pattern:** Điều phối đa bước (Choreography) với cơ chế Hoàn tác (Compensating Actions).
-- **Transactional Outbox:** Đảm bảo tính nguyên tử giữa DB state và Kafka event.
-- **Dual Idempotency:** Bảo vệ 2 lớp: Valkey (Sync/HTTP) + Inbox Pattern (Async/Kafka).
-- **CQRS:** Tách biệt Postgres (Write) và Elasticsearch (Read/Traceability).
+- client-app: `http://localhost:3000`
+- KrakenD gateway: `http://localhost:8081`
+- auth-service HTTP/gRPC: `8082` / `50052`
+- farm-service HTTP/gRPC: `8083` / `50053`
+- Ory Kratos public/admin through identity proxy: `4433` / `4434`
+- Ory Hydra public/admin: `4444` / `4445`
+- Kafka UI: `http://localhost:8090`
+- Postgres host port: `54321`
 
----
+## Architecture Decisions
 
-## 🛠️ 3. Tiêu chuẩn Kỹ thuật (Technical Standards)
+- Clean Architecture is mandatory:
+  - `domain`: pure business entities and constants.
+  - `usecase`: business orchestration and repository interfaces.
+  - `infrastructure`: DB, Kafka, Ory, external adapters.
+  - `delivery`: gRPC/HTTP handlers.
+  - `internal/app/init.go`: manual dependency wiring. Do not add DI frameworks.
+- Internal service APIs are gRPC-first. Browser traffic goes through Next.js and KrakenD REST endpoints.
+- Authorization is centralized-management, distributed-enforcement:
+  - `auth-service` is the centralized Casbin writer and owns `auth_db.casbin_rule`.
+  - business services enforce locally using an in-memory Casbin reader.
+  - readers bootstrap with gRPC `AuthService.GetFullSnapshot`.
+  - readers listen to Kafka topic `auth.policy.changed` for live policy refresh.
+  - polling is fallback only, not the primary sync mechanism.
+- Current farm role model:
+  - `FARMER` has been removed.
+  - Farm operations use `FARM_MANAGER`.
+  - Broad farm administration uses `FARM_ADMIN`.
+  - System-wide role is `ADMIN`.
+- Topology UI:
+  - The root page `/` must render the new Architecture Topology.
+  - `/dashboard/topology-mesh` reuses the same topology component.
+  - Do not restore the old `HighFidelityTopology`/FlowControl topology as the main architecture diagram.
 
-- **Ngôn ngữ:** Go 1.25+ (Go Workspaces).
-- **Error Handling:** Tuân thủ **RFC 7807/9457 (Problem Details)**.
-- **Security:** Mô hình 3 lớp (API Gateway -> Casbin Service-level -> GormScoper Data-level).
-- **Observability:** 
-    - Luôn duy trì context propagation (Trace-ID).
-    - Sử dụng `logger.FromContext(ctx)` để ghi log kèm Trace-ID.
-- **Database:** PostgreSQL (GORM), Elasticsearch, Apache Cassandra, Valkey.
+## Current Known Fixes And Lessons
 
----
+- Gin `NoRoute` plus grpc-gateway can accidentally leave a `404` status on successful `/v1` responses. `pkg/base.App.FinalizeRoutes` must set `200` before delegating to `gwMux`.
+- OIDC callback returns `/?access_token=...`; root page must store the token, remove it from the URL, refresh session, and redirect to dashboard users.
+- Kratos `session_already_available` means the browser already has a Kratos session. If the app has no local access token, restart Hydra authorization instead of creating another normal Kratos login flow.
+- Generated gRPC full method names include the proto package, for example `/runtime.farm.v1.FarmService/ListFarms`. Casbin policies must match those names.
+- gRPC authz action mapping is:
+  - `Get*` / `List*` -> `read`
+  - `Delete*` -> `delete`
+  - everything else -> `write`
+- Data-level `GormScoper` evaluates role permissions and scopes non-admin results by JWT subject ownership.
+- `GET /v1/harvests` is not currently a proto route. The frontend harvest list should use `GET /v1/farms/{id}/harvests`.
+- farm-service must not crash when auth-service is not yet ready. Its resilient reader background bootstrap should retry snapshot sync.
 
-## 📋 4. Quy trình Phát triển (Workflow & Rules)
+## Frontend Rules
 
-### 4.1 Quản lý Công việc (Git-as-Jira)
-- Mỗi task nằm trong `docs/business/sprintX/RR-x/`.
-- `ticket.md`: Yêu cầu nghiệp vụ (What/Why).
-- `technical_design.md`: Kế hoạch thực thi kỹ thuật (How) - **PHẢI viết trước khi code.**
+- Match existing dashboard visual language: compact operational UI, node cards, restrained colors, dense but scannable controls.
+- Avoid marketing landing pages. Build the usable screen directly.
+- Do not put cards inside cards. Use cards for discrete items, modals, and framed tools only.
+- Root `/` is an architecture topology screen, with minimal access/dashboard action.
+- Keep text within containers on mobile and desktop.
 
-### 4.2 Documentation (Diátaxis Framework)
-- `docs/architecture/README.md`: Kiến trúc tổng thể & Nguyên tắc cốt lõi (The WHY).
-- `docs/engineering/README.md`: Cẩm nang kỹ thuật & Tra cứu (The WHAT/HOW).
-- `docs/architecture/flows/`: Sơ đồ tương tác (The INTERACTIONS).
-- `docs/architecture/adrs/`: Nhật ký quyết định kiến trúc.
+## Verification Commands
 
-### 4.3 Code Review (Tech Lead Role)
-- Sử dụng skill tại `.antigravity/skills/tech-lead-reviewer/SKILL.md`.
-- Ưu tiên tính Readability, Clean Arch, và Testability.
+Use these after touching relevant areas:
 
----
+```bash
+cd src
+GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./pkg/base/casbin/... ./apps/auth-service/internal/usecase ./apps/farm-service/internal/...
+```
 
-## 📂 5. Bản đồ Thư mục (Project Map)
+```bash
+cd src/apps/client-app
+npm run lint
+```
 
-- `/api/`: Chứa các file `.proto` định nghĩa contract gRPC.
-- `/pkg/`: Thư viện dùng chung (Auth, Kafka, Logger, DB, Telemetry).
-- `/src/apps/`: Các microservices độc lập (auth, farm, warehouse, etc.).
-- `/deployments/`: Cấu hình Docker Compose, Infra seed scripts.
-- `/docs/`: Toàn bộ tài liệu kiến trúc và nghiệp vụ.
+Useful runtime checks:
 
----
+```bash
+curl -s http://127.0.0.1:8081/v1/users
+curl -s -i http://127.0.0.1:8082/health/live
+curl -s -i http://127.0.0.1:8083/health/live
+curl -s -I http://127.0.0.1:3000/
+```
 
-## ⚠️ 6. Chỉ dẫn AI Đặc thù (AI-Specific Directives)
+Expected `/v1/users` local demo users are `ADMIN` and `FARM_MANAGER` only.
 
-1. **Nghiêm cấm "Magic":** Luôn ưu tiên sự tường minh (Explicit over Implicit). Không dùng Reflection, Monkey Patching hay Hidden Logic.
-2. **Test First:** Mọi bug fix phải đi kèm Test Case tái hiện lỗi. Mọi feature mới phải có Unit Test (dùng Mockery).
-3. **Context is King:** Khi đọc code, hãy đọc file `GEMINI.md` hoặc `AGENT.md` trong thư mục tương ứng để hiểu bối cảnh local.
-4. **Surgical Updates:** Khi sửa code, chỉ thay đổi những phần liên quan trực tiếp, không refactor lan man trừ khi được yêu cầu.
+## Documentation Pointers
 
----
-*Cập nhật lần cuối: 2026-05-13 bởi TechLead Agent*
+- Latest implementation notes: `docs/engineering/current-context.md`
+- Architecture overview: `docs/architecture/README.md`
+- AuthZ ADR: `docs/architecture/adrs/0003-two-gate-authz-casbin.md`
+- Manual test script: `TEST_CASES.md`
+- Demo users: `docs/business/demo-identities.md`
+
+## Agent Rules
+
+- Do not revert user changes or unrelated dirty work.
+- Prefer `rg` for searching.
+- Prefer `apply_patch` for edits.
+- Keep changes scoped to the task.
+- When changing behavior, update docs in the same turn if the decision affects app context.
+- When services are running for manual browser testing, keep them running and report URLs/status instead of killing them at the end.

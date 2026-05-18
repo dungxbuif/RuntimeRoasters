@@ -3,22 +3,30 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"go.uber.org/zap"
 )
 
 // InitTracer khởi tạo OTel Tracer và trả về shutdown function
-func InitTracer(serviceName string, jaegerAddr string) (func(), error) {
+func InitTracer(serviceName string, otlpEndpoint string) (func(), error) {
+	if strings.TrimSpace(otlpEndpoint) == "" {
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+		return func() {}, nil
+	}
+
 	ctx := context.Background()
 
 	exporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(jaegerAddr),
+		otlptracegrpc.WithEndpoint(otlpEndpoint),
 		otlptracegrpc.WithInsecure(),
 	)
 	if err != nil {
@@ -46,7 +54,7 @@ func InitTracer(serviceName string, jaegerAddr string) (func(), error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := tp.Shutdown(ctx); err != nil {
-			fmt.Printf("failed to shutdown TracerProvider: %v\n", err)
+			logger.GetLogger().Warn("failed to shutdown tracer provider", zap.Error(err))
 		}
 	}
 

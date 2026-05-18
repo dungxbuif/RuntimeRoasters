@@ -40,7 +40,13 @@ class FarmService {
   }
 
   async updateFarm(id: number | string, data: Partial<Farm>): Promise<Farm> {
-    const res = await api.put(`${API_ENDPOINTS.FARM.FARMS}/${id}`, data);
+    const res = await api.put(`${API_ENDPOINTS.FARM.FARMS}/${id}`, {
+      name: data.name,
+      location: data.location,
+      area: data.area,
+      farm_type: data.farm_type,
+      farmType: data.farm_type,
+    });
     return res.data.farm;
   }
 

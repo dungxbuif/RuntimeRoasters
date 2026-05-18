@@ -30,4 +30,14 @@ export const e2eSelectors = {
   FARM_SUBMIT_BTN: 'farm-submit-btn',
   FARM_DELETE_BTN: 'farm-delete-btn',
   FARM_EDIT_BTN: 'farm-edit-btn',
+
+  // Harvest Management
+  HARVEST_LIST_TABLE: 'harvest-list-table',
+  CREATE_HARVEST_BTN: 'create-harvest-btn',
+  HARVEST_MODAL: 'harvest-modal',
+  HARVEST_FARM_SELECT: 'harvest-farm-select',
+  HARVEST_TYPE_SELECT: 'harvest-type-select',
+  HARVEST_QUANTITY_INPUT: 'harvest-quantity-input',
+  HARVEST_DATE_INPUT: 'harvest-date-input',
+  HARVEST_SUBMIT_BTN: 'harvest-submit-btn',
 };

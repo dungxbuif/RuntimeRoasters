@@ -10,11 +10,15 @@ import (
 )
 
 // GormScoper provides a way to apply Casbin-based filters to GORM queries
-type GormScoper struct {
-	enforcer *casbin.SyncedEnforcer
+type PolicyEnforcer interface {
+	Enforce(rvals ...interface{}) (bool, error)
 }
 
-func NewGormScoper(e *casbin.SyncedEnforcer) *GormScoper {
+type GormScoper struct {
+	enforcer PolicyEnforcer
+}
+
+func NewGormScoper(e PolicyEnforcer) *GormScoper {
 	return &GormScoper{enforcer: e}
 }
 

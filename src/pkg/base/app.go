@@ -32,13 +32,14 @@ type Options struct {
 }
 
 type App struct {
-	Name       string
-	httpServer *http.Server
-	grpcServer *grpc.Server
-	logger     *zap.Logger
-	ginEngine  *gin.Engine
-	gwMux      *runtime.ServeMux
-	shutdownFn func()
+	Name         string
+	internalHost string
+	httpServer   *http.Server
+	grpcServer   *grpc.Server
+	logger       *zap.Logger
+	ginEngine    *gin.Engine
+	gwMux        *runtime.ServeMux
+	shutdownFn   func()
 }
 
 func NewApp(opts Options) *App {
@@ -46,13 +47,7 @@ func NewApp(opts Options) *App {
 	log := logger.GetLogger()
 	log.Info("bootstrapping service", zap.String("name", opts.Name))
 
-	// Initialize OpenTelemetry
-	otelEndpoint := opts.Config.OTLPEndpoint
-	if otelEndpoint == "" {
-		otelEndpoint = "localhost:4317" // Default for local dev
-	}
-
-	otelShutdown, err := telemetry.InitTracer(opts.Name, otelEndpoint)
+	otelShutdown, err := telemetry.InitTracer(opts.Name, opts.Config.OTLPEndpoint)
 	if err != nil {
 		log.Warn("failed to initialize telemetry", zap.Error(err))
 	}
@@ -63,7 +58,7 @@ func NewApp(opts Options) *App {
 	engine := gin.New()
 	engine.Use(gin.Recovery())
 	engine.Use(otelgin.Middleware(opts.Name)) // HTTP/Gin tracing
-	engine.Use(logger.GinLoggerMiddleware()) // Zap HTTP Logging
+	engine.Use(logger.GinLoggerMiddleware())  // Zap HTTP Logging
 	engine.Use(errs.GinErrorHandler())
 
 	engine.GET("/health/live", func(c *gin.Context) {
@@ -73,10 +68,11 @@ func NewApp(opts Options) *App {
 	gwMux := runtime.NewServeMux()
 
 	return &App{
-		Name:       opts.Name,
-		ginEngine:  engine,
+		Name:         opts.Name,
+		internalHost: defaultInternalHost(opts.Config.InternalHost),
+		ginEngine:    engine,
 		grpcServer: grpc.NewServer(
-			append(opts.GRPCServerOptions, 
+			append(opts.GRPCServerOptions,
 				grpc.StatsHandler(otelgrpc.NewServerHandler()),
 				grpc.ChainUnaryInterceptor(logger.GRPCLoggerInterceptor()),
 			)...,
@@ -115,10 +111,17 @@ func (a *App) RegisterGateway(register func(ctx context.Context, mux *runtime.Se
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	}
-	endpoint := fmt.Sprintf("localhost:%d", grpcPort)
+	endpoint := fmt.Sprintf("%s:%d", a.internalHost, grpcPort)
 	if err := register(ctx, a.gwMux, endpoint, opts); err != nil {
 		a.logger.Fatal("failed to register gateway", zap.Error(err))
 	}
+}
+
+func defaultInternalHost(host string) string {
+	if strings.TrimSpace(host) == "" {
+		return "127.0.0.1"
+	}
+	return host
 }
 
 func (a *App) ServeSwagger(path, dir string) {

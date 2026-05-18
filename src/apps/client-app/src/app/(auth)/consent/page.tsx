@@ -1,6 +1,7 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { hydraAdmin } from "@/lib/ory/hydra";
+import { resolveIdentityRole } from '@/lib/ory/identity-admin';
 import { AUTH_PARAMS, TRUSTED_CLIENTS } from '@/constants/auth';
 
 interface ConsentPageProps {
@@ -35,8 +36,10 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
   try {
     const response = await hydraAdmin.getOAuth2ConsentRequest({ consentChallenge });
     consentRequest = response.data;
+    const role = await resolveIdentityRole(consentRequest.subject);
 
     console.log('[CONSENT] client:', consentRequest.client?.client_id, 'scopes:', consentRequest.requested_scope);
+    console.log('[CONSENT] mapped role:', role);
 
     const isTrusted = TRUSTED_CLIENTS.includes(consentRequest.client?.client_id || '');
 
@@ -47,8 +50,8 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
           grant_scope: consentRequest.requested_scope,
           grant_access_token_audience: consentRequest.requested_access_token_audience,
           session: {
-            id_token: { role: "ADMIN" },
-            access_token: { role: "ADMIN" },
+            id_token: { role },
+            access_token: { role },
           },
           remember: true,
           remember_for: 3600,

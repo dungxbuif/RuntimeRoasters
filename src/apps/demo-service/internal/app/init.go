@@ -18,10 +18,14 @@ import (
 
 func InitializeApp() (*App, func(), error) {
 	cfg := config.Load()
+	if cfg.DBLogLevel == "" {
+		cfg.DBLogLevel = "warn"
+	}
 
 	// 1. Core Infra
 	db, err := database.NewPostgres(database.PostgresConfig{
-		URL: cfg.DatabaseURL,
+		URL:      cfg.DatabaseURL,
+		LogLevel: cfg.DBLogLevel,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -77,7 +81,10 @@ m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatc
 	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, demoHandler)
 
 	cleanup := func() {
-		// No manual cleanup required for db/rdb here as shutdown handles graceful termination
+		_ = vdb.Close()
+		if sqlDB, sqlErr := db.DB.DB(); sqlErr == nil {
+			_ = sqlDB.Close()
+		}
 	}
 
 	return app, cleanup, nil

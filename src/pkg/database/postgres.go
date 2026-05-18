@@ -2,17 +2,19 @@ package database
 
 import (
 	"context"
+	"log"
+	"os"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 type PostgresConfig struct {
 	URL          string
-	MaxOpenConns int // default: 20
-	MaxIdleConns int // default: 5
+	MaxOpenConns int    // default: 20
+	MaxIdleConns int    // default: 5
 	LogLevel     string // silent, error, warn, info
 }
 
@@ -29,7 +31,7 @@ type txKey struct{}
 // NewPostgres initializes and returns a wrapped gorm.DB instance connected to Postgres
 func NewPostgres(cfg PostgresConfig) (*DB, error) {
 	gormCfg := &gorm.Config{
-		Logger: logger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+		Logger: newGormLogger(cfg.LogLevel),
 	}
 
 	db, err := gorm.Open(postgres.Open(cfg.URL), gormCfg)
@@ -83,17 +85,29 @@ func (db *DB) Ping(ctx context.Context) error {
 	return sqlDB.PingContext(ctx)
 }
 
-func parseLogLevel(level string) logger.LogLevel {
+func parseLogLevel(level string) gormlogger.LogLevel {
 	switch level {
 	case "silent":
-		return logger.Silent
+		return gormlogger.Silent
 	case "error":
-		return logger.Error
+		return gormlogger.Error
 	case "warn":
-		return logger.Warn
+		return gormlogger.Warn
 	case "info":
-		return logger.Info
+		return gormlogger.Info
 	default:
-		return logger.Info
+		return gormlogger.Info
 	}
+}
+
+func newGormLogger(level string) gormlogger.Interface {
+	return gormlogger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		gormlogger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  parseLogLevel(level),
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  true,
+		},
+	)
 }

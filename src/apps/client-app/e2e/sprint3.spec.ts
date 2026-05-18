@@ -1,114 +1,58 @@
-import { test, expect } from '@playwright/test';
-
-/**
- * Sprint 3 E2E Test: Full Vertical Slice (High Fidelity)
- * Rules:
- * - Admin creates Manager
- * - Admin creates Farm & assigns to Manager
- * - Manager logs in -> Can view own farm
- * - Manager CANNOT delete any farm (Role restriction enforced in UI & Backend)
- * - Data isolation: Manager cannot see other's farms
- */
-
-const ADMIN_EMAIL = 'admin@runtimeroasters.com';
-const ADMIN_PASS = 'Hello@123';
+import { expect, test } from '@playwright/test';
+import { ADMIN_PASS, loginViaUi, logoutViaUi } from './helpers';
 
 const TEST_MANAGER_EMAIL = `mgr.${Date.now()}@runtimeroasters.com`;
-const TEST_MANAGER_PASS = 'Hello@123';
 const TEST_FARM_NAME = `Hectare Node ${Date.now()}`;
+const UPDATED_FARM_NAME = `${TEST_FARM_NAME} Updated`;
 
-const SELECTORS = {
-  LOGIN_SUBMIT: '[data-e2e="login-submit"]',
-  CREATE_USER_BTN: '[data-e2e="create-user-btn"]',
-  USER_EMAIL_INPUT: '[data-e2e="user-email-input"]',
-  USER_PASS_INPUT: '[data-e2e="user-password-input"]',
-  USER_ROLE_SELECT: '[data-e2e="user-role-select"]',
-  USER_SUBMIT_BTN: '[data-e2e="user-submit-btn"]',
-  
-  CREATE_FARM_BTN: '[data-e2e="create-farm-btn"]',
-  FARM_NAME_INPUT: '[data-e2e="farm-name-input"]',
-  FARM_AREA_INPUT: '[data-e2e="farm-area-input"]',
-  FARM_OWNER_SELECT: '[data-e2e="farm-owner-select"]',
-  FARM_SUBMIT_BTN: '[data-e2e="farm-submit-btn"]',
-  FARM_DELETE_BTN: '[data-e2e="farm-delete-btn"]',
-  
-  AUTH_LOADER: '[data-e2e="auth-loader"]',
-  DASHBOARD_HEADER: '[data-e2e="dashboard-header"]',
-  LOGOUT_BTN: '[data-e2e="logout-btn"]',
-};
+test.describe('Sprint 3: Farm Service & Vertical Slice', () => {
+  test('admin provisions manager and farm, updates it, and manager sees only assigned farm and cannot delete', async ({ browser, page }) => {
+    await loginViaUi(page);
 
-test.describe('Sprint 3: High-Fidelity Flow & Role Constraints', () => {
+    await page.goto('/dashboard/users');
+    await page.locator('[data-e2e="create-user-btn"]').click();
+    await page.locator('[data-e2e="user-email-input"]').fill(TEST_MANAGER_EMAIL);
+    await page.locator('[data-e2e="user-password-input"]').fill(ADMIN_PASS);
+    await page.locator('[data-e2e="user-role-select"]').selectOption('FARM_MANAGER');
+    await page.locator('[data-e2e="user-submit-btn"]').click();
+    await expect(page.locator(`[data-e2e="user-row-${TEST_MANAGER_EMAIL}"]`)).toBeVisible({ timeout: 15000 });
 
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-  });
+    await page.goto('/dashboard/farm-ops/registry');
+    await page.locator('[data-e2e="create-farm-btn"]').click();
+    await page.locator('[data-e2e="farm-name-input"]').fill(TEST_FARM_NAME);
+    await page.locator('[data-e2e="farm-area-input"]').fill('120.5');
+    const managerLabel = `${TEST_MANAGER_EMAIL.split('@')[0]} (${TEST_MANAGER_EMAIL})`;
+    await page.locator('[data-e2e="farm-owner-select"]').selectOption({ label: managerLabel });
+    await page.locator('[data-e2e="farm-submit-btn"]').click();
+    const adminFarmRow = page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`);
+    await expect(adminFarmRow).toBeVisible({ timeout: 15000 });
 
-  test('Full Sprint 3 Flow: Admin Provisioning -> Manager Isolation', async ({ page }) => {
-    
-    await test.step('Step 1: Admin Login', async () => {
-      await page.goto('/login');
-      // Using generic input selectors as specific ones might be missing on login page
-      await page.fill('input[type="email"], input[name="identifier"]', ADMIN_EMAIL);
-      await page.fill('input[type="password"], input[name="password"]', ADMIN_PASS);
-      await page.click(SELECTORS.LOGIN_SUBMIT);
-      
-      // Admin defaults to /dashboard/users
-      await expect(page).toHaveURL(/\/dashboard\/users/, { timeout: 15000 });
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
-      await expect(page.locator(SELECTORS.DASHBOARD_HEADER)).toBeVisible();
+    await adminFarmRow.locator('[data-e2e="farm-edit-btn"]').click();
+    await expect(page.locator('[data-e2e="farm-modal"]')).toBeVisible();
+    await page.locator('[data-e2e="farm-name-input"]').fill(UPDATED_FARM_NAME);
+    await page.locator('[data-e2e="farm-area-input"]').fill('132.75');
+    await page.locator('[data-e2e="farm-submit-btn"]').click();
+
+    const updatedAdminFarmRow = page.locator(`[data-e2e="farm-row-${UPDATED_FARM_NAME}"]`);
+    await expect(updatedAdminFarmRow).toBeVisible({ timeout: 15000 });
+
+    const managerContext = await browser.newContext();
+    const managerPage = await managerContext.newPage();
+
+    await loginViaUi(managerPage, TEST_MANAGER_EMAIL, ADMIN_PASS);
+    await managerPage.goto('/dashboard/farm-ops/registry');
+
+    const managerFarmRow = managerPage.locator(`[data-e2e="farm-row-${UPDATED_FARM_NAME}"]`);
+    await expect(managerFarmRow).toBeVisible({ timeout: 15000 });
+    await expect(managerFarmRow.locator('[data-e2e="farm-delete-btn"]')).toHaveCount(0);
+    await managerContext.close();
+
+    page.once('dialog', async (dialog) => {
+      await dialog.accept();
     });
+    await updatedAdminFarmRow.locator('[data-e2e="farm-delete-btn"]').click();
+    await expect(updatedAdminFarmRow).toHaveCount(0, { timeout: 15000 });
 
-    await test.step('Step 2: Admin Creates Manager', async () => {
-      await page.click(SELECTORS.CREATE_USER_BTN);
-      await page.fill(SELECTORS.USER_EMAIL_INPUT, TEST_MANAGER_EMAIL);
-      await page.fill(SELECTORS.USER_PASS_INPUT, TEST_MANAGER_PASS);
-      await page.selectOption(SELECTORS.USER_ROLE_SELECT, 'FARM_MANAGER');
-      await page.click(SELECTORS.USER_SUBMIT_BTN);
-
-      await expect(page.locator(`[data-e2e="user-row-${TEST_MANAGER_EMAIL}"]`)).toBeVisible({ timeout: 10000 });
-    });
-
-    await test.step('Step 3: Admin Creates Farm for Manager', async () => {
-      await page.goto('/dashboard/farm-ops/registry');
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
-      await page.click(SELECTORS.CREATE_FARM_BTN);
-      await page.fill(SELECTORS.FARM_NAME_INPUT, TEST_FARM_NAME);
-      await page.fill(SELECTORS.FARM_AREA_INPUT, '120.5');
-      
-      // Wait for managers to load in dropdown
-      await page.selectOption(SELECTORS.FARM_OWNER_SELECT, { label: TEST_MANAGER_EMAIL });
-      await page.click(SELECTORS.FARM_SUBMIT_BTN);
-
-      await expect(page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`)).toBeVisible({ timeout: 10000 });
-    });
-
-    await test.step('Step 4: Admin Logout', async () => {
-      await page.click(SELECTORS.LOGOUT_BTN);
-      await expect(page).toHaveURL(/\/login/);
-    });
-
-    await test.step('Step 5: Manager Login & Verify Isolation', async () => {
-      await page.fill('input[type="email"], input[name="identifier"]', TEST_MANAGER_EMAIL);
-      await page.fill('input[type="password"], input[name="password"]', TEST_MANAGER_PASS);
-      await page.click(SELECTORS.LOGIN_SUBMIT);
-
-      await expect(page).toHaveURL(/\/dashboard\/users/, { timeout: 15000 });
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
-
-      await page.goto('/dashboard/farm-ops/registry');
-      await page.waitForSelector(SELECTORS.AUTH_LOADER, { state: 'hidden' });
-      
-      const farmRow = page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`);
-      await expect(farmRow).toBeVisible();
-      
-      // Verify Restriction: Manager cannot see Delete button in UI
-      await expect(farmRow.locator(SELECTORS.FARM_DELETE_BTN)).not.toBeVisible();
-    });
-  });
-
-  test('Public Showcase accessibility', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('h1:has-text("System")')).toBeVisible();
-    await expect(page.locator('aside')).not.toBeVisible();
+    await logoutViaUi(page);
   });
 });

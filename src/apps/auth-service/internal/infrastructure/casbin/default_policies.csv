@@ -1,4 +1,6 @@
 p, FARM_ADMIN, /runtime.farm.v1.FarmService/*, .*
+p, FARM_ADMIN, farm, .*
+p, FARM_ADMIN, harvest, .*
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/GetFarm, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/ListFarms, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/CreateFarm, write
@@ -7,4 +9,7 @@ p, FARM_MANAGER, /runtime.farm.v1.FarmService/DeleteFarm, delete
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/CreateHarvest, write
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/GetHarvest, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/ListFarmHarvests, read
+p, FARM_MANAGER, farm, read|write
+p, FARM_MANAGER, farm, delete
+p, FARM_MANAGER, harvest, read|write
 g, ADMIN, FARM_ADMIN

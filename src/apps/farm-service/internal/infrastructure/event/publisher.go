@@ -2,30 +2,31 @@ package event
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type kafkaPublisher struct {
 	producer kafka.Producer
+	topic    string
 }
 
-func NewKafkaPublisher(producer kafka.Producer) usecase.EventPublisher {
-	return &kafkaPublisher{producer: producer}
+func NewKafkaPublisher(producer kafka.Producer, topic string) usecase.EventPublisher {
+	return &kafkaPublisher{producer: producer, topic: topic}
 }
 
 func (p *kafkaPublisher) Publish(ctx context.Context, event *domain.OutboxEvent) error {
-	// In a real system, the aggregate ID (e.g., harvest_id) should be in the metadata or payload
-	// For this demo, we'll try to extract it or use the event ID as key for partitioning
 	key := event.ID
-
-	topic := "rr.farm.events"
-	fmt.Printf("[KAFKA] Publishing real event: %s to topic %s\n", event.EventType, topic)
-	
-	return p.producer.Publish(ctx, topic, key, event.Payload)
+	logger.FromContext(ctx).Info("publishing kafka event",
+		zap.String("topic", p.topic),
+		zap.String("event_type", event.EventType),
+		zap.String("event_id", event.ID),
+	)
+	return p.producer.Publish(ctx, p.topic, key, event.Payload)
 }
 
 type mockPublisher struct{}
@@ -35,6 +36,9 @@ func NewMockPublisher() usecase.EventPublisher {
 }
 
 func (m *mockPublisher) Publish(ctx context.Context, event *domain.OutboxEvent) error {
-	fmt.Printf("[MOCK PUBLISHER] Published event: %s\n", event.EventType)
+	logger.FromContext(ctx).Info("mock publisher emitted event",
+		zap.String("event_type", event.EventType),
+		zap.String("event_id", event.ID),
+	)
 	return nil
 }

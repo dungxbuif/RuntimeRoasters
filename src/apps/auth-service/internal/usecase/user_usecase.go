@@ -31,8 +31,6 @@ type userUsecase struct {
 	producer     kafka.Producer
 }
 
-const authPolicyChangedTopic = "auth.policy.changed"
-
 func NewUserUsecase(cfg *config.Config, enforcer *casbin.Enforcer, producer kafka.Producer) UserUsecase {
 	kratosCfg := client.NewConfiguration()
 	kratosCfg.Servers = client.ServerConfigurations{{URL: cfg.KratosAdminURL}}
@@ -42,11 +40,7 @@ func NewUserUsecase(cfg *config.Config, enforcer *casbin.Enforcer, producer kafk
 	kratosClient := client.NewAPIClient(kratosCfg)
 
 	hydraCfg := hydra.NewConfiguration()
-	// Using direct localhost port for dev environment as per .env standard
-	hydraAdminURL := "http://localhost:4445"
-	hydraCfg.Servers = hydra.ServerConfigurations{{URL: hydraAdminURL}}
-	// Hydra Admin 4445 usually doesn't have Nginx proxy in this setup, but let's be consistent if needed.
-	// In docker-compose, hydra 4445 is exposed directly.
+	hydraCfg.Servers = hydra.ServerConfigurations{{URL: cfg.HydraAdminURL}}
 	hydraClient := hydra.NewAPIClient(hydraCfg)
 
 	return &userUsecase{
@@ -190,6 +184,9 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 
 	// 2. Accept Login with Session Claims
 	accept := *hydra.NewAcceptOAuth2LoginRequest(req.Subject)
+	accept.SetContext(map[string]interface{}{
+		"role": role,
+	})
 	/*
 	   TODO: Fix custom claims for Hydra v2 Go SDK.
 	   In v2, custom claims might need to be passed differently.
@@ -265,7 +262,7 @@ func (u *userUsecase) publishPolicyChanged(ctx context.Context, key string, reas
 		"reason":      reason,
 		"occurred_at": time.Now().Format(time.RFC3339),
 	}
-	if err := u.producer.Publish(ctx, authPolicyChangedTopic, key, event); err != nil {
+	if err := u.producer.Publish(ctx, u.cfg.KafkaPolicyTopic, key, event); err != nil {
 		logger.FromContext(ctx).Warn("failed to publish auth policy change event", zap.Error(err))
 	}
 }

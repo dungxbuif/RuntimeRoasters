@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/casbin/casbin/v3"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
@@ -60,7 +59,7 @@ type farmRepository struct {
 	scoper *rr_casbin.GormScoper
 }
 
-func NewFarmRepository(db *database.DB, enforcer *casbin.SyncedEnforcer) usecase.FarmRepository {
+func NewFarmRepository(db *database.DB, enforcer rr_casbin.PolicyEnforcer) usecase.FarmRepository {
 	return &farmRepository{
 		db:     db,
 		scoper: rr_casbin.NewGormScoper(enforcer),
