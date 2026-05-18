@@ -39,7 +39,7 @@ The **RuntimeRoasters Auth Library** is a centralized, plug-and-play authenticat
 
 ### File: `src/lib/auth/types.ts`
 ```typescript
-export type UserRole = 'ADMIN' | 'FARM_ADMIN' | 'FARM_MANAGER' | 'FARMER' | 'GUEST';
+export type UserRole = 'ADMIN' | 'FARM_ADMIN' | 'FARM_MANAGER' | 'GUEST';
 
 export interface AuthUser {
   id: string;

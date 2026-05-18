@@ -33,7 +33,7 @@
 - **Giải pháp:** Kết hợp **Middleware check Role** (Casbin) và **Repository check Ownership** (SQL filtering: `WHERE user_id = ?`). Đảm bảo cân bằng giữa hiệu năng và tính bảo trì.
 
 ### Session 6: Định nghĩa Roles & Least Privilege
-- **Danh sách Roles:** `admin`, `farmer`, `processor`, `warehouse_mgr`, `driver`, `store_mgr`, `guest`.
+- **Danh sách Roles:** `admin`, `farm_manager`, `processor`, `warehouse_mgr`, `driver`, `store_mgr`, `guest`.
 - **Nguyên tắc:** Áp dụng **Least Privilege** (Quyền hạn tối thiểu). Tách biệt `processor` và `warehouse_mgr` dù logic có vẻ tương đồng để đảm bảo tính chuyên môn hóa của từng domain Microservice.
 
 ### Session 7: Advanced Casbin - Hierarchy & Data Scopes

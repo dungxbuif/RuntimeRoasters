@@ -31,6 +31,8 @@ type userUsecase struct {
 	producer     kafka.Producer
 }
 
+const authPolicyChangedTopic = "auth.policy.changed"
+
 func NewUserUsecase(cfg *config.Config, enforcer *casbin.Enforcer, producer kafka.Producer) UserUsecase {
 	kratosCfg := client.NewConfiguration()
 	kratosCfg.Servers = client.ServerConfigurations{{URL: cfg.KratosAdminURL}}
@@ -91,6 +93,7 @@ func (u *userUsecase) CreateUser(ctx context.Context, req domain.CreateUserReque
 		return nil, fmt.Errorf("failed to assign role in casbin: %w", err)
 	}
 	log.Debug("Role assigned in Casbin", zap.String("role", req.Role))
+	u.publishPolicyChanged(ctx, userId, "user_role_assigned")
 
 	user := &domain.User{
 		ID:    userId,
@@ -187,8 +190,8 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 
 	// 2. Accept Login with Session Claims
 	accept := *hydra.NewAcceptOAuth2LoginRequest(req.Subject)
-	/* 
-	   TODO: Fix custom claims for Hydra v2 Go SDK. 
+	/*
+	   TODO: Fix custom claims for Hydra v2 Go SDK.
 	   In v2, custom claims might need to be passed differently.
 	   For now, we just accept the login with the subject.
 	*/
@@ -243,10 +246,26 @@ func (u *userUsecase) SyncCasbinWithKratos(ctx context.Context) error {
 				log.Error("failed to sync role for user", zap.String("user_id", id.Id), zap.Error(err))
 				continue
 			}
+			u.publishPolicyChanged(ctx, id.Id, "kratos_role_synced")
 			syncedCount++
 		}
 	}
 
 	log.Info("Casbin synchronization complete", zap.Int("total_identities", len(identities)), zap.Int("synced_new", syncedCount))
 	return nil
+}
+
+func (u *userUsecase) publishPolicyChanged(ctx context.Context, key string, reason string) {
+	if u.producer == nil {
+		return
+	}
+
+	event := map[string]interface{}{
+		"event_type":  "AUTH_POLICY_CHANGED",
+		"reason":      reason,
+		"occurred_at": time.Now().Format(time.RFC3339),
+	}
+	if err := u.producer.Publish(ctx, authPolicyChangedTopic, key, event); err != nil {
+		logger.FromContext(ctx).Warn("failed to publish auth policy change event", zap.Error(err))
+	}
 }

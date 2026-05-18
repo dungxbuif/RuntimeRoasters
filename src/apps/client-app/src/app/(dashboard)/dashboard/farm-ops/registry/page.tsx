@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { adminService, User } from '@/services/admin.service';
+import { adminService, CreateFarmRequest, User } from '@/services/admin.service';
 import { farmService, Farm } from '@/services/farm.service';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ export default function AdminFarmsPage() {
 
   // Mutations
   const createFarmMutation = useMutation({
-    mutationFn: (data: any) => adminService.createFarm(data),
+    mutationFn: (data: CreateFarmRequest) => adminService.createFarm(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farms'] });
       setShowModal(false);

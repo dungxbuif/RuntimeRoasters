@@ -49,14 +49,14 @@ func TestFarmRepository_Integration(t *testing.T) {
 	repo := repository.NewFarmRepository(db, enforcer)
 
 	ctx := context.Background()
-	ownerID := "farmer-1"
-	ctx = identity.InjectContext(ctx, identity.Claims{Subject: ownerID, Role: domain.RoleFarmer})
+	ownerID := "farm-manager-1"
+	ctx = identity.InjectContext(ctx, identity.Claims{Subject: ownerID, Role: domain.RoleManager})
 
 	// Setup Policies
-	enforcer.AddPolicy(domain.RoleFarmer, "farm", "read")
-	enforcer.AddPolicy(domain.RoleFarmer, "farm", "write")
-	enforcer.AddPolicy(domain.RoleFarmer, "farm", "delete")
-	enforcer.AddGroupingPolicy(ownerID, domain.RoleFarmer)
+	enforcer.AddPolicy(domain.RoleManager, "farm", "read")
+	enforcer.AddPolicy(domain.RoleManager, "farm", "write")
+	enforcer.AddPolicy(domain.RoleManager, "farm", "delete")
+	enforcer.AddGroupingPolicy(ownerID, domain.RoleManager)
 	enforcer.AddGroupingPolicy("admin-user", "admin")
 
 	// 2. Test Create
@@ -70,7 +70,7 @@ func TestFarmRepository_Integration(t *testing.T) {
 	err = repo.Create(ctx, farm)
 	assert.NoError(t, err)
 	assert.NotZero(t, farm.ID) // ID should be auto-generated
-	
+
 	createdID := farm.ID
 
 	// 3. Test List (Isolation)
@@ -85,10 +85,10 @@ func TestFarmRepository_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, allFarms, 1)
 
-	// 5. Test Isolation - Another farmer should see 0
-	otherFarmerCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "farmer-2", Role: domain.RoleFarmer})
-	enforcer.AddGroupingPolicy("farmer-2", domain.RoleFarmer)
-	otherFarms, err := repo.List(otherFarmerCtx)
+	// 5. Test Isolation - Another farm manager should see 0
+	otherManagerCtx := identity.InjectContext(context.Background(), identity.Claims{Subject: "farm-manager-2", Role: domain.RoleManager})
+	enforcer.AddGroupingPolicy("farm-manager-2", domain.RoleManager)
+	otherFarms, err := repo.List(otherManagerCtx)
 	assert.NoError(t, err)
 	assert.Len(t, otherFarms, 0)
 

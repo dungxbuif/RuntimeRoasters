@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { default: kratos } = await import('@/lib/ory/kratos');
       const { data } = await kratos.createBrowserLogoutFlow();
       window.location.href = data.logout_url;
-    } catch (e) {
+    } catch {
       router.push(APP_ROUTES.LOGIN);
     }
   }, [router]);

@@ -4,3 +4,4 @@ CREATE DATABASE hydra_db;    -- Ory Hydra: OAuth2, OIDC, Tokens
 CREATE DATABASE demo_db;     -- Demo Service
 CREATE DATABASE auth_db;     -- Centralized Auth Service (RR-12)
 CREATE DATABASE farm_db;     -- Farm Service (Sprint 3)
+CREATE DATABASE warehouse_db; -- Warehouse Service (Sprint 5)

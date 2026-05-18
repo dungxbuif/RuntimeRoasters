@@ -20,20 +20,20 @@ func NewGormScoper(e *casbin.SyncedEnforcer) *GormScoper {
 
 // ApplyScope restricts a GORM query based on Casbin policies.
 // It looks for policies that define constraints on the object.
-func (s *GormScoper) ApplyScope(user, object, action string, ownerField string) func(db *gorm.DB) *gorm.DB {
+func (s *GormScoper) ApplyScope(subject, role, object, action string, ownerField string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		// 1. Check if user has global access (*)
-		allowed, err := s.enforcer.Enforce(user, object, action)
+		allowed, err := s.enforcer.Enforce(role, object, action)
 		if err != nil {
 			return db.Where("1 = 0")
 		}
 
 		// 2. Determine IF we need to scope by owner.
-		isAdmin, _ := s.enforcer.HasRoleForUser(user, "admin")
-		isFarmAdmin, _ := s.enforcer.HasRoleForUser(user, "farm_admin")
-		
+		isAdmin := role == "ADMIN"
+		isFarmAdmin := role == "FARM_ADMIN"
+
 		if allowed && !isAdmin && !isFarmAdmin {
-			return db.Where(fmt.Sprintf("%s = ?", ownerField), user)
+			return db.Where(fmt.Sprintf("%s = ?", ownerField), subject)
 		}
 
 		if allowed {
@@ -58,7 +58,7 @@ func NewGormAdapterEnforcer(db *gorm.DB, modelSource string) (*casbin.SyncedEnfo
 	} else {
 		m, err = model.NewModelFromString(modelSource)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}

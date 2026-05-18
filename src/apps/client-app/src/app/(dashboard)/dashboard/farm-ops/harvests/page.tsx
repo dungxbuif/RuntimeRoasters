@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services/farm.service';
-import { testId } from '@/lib/utils/test-id';
-import { useAuth } from '@/lib/auth';
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
+
+type ApiError = {
+  response?: { data?: { message?: string } };
+  message?: string;
+};
 
 export default function HarvestsPage() {
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<CreateHarvestInput>({
     farm_id: 0,
@@ -48,7 +50,7 @@ export default function HarvestsPage() {
         harvest_date: new Date().toISOString().split('T')[0],
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       alert(`Failed to declare harvest: ${error.response?.data?.message || error.message}`);
     }
   });

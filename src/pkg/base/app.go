@@ -95,6 +95,7 @@ func (a *App) FinalizeRoutes() {
 	// Route everything to gateway mux for /v1 ONLY IF NOT HANDLED BY GIN
 	a.ginEngine.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/v1") {
+			c.Status(http.StatusOK)
 			a.gwMux.ServeHTTP(c.Writer, c.Request)
 			return
 		}

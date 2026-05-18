@@ -37,12 +37,12 @@ This project serves as a comprehensive showcase of industry-standard patterns an
 
 ### 📖 The Business Story
 
-In Vietnamese culture, coffee is a "thread" that connects society. However, there is often a gap in information between the farmer and the consumer. **Runtime Roasters** digitizes this entire "lifeline" (Mạch sống).
+In Vietnamese culture, coffee is a "thread" that connects society. However, there is often a gap in information between farm operations and the consumer. **Runtime Roasters** digitizes this entire "lifeline" (Mạch sống).
 
 Each coffee bean is given a digital identity. From the smallest data point at the plantation, through processing stages at the factory, to nationwide logistics, and finally into the customer's cup, every step is recorded and verifiable.
 
 **The main touchpoints are:**
-1. **Upstream (Farm):** Farmers update cultivation area and declare newly harvested coffee batches.
+1. **Upstream (Farm):** Farm Managers update cultivation area and declare newly harvested coffee batches.
 2. **Midstream (Processing & Warehouse):** Factory managers receive raw beans, proceed to hulling, drying, roasting, and packaging into finished batches (Batch ID). Goods are stored at the central warehouse.
 3. **Transportation (Logistics):** When a dispatch order is received, the driver receives the trip, transports goods from the factory to retail locations, and continuously updates GPS coordinates in real-time.
 4. **Downstream (Retail):** Store managers track inventory at the point of sale, send replenishment requests, and receive goods from drivers.
@@ -56,7 +56,7 @@ Each coffee bean is given a digital identity. From the smallest data point at th
 | :---------- | :---------------------------------------------------------------------------------------------------- | :---------------------- |
 | `Gateway`   | Entry point, Authentication, Rate Limiting                                                            | `API Gateway Pattern`   |
 | `Webhook`   | Ingress gateway for external data (`Stripe`, `VNPay`, `IoT GPS`) — `HMAC` validate + publish to Kafka | `Inbox Pattern`, `HMAC` |
-| `Farm`      | Farmer management, plantation tracking, and harvest coffee batches                                    | `Transactional Design`  |
+| `Farm`      | Farm Manager workflows, plantation tracking, and harvest coffee batches                               | `Transactional Design`  |
 | `Process`   | Mill/Roastery operations, processing raw beans into `Batch ID`s                                       | `Event-Driven`          |
 | `Warehouse` | Inventory management, stock reservation (`Saga Participant`)                                          | `Transactional DB`      |
 | `Logistics` | Route coordination, real-time `GPS` tracking via `Valkey`                                              | `Geo-spatial Tracking`  |

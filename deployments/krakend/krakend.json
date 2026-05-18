@@ -94,6 +94,118 @@
           "disable_host_sanitize": true
         }
       ]
+    },
+    {
+      "endpoint": "/v1/farms/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/v1/farms/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/farms/{id}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/v1/farms/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "PUT",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/farms/{id}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/v1/farms/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "DELETE",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/harvests",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/v1/harvests",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/harvests",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["Authorization", "Content-Type"],
+      "backend": [
+        {
+          "url_pattern": "/v1/harvests",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/harvests/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/v1/harvests/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/farms/{id}/harvests",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/v1/farms/{id}/harvests",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": ["http://host.docker.internal:8083"],
+          "disable_host_sanitize": true
+        }
+      ]
     }
   ]
 }

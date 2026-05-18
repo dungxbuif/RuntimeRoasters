@@ -87,7 +87,7 @@ Sau khi hoàn tất **Sprint 3 (Farm Management)**, chúng ta đã có "Gốc" c
     - `KrakenD (Gate 1)`: Verify scope (VD: `farm:read`).
     - `gRPC Interceptor`: Trích xuất identity từ metadata cho các cuộc gọi liên dịch vụ.
     - `OTel Correlation`: Gắn `user_id` vào mọi Trace span trên SigNoz.
-- **Business (BA)**: Bảo vệ tuyệt đối dữ liệu nông trại, đảm bảo quyền riêng tư và bảo mật giữa các Farmer.
+- **Business (BA)**: Bảo vệ tuyệt đối dữ liệu nông trại, đảm bảo quyền riêng tư và bảo mật giữa các Farm Manager.
 
 **3. Token Revocation: Luồng Logout An toàn**
 - **Kỹ thuật (TechLead)**: Triển khai Distributed Blacklist.

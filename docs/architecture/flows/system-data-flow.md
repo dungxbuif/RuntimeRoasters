@@ -10,7 +10,7 @@ Tài liệu này mô tả chi tiết các bước thực thi kỹ thuật cho t�
 
 ### Bước 1: Client gửi yêu cầu thu hoạch
 *   **Action:** UI gửi `POST /v1/harvests` tới API Gateway.
-*   **Auth:** Gateway kiểm tra JWT, thêm `X-User-Role: Farmer` vào header.
+*   **Auth:** Gateway kiểm tra JWT, thêm `X-User-Role: FARM_MANAGER` vào header.
 
 ### Bước 2: Xử lý tại Farm Service (Write Side)
 1.  **Delivery layer:** Nhận JSON, validate cấu hình (coffee_type, quantity).

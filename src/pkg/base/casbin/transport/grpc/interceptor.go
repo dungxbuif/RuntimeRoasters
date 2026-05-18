@@ -2,6 +2,7 @@ package casbingrpc
 
 import (
 	"context"
+	"strings"
 
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"google.golang.org/grpc"
@@ -26,13 +27,11 @@ func GRPCUnaryInterceptor(engine Enforcer) grpc.UnaryServerInterceptor {
 		// sub: User Role
 		// obj: info.FullMethod (e.g., /farm.v1.FarmService/CreateFarm)
 		// act: We map all gRPC calls to 'write' by default for safety, or custom logic
-		action := "read"
-		if info.FullMethod != "" {
-			// Basic heuristic: if it contains Get/List -> read, else write
-			// (In a real system, you might want more granular mapping)
-			action = "write" 
-			// Check for read-only methods
-			// This can be improved by adding metadata to proto or a mapping table
+		action := "write"
+		if strings.Contains(info.FullMethod, "/Get") || strings.Contains(info.FullMethod, "/List") {
+			action = "read"
+		} else if strings.Contains(info.FullMethod, "/Delete") {
+			action = "delete"
 		}
 
 		// 3. Enforce

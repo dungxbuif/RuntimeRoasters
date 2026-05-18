@@ -3,7 +3,7 @@ package domain
 const (
 	RoleAdmin     = "ADMIN"
 	RoleFarmAdmin = "FARM_ADMIN"
-	RoleFarmer    = "FARMER"
+	RoleManager   = "FARM_MANAGER"
 )
 
 const (

@@ -24,6 +24,6 @@ Phân quyền là rào chắn cuối cùng để bảo vệ dữ liệu. Một s
 ---
 
 ## ✅ Acceptance Criteria (AC)
-1. **Successful AuthZ:** User có role `FARMER` có thể tạo Harvest.
-2. **Access Denied:** User có role `FARMER` không thể truy cập API của Retail Service.
+1. **Successful AuthZ:** User có role `FARM_MANAGER` có thể tạo Harvest.
+2. **Access Denied:** User có role `FARM_MANAGER` không thể truy cập API của Retail Service.
 3. **Audit Trail:** Mọi hành động từ chối quyền (Access Denied) phải được log lại.

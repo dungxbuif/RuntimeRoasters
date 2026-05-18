@@ -59,7 +59,7 @@ func (r *harvestRepository) GetByID(ctx context.Context, id uint64) (*domain.Har
 
 	var model HarvestModel
 	err := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "harvest", "read", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "harvest", "read", "owner_id")).
 		First(&model, id).Error
 
 	if err != nil {
@@ -76,7 +76,7 @@ func (r *harvestRepository) ListByFarm(ctx context.Context, farmID uint64) ([]*d
 
 	var models []HarvestModel
 	err := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "harvest", "read", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "harvest", "read", "owner_id")).
 		Where("farm_id = ?", farmID).
 		Find(&models).Error
 
@@ -99,7 +99,7 @@ func (r *harvestRepository) Update(ctx context.Context, harvest *domain.Harvest)
 
 	model := toHarvestModel(harvest)
 	result := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "harvest", "write", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "harvest", "write", "owner_id")).
 		Where("id = ?", model.ID).
 		Updates(model)
 	return result.Error
@@ -112,7 +112,7 @@ func (r *harvestRepository) Delete(ctx context.Context, id uint64) error {
 	}
 
 	result := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "harvest", "delete", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "harvest", "delete", "owner_id")).
 		Where("id = ?", id).
 		Delete(&HarvestModel{})
 	return result.Error

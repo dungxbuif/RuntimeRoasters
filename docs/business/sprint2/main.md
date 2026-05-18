@@ -21,7 +21,7 @@
 ## 💡 Tầm nhìn Nghiệp vụ (Business Vision)
 - **Zero Trust Architecture:** Mọi request vào hệ thống đều phải được định danh và kiểm tra quyền một cách nghiêm ngặt.
 - **Seamless Experience:** Người dùng chỉ cần đăng nhập một lần (SSO) để sử dụng tất cả các dịch vụ trong hệ sinh thái.
-- **Fine-grained Control:** Phân quyền đến từng hành động cụ thể (VD: Farmer chỉ được tạo Harvest, không được duyệt Payment).
+- **Fine-grained Control:** Phân quyền đến từng hành động cụ thể (VD: Farm Manager chỉ được tạo Harvest, không được duyệt Payment).
 
 ## 📊 Kết quả đạt được (Sprint Result)
 - Tích hợp thành công bộ giải pháp Ory (Kratos/Hydra) cho quản lý Identity.

@@ -8,6 +8,8 @@ import { TraceLog } from '@/components/features/chaos-topology/TraceLog';
 import { LogOut, User, Key, Coffee, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/constants/routes';
+import { AUTH_PARAMS } from '@/constants/auth';
+import { storageService } from '@/services/storage.service';
 
 const SCENARIOS: FlowScenario[] = [
   { 
@@ -36,7 +38,21 @@ const OIDC_LOGS = [
 ];
 
 export default function DashboardPage() {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, login, logout, refreshSession } = useAuth();
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get(AUTH_PARAMS.ACCESS_TOKEN);
+    if (!token) return;
+
+    storageService.setAccessToken(token);
+    url.searchParams.delete(AUTH_PARAMS.ACCESS_TOKEN);
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+
+    refreshSession().finally(() => {
+      window.location.href = APP_ROUTES.DASHBOARD.USERS;
+    });
+  }, [refreshSession]);
   
   // Animation State
   const [activeScenario, setActiveScenario] = useState<string | null>(null);

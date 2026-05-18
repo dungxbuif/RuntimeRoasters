@@ -11,7 +11,7 @@ CREATE TABLE farms (
     location TEXT,
     area DECIMAL(10,2) NOT NULL,
     coffee_type VARCHAR(100),
-    owner_id UUID NOT NULL, -- Farmer Subject ID from JWT
+    owner_id UUID NOT NULL, -- Farm Manager Subject ID from JWT
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -14,7 +14,6 @@ Mọi tài khoản dưới đây đều được gán Role viết hoa (UPPERCASE
 | **Quản trị nông nghiệp**| Agri Supply Admin | `agri.admin@runtimeroasters.com` | `Hello@123` | **`FARM_ADMIN`** |
 | **Quản lý Nông trại** | Manager Sơn La | `manager.sonla@runtimeroasters.com` | `Hello@123` | **`FARM_MANAGER`** |
 | **Quản lý Nông trại** | Manager Cầu Đất | `manager.caudat@runtimeroasters.com` | `Hello@123` | **`FARM_MANAGER`** |
-| **Chủ nông hộ** | Farmer A (Sơn La) | `farmer.a@runtimeroasters.com` | `Hello@123` | **`FARMER`** |
 | **Nhà máy chế biến** | Roast Master | `processor@runtimeroasters.com` | `Hello@123` | **`PROCESSOR`** |
 | **Vận tải (Logistics)** | Driver Alpha | `driver@runtimeroasters.com` | `Hello@123` | **`DRIVER`** |
 | **Cửa hàng bán lẻ** | Store Manager | `retail@runtimeroasters.com` | `Hello@123` | **`STORE_MGR`** |
@@ -41,7 +40,7 @@ Mọi tài khoản dưới đây đều được gán Role viết hoa (UPPERCASE
 - **Giá trị**: Chứng minh **Data Scoping (ABAC)** — Manager này tuyệt đối không thấy nông trại của Manager kia.
 
 ### Phase 4: Theo dõi mẻ hàng (Sắp tới - Sprint 4+)
-- **Hành động**: Đăng nhập bằng các role vận hành (`FARMER`, `PROCESSOR`, `DRIVER`).
+- **Hành động**: Đăng nhập bằng các role vận hành (`FARM_MANAGER`, `PROCESSOR`, `DRIVER`).
 - **Giá trị**: Chứng minh tính nhất quán dữ liệu xuyên suốt chuỗi cung ứng.
 
 ---

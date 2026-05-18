@@ -1,6 +1,6 @@
 'use client';
 
-import { adminService, User } from '@/services/admin.service';
+import { adminService, CreateUserRequest, User } from '@/services/admin.service';
 import React, { useState } from 'react';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ export default function AdminUsersPage() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: (data: any) => adminService.createUser(data),
+    mutationFn: (data: CreateUserRequest) => adminService.createUser(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setShowModal(false);

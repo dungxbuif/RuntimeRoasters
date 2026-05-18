@@ -7,7 +7,7 @@
 ---
 
 ## 📖 Câu chuyện người dùng (User Story)
-> Là một **Người nông dân (Farmer)**, tôi muốn có thể ghi lại khối lượng cà phê vừa thu hoạch được tại một nông trại cụ thể, để tôi có bằng chứng về sản lượng và sẵn sàng gửi hàng tới nhà máy chế biến.
+> Là một **Quản lý nông trại (Farm Manager)**, tôi muốn có thể ghi lại khối lượng cà phê vừa thu hoạch được tại một nông trại cụ thể, để tôi có bằng chứng về sản lượng và sẵn sàng gửi hàng tới nhà máy chế biến.
 
 ## 💰 Giá trị nghiệp vụ (Business Value)
 Đây là hành động **kích hoạt** chuỗi cung ứng. Dữ liệu thu hoạch là cơ sở để tính toán hiệu suất nông trại và là thông tin quan trọng nhất mà người tiêu dùng muốn xem khi quét mã QR.

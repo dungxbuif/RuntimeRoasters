@@ -27,7 +27,6 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   'ADMIN': 'System Admin',
   'FARM_ADMIN': 'Agri Admin',
   'FARM_MANAGER': 'Farm Manager',
-  'FARMER': 'Field Farmer',
   'PROCESSOR': 'Roast Master',
   'DRIVER': 'Logistics Driver',
   'GUEST': 'Guest',

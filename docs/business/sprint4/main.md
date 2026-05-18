@@ -10,7 +10,7 @@
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
 | [RR-4.0](./RR-4.0/ticket.md) | [Tech] Refactor Farm Service: Migration & DI cleanup | ✅ Done | Tech Lead |
-| [RR-4.1](./RR-4.1/ticket.md) | [BA] Khai báo mẻ thu hoạch (Harvesting Management) | ✅ Done | Farmer |
+| [RR-4.1](./RR-4.1/ticket.md) | [BA] Khai báo mẻ thu hoạch (Harvesting Management) | ✅ Done | Farm Manager |
 | [RR-4.2](./RR-4.2/ticket.md) | [Tech] Transactional Outbox: Event Reliability | ✅ Done | Tech Lead |
 | [RR-22](./RR-22.md) | [Tech] Trace Service & CQRS Bootstrap | ✅ Done | Backend |
 

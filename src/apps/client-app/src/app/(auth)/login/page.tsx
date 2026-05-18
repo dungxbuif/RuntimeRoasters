@@ -6,7 +6,6 @@ import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAcceptHydraLogin, useLoginFlow, useSubmitLogin } from '@/hooks/useAuthFlow';
 import { useAuth } from '@/lib/auth';
-import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { UpdateLoginFlowBody } from '@ory/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useRef, useEffect } from 'react';
@@ -14,7 +13,7 @@ import React, { Suspense, useRef, useEffect } from 'react';
 const LOG = (...args: unknown[]) => console.log('%c[AUTH]', 'color:#38bdf8;font-weight:bold', ...args);
 
 function LoginContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const loginChallenge = searchParams.get(AUTH_PARAMS.LOGIN_CHALLENGE);
@@ -24,7 +23,7 @@ function LoginContent() {
   // If already authenticated and no challenge, go home
   useEffect(() => {
     if (isAuthenticated && !loginChallenge) {
-      router.push(APP_ROUTES.HOME);
+      router.push(APP_ROUTES.DASHBOARD.USERS);
     }
   }, [isAuthenticated, loginChallenge, router]);
 
@@ -59,7 +58,8 @@ function LoginContent() {
                 window.location.href = redirect_to;
               });
             } else if (session.identity?.id) {
-              router.push(APP_ROUTES.DASHBOARD.USERS);
+              LOG('Found Kratos session without app token, restarting Hydra login');
+              login();
             }
           }).catch(() => {
             LOG('No session found, flow creation might be failed');
@@ -68,7 +68,7 @@ function LoginContent() {
       }, 2000); // Wait 2s before fallback
       return () => clearTimeout(timer);
     }
-  }, [flow, flowError, loginChallenge, router, submitLogin.isPending, acceptHydra.isPending]);
+  }, [flow, flowError, loginChallenge, router, login, submitLogin.isPending, acceptHydra.isPending]);
 
   const handleLogin = async (body: UpdateLoginFlowBody) => {
     LOG('handleLogin: submitting to Kratos', { flowId: flow?.id, loginChallenge });
@@ -161,8 +161,8 @@ function LoginContent() {
           });
         });
       } else {
-        LOG('flowError: no challenge → pushing DASHBOARD');
-        router.push(APP_ROUTES.DASHBOARD.USERS);
+        LOG('flowError: no challenge → restarting Hydra login');
+        login();
       }
     }
     if (redirectTo) {
@@ -174,7 +174,7 @@ function LoginContent() {
     } else {
       LOG('flowError: unhandled error', err.response?.data);
     }
-  }, [flowError, router, loginChallenge]);
+  }, [flowError, router, loginChallenge, login]);
 
   if (!flow) return (
     <div className="flex items-center justify-center min-h-screen bg-[#f7f9fb]">

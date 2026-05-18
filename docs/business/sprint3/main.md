@@ -12,7 +12,7 @@
 | [RR-15](./RR-15/ticket.md) | [Tech] Farm Service: Scaffolding & Composition Root | ✅ Done | Tech Lead |
 | [RR-16](./RR-16/ticket.md) | [BA] Quản lý Danh mục Nông trại (Create & List) | ✅ Done | Product Owner |
 | [RR-17](./RR-17/ticket.md) | [Tech] Farm CRUD: Update & Delete Logic | ✅ Done | Backend |
-| [RR-18](./RR-18/ticket.md) | [BA] Quản lý Lô đất & Quy hoạch Vùng trồng | ✅ Done | Farmer |
+| [RR-18](./RR-18/ticket.md) | [BA] Quản lý Lô đất & Quy hoạch Vùng trồng | ✅ Done | Farm Manager |
 
 ---
 
@@ -24,4 +24,4 @@
 ## 📊 Kết quả đạt được (Sprint Result)
 - Khởi tạo thành công Farm Service với đầy đủ các tầng Clean Architecture.
 - Hoàn thiện bộ API quản lý Nông trại (CRUD).
-- Tích hợp phân quyền Casbin: Chỉ Farmer/FarmAdmin mới được quản lý dữ liệu nông trại của họ.
+- Tích hợp phân quyền Casbin: Chỉ Farm Manager/FarmAdmin mới được quản lý dữ liệu nông trại của họ.

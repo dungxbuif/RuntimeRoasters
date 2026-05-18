@@ -32,8 +32,8 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 `
 	mock := &MockAuthClient{
 		policies: []string{
-			"p, farmer, /v1/demo, read",
-			"g, admin, farmer",
+			"p, FARM_MANAGER, /v1/demo, read",
+			"g, ADMIN, FARM_MANAGER",
 		},
 	}
 
@@ -47,7 +47,7 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 	}
 
 	// 1. Initial state should be empty
-	allowed, _ := reader.Enforce("farmer", "/v1/demo", "read")
+	allowed, _ := reader.Enforce("FARM_MANAGER", "/v1/demo", "read")
 	if allowed {
 		t.Error("expected access denied before sync")
 	}
@@ -59,14 +59,14 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 
 	// 3. Check permissions after sync
 	t.Run("Check direct policy", func(t *testing.T) {
-		allowed, _ := reader.Enforce("farmer", "/v1/demo", "read")
+		allowed, _ := reader.Enforce("FARM_MANAGER", "/v1/demo", "read")
 		if !allowed {
-			t.Error("expected access granted for farmer after sync")
+			t.Error("expected access granted for farm manager after sync")
 		}
 	})
 
 	t.Run("Check role hierarchy", func(t *testing.T) {
-		allowed, _ := reader.Enforce("admin", "/v1/demo", "read")
+		allowed, _ := reader.Enforce("ADMIN", "/v1/demo", "read")
 		if !allowed {
 			t.Error("expected access granted for admin via hierarchy")
 		}

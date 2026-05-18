@@ -7,7 +7,7 @@
 ---
 
 ## 📖 Câu chuyện người dùng (User Story)
-> Là một **Người nông dân (Farmer)**, tôi muốn có thể thay đổi thông tin nông trại (như đổi tên hoặc cập nhật lại diện tích thực tế) hoặc xóa bỏ nông trại nếu tôi không còn canh tác ở đó nữa, để đảm bảo hồ sơ của tôi trên hệ thống luôn đúng với thực tế.
+> Là một **Quản lý nông trại (Farm Manager)**, tôi muốn có thể thay đổi thông tin nông trại (như đổi tên hoặc cập nhật lại diện tích thực tế) hoặc xóa bỏ nông trại nếu tôi không còn canh tác ở đó nữa, để đảm bảo hồ sơ của tôi trên hệ thống luôn đúng với thực tế.
 
 ## 💰 Giá trị nghiệp vụ (Business Value)
 Đảm bảo tính chính xác cho các báo cáo sản lượng. Việc người dùng có thể tự quản lý dữ liệu giúp giảm tải cho bộ phận hỗ trợ kỹ thuật.
@@ -22,8 +22,8 @@
 - **Thì:** Tên mới phải được lưu lại và hiển thị chính xác ở mọi nơi.
 
 ### Kịch bản 2: Bảo vệ quyền sở hữu khi cập nhật/xóa
-- **Giả sử:** Có một nông trại ID là `X` thuộc về Farmer A.
-- **Khi:** Farmer B cố tình gửi lệnh cập nhật hoặc xóa cho nông trại `X`.
+- **Giả sử:** Có một nông trại ID là `X` thuộc về Farm Manager A.
+- **Khi:** Farm Manager B cố tình gửi lệnh cập nhật hoặc xóa cho nông trại `X`.
 - **Thì:** Hệ thống phải từ chối và thông báo "Bạn không có quyền thực hiện hành động này".
 
 ### Kịch bản 3: Xóa nông trại

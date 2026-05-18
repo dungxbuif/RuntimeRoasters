@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/casbin/casbin/v3"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
-	"github.com/casbin/casbin/v3"
 	"gorm.io/gorm"
 )
 
@@ -84,7 +84,7 @@ func (r *farmRepository) GetByID(ctx context.Context, id uint64) (*domain.Farm, 
 
 	var model FarmModel
 	err := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "read", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "farm", "read", "owner_id")).
 		Where("id = ?", id).
 		First(&model).Error
 
@@ -106,7 +106,7 @@ func (r *farmRepository) List(ctx context.Context) ([]*domain.Farm, error) {
 
 	var models []FarmModel
 	err := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "read", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "farm", "read", "owner_id")).
 		Find(&models).Error
 
 	if err != nil {
@@ -129,7 +129,7 @@ func (r *farmRepository) Update(ctx context.Context, farm *domain.Farm) error {
 
 	model := FromDomain(farm)
 	result := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "write", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "farm", "write", "owner_id")).
 		Where("id = ?", model.ID).
 		Updates(model)
 
@@ -151,7 +151,7 @@ func (r *farmRepository) Delete(ctx context.Context, id uint64) error {
 	}
 
 	result := r.db.WithContext(ctx).
-		Scopes(r.scoper.ApplyScope(user.Subject, "farm", "delete", "owner_id")).
+		Scopes(r.scoper.ApplyScope(user.Subject, user.Role, "farm", "delete", "owner_id")).
 		Where("id = ?", id).
 		Delete(&FarmModel{})
 

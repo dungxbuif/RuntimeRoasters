@@ -1,7 +1,7 @@
 # [RR-4.1] [BA] Khai báo mẻ thu hoạch (Harvesting Management)
 
 **User Story:**
-Dưới vai trò là **Nông dân (Farmer)**, tôi muốn khai báo khối lượng mẻ hạt vừa thu hoạch được để tôi có thể chuyển giao hàng cho nhà máy và nhận được thanh toán sau này.
+Dưới vai trò là **Quản lý nông trại (Farm Manager)**, tôi muốn khai báo khối lượng mẻ hạt vừa thu hoạch được để tôi có thể chuyển giao hàng cho nhà máy và nhận được thanh toán sau này.
 
 **Business Context:**
 Thu hoạch là thời điểm "hái ra tiền". Đây là dữ liệu đầu vào quan trọng nhất cho toàn bộ chuỗi cung ứng. Việc ghi nhận chính xác loại hạt, khối lượng và thời gian thu hoạch giúp đảm bảo tính tươi mới và chất lượng sản phẩm.
@@ -9,7 +9,7 @@ Thu hoạch là thời điểm "hái ra tiền". Đây là dữ liệu đầu v�
 ---
 
 ## 🔄 Luồng Nghiệp vụ (Workflow)
-1. **Lựa chọn Nông trại:** Farmer chọn nông trại mình đang quản lý.
+1. **Lựa chọn Nông trại:** Farm Manager chọn nông trại mình đang quản lý.
 2. **Nhập dữ liệu Thu hoạch:**
     - Khối lượng (kg).
     - Loại hạt (Arabica/Robusta/...).

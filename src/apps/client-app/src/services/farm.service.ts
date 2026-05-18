@@ -55,8 +55,14 @@ class FarmService {
   }
 
   async listHarvests(): Promise<Harvest[]> {
-    const res = await api.get(API_ENDPOINTS.FARM.HARVESTS);
-    return res.data.harvests || [];
+    const farms = await this.listFarms();
+    const harvests = await Promise.all(
+      farms.map(async (farm) => {
+        const res = await api.get(`${API_ENDPOINTS.FARM.FARMS}/${farm.id}/harvests`);
+        return res.data.harvests || [];
+      })
+    );
+    return harvests.flat();
   }
 }
 

@@ -9,7 +9,9 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
+	rrkafka "github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	kafkago "github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
@@ -25,9 +27,10 @@ type AuthSnapshotClient interface {
 }
 
 type ReaderOptions struct {
-	ModelText     string
-	SyncInterval  time.Duration
-	RetryInterval time.Duration
+	ModelText            string
+	SyncInterval         time.Duration
+	RetryInterval        time.Duration
+	PolicyChangeConsumer rrkafka.Consumer
 }
 
 func NewResilientReader(client AuthSnapshotClient, opts ReaderOptions) (*ResilientReader, error) {
@@ -102,10 +105,13 @@ func convertToInterface(strs []string) []interface{} {
 	return res
 }
 
-// StartBackgroundSync starts the resilience pillars
+// StartBackgroundSync starts snapshot bootstrap, Kafka live updates, and polling fallback.
 func (r *ResilientReader) StartBackgroundSync(ctx context.Context) {
 	go r.bootstrap(ctx)
-	go r.pollingLoop(ctx)
+	if r.options.PolicyChangeConsumer != nil {
+		go r.liveUpdateLoop(ctx)
+	}
+	go r.pollingFallbackLoop(ctx)
 }
 
 func (r *ResilientReader) bootstrap(ctx context.Context) {
@@ -119,7 +125,18 @@ func (r *ResilientReader) bootstrap(ctx context.Context) {
 	}
 }
 
-func (r *ResilientReader) pollingLoop(ctx context.Context) {
+func (r *ResilientReader) liveUpdateLoop(ctx context.Context) {
+	log := logger.GetLogger()
+	err := r.options.PolicyChangeConsumer.Listen(ctx, func(ctx context.Context, msg kafkago.Message) error {
+		log.Info("Auth policy change received, refreshing snapshot", zap.ByteString("key", msg.Key))
+		return r.Sync(ctx)
+	})
+	if err != nil && ctx.Err() == nil {
+		log.Error("Auth policy live update listener stopped", zap.Error(err))
+	}
+}
+
+func (r *ResilientReader) pollingFallbackLoop(ctx context.Context) {
 	ticker := time.NewTicker(r.options.SyncInterval)
 	defer ticker.Stop()
 
@@ -129,7 +146,7 @@ func (r *ResilientReader) pollingLoop(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if err := r.Sync(ctx); err != nil {
-				logger.GetLogger().Error("Background auth sync failed", zap.Error(err))
+				logger.GetLogger().Error("Auth policy fallback sync failed", zap.Error(err))
 			}
 		}
 	}

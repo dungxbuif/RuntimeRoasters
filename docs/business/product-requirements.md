@@ -51,7 +51,7 @@ Dự án **không** hướng tới việc giải quyết bài toán thương m�
 
 | Role         | Mã hệ thống  | Mô tả ngắn                                              | Quyền chính                                                  |
 | :----------- | :----------- | :------------------------------------------------------- | :----------------------------------------------------------- |
-| **Nông dân** | `FARMER`     | Chủ nông trại cà phê, khai báo thu hoạch                 | CRUD nông trại, tạo lô thu hoạch, xem lịch sử               |
+| **Quản lý nông trại** | `FARM_MANAGER` | Quản lý nông trại cà phê, khai báo thu hoạch             | CRUD nông trại, tạo lô thu hoạch, xem lịch sử               |
 | **Quản đốc** | `PROCESSOR`  | Quản lý nhà máy chế biến, rang xay                       | Tiếp nhận hạt thô, tạo mẻ rang, cấp `Batch ID`, đóng gói    |
 | **Tài xế**   | `DRIVER`     | Lái xe vận chuyển, cập nhật GPS                          | Nhận cuốc, cập nhật trạng thái vận chuyển, gửi tọa độ GPS    |
 | **QL Cửa hàng** | `STORE_MGR` | Quản lý cửa hàng bán lẻ                                | Xem tồn kho, tạo yêu cầu cung ứng, tiếp nhận hàng           |
@@ -65,7 +65,7 @@ Dự án **không** hướng tới việc giải quyết bài toán thương m�
 ### 4.1 Luồng chính: Farm-to-Cup Pipeline
 
 ```
-[Farmer]        [Processor]       [Warehouse]    [Payment]     [Logistics]    [Retail]      [End User]
+[Farm Manager]  [Processor]       [Warehouse]    [Payment]     [Logistics]    [Retail]      [End User]
    │                │                  │              │              │             │              │
    ├─ Thu hoạch ──►│                  │              │              │             │              │
    │ (Harvest       │                  │              │              │             │              │

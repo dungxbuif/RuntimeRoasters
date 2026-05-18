@@ -7,7 +7,7 @@
 1. gRPC Interceptor được triển khai tại `pkg/base/casbin/interceptor_grpc.go`.
 2. Gin Middleware được triển khai tại `pkg/base/casbin/middleware_gin.go`.
 3. `demo-service` tích hợp thành công Resilient Engine và bảo vệ các endpoint bằng Interceptor/Middleware mới.
-4. Kiểm thử thành công: User với Role hợp lệ (ví dụ: `farmer`) có quyền gọi API, User không hợp lệ bị từ chối với mã lỗi `PermissionDenied`.
+4. Kiểm thử thành công: User với Role hợp lệ (ví dụ: `farm_manager`) có quyền gọi API, User không hợp lệ bị từ chối với mã lỗi `PermissionDenied`.
 5. Audit Log: Log đầy đủ thông tin về các yêu cầu bị từ chối truy cập.
 
 ## 🛠 Task list cho Developer

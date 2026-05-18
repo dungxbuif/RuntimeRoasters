@@ -23,7 +23,7 @@ Mã Batch ID được sinh ra tự động để định danh duy nhất mẻ h�
 ## 3. Vòng đời của Mẻ hàng (Batch Lifecycle)
 
 ### Giai đoạn 1: Thu hoạch (Farm Service)
-- Khi Farmer xác nhận thu hoạch, một mã `RR-H-...` được sinh ra.
+- Khi Farm Manager xác nhận thu hoạch, một mã `RR-H-...` được sinh ra.
 - Trạng thái: `HARVESTED`.
 - Thông tin đi kèm: Loại hạt, khối lượng thô, ngày thu hoạch, nông trại.
 

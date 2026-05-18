@@ -60,3 +60,48 @@ func (h *Handler) AcceptLogin(ctx context.Context, req *authv1.AcceptLoginReques
 		RedirectTo: res.RedirectTo,
 	}, nil
 }
+
+func (h *Handler) CreateUser(ctx context.Context, req *authv1.CreateUserRequest) (*authv1.CreateUserResponse, error) {
+	user, err := h.usecase.CreateUser(ctx, domain.CreateUserRequest{
+		Email:    req.GetEmail(),
+		Password: req.GetPassword(),
+		Name:     req.GetName(),
+		Role:     req.GetRole(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &authv1.CreateUserResponse{
+		User: toProtoUser(user),
+	}, nil
+}
+
+func (h *Handler) ListUsers(ctx context.Context, _ *authv1.ListUsersRequest) (*authv1.ListUsersResponse, error) {
+	users, err := h.usecase.ListUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &authv1.ListUsersResponse{
+		Users: make([]*authv1.User, 0, len(users)),
+	}
+	for _, user := range users {
+		res.Users = append(res.Users, toProtoUser(user))
+	}
+
+	return res, nil
+}
+
+func toProtoUser(user *domain.User) *authv1.User {
+	if user == nil {
+		return nil
+	}
+
+	return &authv1.User{
+		Id:    user.ID,
+		Email: user.Email,
+		Name:  user.Name,
+		Role:  user.Role,
+	}
+}

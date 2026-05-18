@@ -31,7 +31,9 @@ class AuthService {
       login_challenge: loginChallenge,
       subject,
     });
-    return data;
+    return {
+      redirect_to: data.redirect_to ?? data.redirectTo,
+    };
   }
 
   async acceptHydraConsent(consentChallenge: string): Promise<{ redirect_to: string }> {

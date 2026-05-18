@@ -14,7 +14,7 @@ Tất cả mật khẩu mặc định: `Hello@123`
 | **Agri Admin** | `agri.admin@runtimeroasters.com` | `FARM_ADMIN` | Quản lý danh mục vùng trồng, gán sở hữu. |
 | **Manager Cầu Đất** | `manager.caudat@runtimeroasters.com` | `FARM_MANAGER` | Quản lý vận hành tại vùng Đà Lạt. |
 | **Manager Buôn Ma Thuột**| `manager.bmt@runtimeroasters.com` | `FARM_MANAGER` | Quản lý vận hành tại Đắk Lắk. |
-| **Farmer K'Ho** | `farmer.kho@runtimeroasters.com` | `FARMER` | Ghi chép nhật ký thu hoạch thực địa. |
+| **Farm Manager K'Ho** | `manager.kho@runtimeroasters.com` | `FARM_MANAGER` | Ghi chép nhật ký thu hoạch thực địa. |
 | **Roast Master** | `processor@runtimeroasters.com` | `PROCESSOR` | Tiếp nhận cà phê nhân và chế biến. |
 | **Driver Alpha** | `driver@runtimeroasters.com` | `DRIVER` | Vận chuyển hàng hóa giữa các điểm. |
 

@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'FARM_ADMIN' | 'FARM_MANAGER' | 'FARMER' | 'PROCESSOR' | 'DRIVER' | 'GUEST';
+export type UserRole = 'ADMIN' | 'FARM_ADMIN' | 'FARM_MANAGER' | 'PROCESSOR' | 'DRIVER' | 'GUEST';
 
 export interface AuthUser {
   id: string;

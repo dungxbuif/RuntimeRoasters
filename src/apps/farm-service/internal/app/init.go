@@ -1,8 +1,12 @@
 package app
 
 import (
+	"bufio"
+	"os"
+	"strings"
 	"time"
 
+	realcasbin "github.com/casbin/casbin/v3"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
 	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
@@ -12,8 +16,8 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
 	authgrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/watcher"
 	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/watcher"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
 	"github.com/redis/go-redis/v9"
@@ -60,13 +64,9 @@ func InitializeApp() (*App, func(), error) {
 
 	watcher.WatchCasbinFiles(casbinEnforcer, modelPath, policyPath)
 
-
-	// Optional: Seed policies from CSV if needed (only for development/initial setup)
-	// You might want to wrap this in a condition or only run it once.
-	// _ = casbinEnforcer.LoadPolicy() // Load from DB
-	// casbinEnforcer.LoadPolicyFromCSV("rbac_policy.csv") 
-	// casbinEnforcer.SavePolicy() // Sync back to DB if you want to persist CSV changes
-
+	if err := seedCasbinPolicies(casbinEnforcer, policyPath); err != nil {
+		return nil, nil, err
+	}
 
 	// 3. Server Options & Base App
 	grpcOpts := []grpc.ServerOption{
@@ -106,4 +106,59 @@ func InitializeApp() (*App, func(), error) {
 	}
 
 	return app, cleanup, nil
+}
+
+func seedCasbinPolicies(enforcer *realcasbin.SyncedEnforcer, policyPath string) error {
+	policies, err := enforcer.GetPolicy()
+	if err != nil {
+		return err
+	}
+	groupingPolicies, err := enforcer.GetGroupingPolicy()
+	if err != nil {
+		return err
+	}
+	if len(policies) > 0 || len(groupingPolicies) > 0 {
+		return nil
+	}
+
+	file, err := os.Open(policyPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.Split(line, ",")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		if len(parts) < 3 {
+			continue
+		}
+
+		switch parts[0] {
+		case "p":
+			if len(parts) < 4 {
+				continue
+			}
+			if _, err := enforcer.AddPolicy(parts[1], parts[2], parts[3]); err != nil {
+				return err
+			}
+		case "g":
+			if _, err := enforcer.AddGroupingPolicy(parts[1], parts[2]); err != nil {
+				return err
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return enforcer.SavePolicy()
 }
