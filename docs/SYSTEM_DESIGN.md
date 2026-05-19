@@ -72,41 +72,24 @@ graph TB
 
 ## 🌊 2. System Data Flows
 
-### A. Identity & SSO Flow (OIDC + Kratos + Hydra)
-The system uses a sophisticated SSO cycle to ensure secure, role-aware identity management.
+Detailed interaction diagrams and step-by-step logic for core business processes.
 
-1. **Access:** User hits `/dashboard` (Next.js).
-2. **Challenge:** Next.js redirects to **Ory Hydra** for OAuth2 authorization.
-3. **Identity:** Hydra delegates authentication to **Ory Kratos**.
-4. **Verification:** Kratos validates credentials and notifies Hydra to accept the login.
-5. **Token:** Hydra issues a JWT (Access Token) containing user `roles` and `scopes`.
-6. **Persistence:** Next.js saves the JWT and uses it for all subsequent API calls.
-
-### B. Distributed Transaction (The Retail Saga)
-Ensuring atomicity across Retail, Warehouse, and Payment services.
-
-1. **Retail Service:** Creates an Order with status `PENDING`. Records an `OrderCreated` outbox event.
-2. **Warehouse Service:** Consumes the event, uses **Valkey Distributed Lock** to reserve stock, and emits `InventoryReserved`.
-3. **Payment Service:** Receives Stripe Webhook (verified via HMAC), updates payment status, and emits `PaymentCompleted`.
-4. **Saga Finalization:** Retail Service listens for both successes and moves the Order to `SUCCESS`. If any step fails, **Compensating Actions** (Refunds/Stock Release) are triggered.
-
-### C. Real-time Logistics Bridge
-1. **Simulation:** The Frontend "steps" through OSRM coordinate arrays.
-2. **Ingress:** FE calls `UpdateLocation` (Gin/gRPC).
-3. **Backend:** Logistics Service updates **Valkey GeoSearch** index for the driver.
-4. **Broadcast:** Emits `LogisticsGPSUpdated` to Kafka.
-5. **Traceability:** Trace Service consumes GPS events to rebuild the delivery timeline.
+*   👉 **[Identity & SSO Flow](./architecture/flows/identity-authentication.md)**: OIDC, Kratos, and Hydra integration.
+*   👉 **[System-Wide Data Flows](./architecture/flows/system-data-flow.md)**: Sagas, CQRS, and Transactional Outbox.
+*   👉 **[User Management Flow](./architecture/flows/user-management-creation.md)**: Admin-only creation and propagation.
 
 ---
 
 ## 📜 3. Architectural Decision Records (ADR Log)
 
-| ID | Title | Status | Decision Summary |
+A record of the critical technical decisions that shaped the platform.
+
+| ID | Title | Status | Link |
 | :-- | :--- | :--- | :--- |
-| **0001** | **Clean Architecture** | ✅ Accepted | Use **Consumer-Owned Interfaces**. Usecase defines interfaces; Infrastructure implements them. Ensures domain purity. |
-| **0002** | **SigNoz Reversion** | 🔴 Reverted | Removed SigNoz/ClickHouse to save local resources. Reverted to standard OTel + Jaeger. |
-| **0003** | **Two-Gate AuthZ** | ✅ Accepted | **Gate 1:** Casbin (RBAC) at the service entry. **Gate 2:** Data Scoping (ABAC) at the GORM/Repository layer via `owner_id`. |
-| **0004** | **GORM Migration** | ✅ Accepted | Migrated from `sqlx` to **GORM** to accelerate developer velocity and simplify relationship management/transactions. |
+| **0001** | **Clean Architecture** | ✅ Accepted | [View ADR](./architecture/adrs/0001-use-clean-architecture.md) |
+| **0002** | **SigNoz Reversion** | 🔴 Reverted | [View ADR](./architecture/adrs/0002-use-signoz.md) |
+| **0003** | **Two-Gate AuthZ** | ✅ Accepted | [View ADR](./architecture/adrs/0003-two-gate-authz-casbin.md) |
+| **0004** | **GORM Migration** | ✅ Accepted | [View ADR](./architecture/adrs/0004-migrate-sqlx-to-gorm.md) |
 
 ---
 
