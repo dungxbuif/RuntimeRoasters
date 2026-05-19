@@ -67,7 +67,7 @@ func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, internalID string
 			"quantity":  batch.TotalOutputWeight,
 			"timestamp": time.Now(),
 		}
-		
+
 		// For demo, we publish directly but note the intent
 		return uc.producer.Publish(ctx, uc.stockTopic, batch.BatchID, event)
 	})

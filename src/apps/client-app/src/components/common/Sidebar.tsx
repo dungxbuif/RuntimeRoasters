@@ -20,12 +20,16 @@ export default function Sidebar() {
     { href: APP_ROUTES.DASHBOARD.FARM_TELEMETRY, label: "Farm Telemetry", icon: "agriculture" },
     { href: APP_ROUTES.DASHBOARD.LOGISTICS, label: "Transit Monitor", icon: "local_shipping" },
     { href: APP_ROUTES.DASHBOARD.WAREHOUSE, label: "Stock Analytics", icon: "warehouse" },
-    { href: APP_ROUTES.DASHBOARD.RETAIL, label: "Market Insights", icon: "store" },
+    { href: APP_ROUTES.DASHBOARD.RETAIL, label: "Saga Monitor", icon: "analytics" },
+    { href: APP_ROUTES.DASHBOARD.RETAIL_ORDERS, label: "Market Orders", icon: "shopping_cart" },
+    { href: APP_ROUTES.DASHBOARD.TRACEABILITY, label: "Provenance Trace", icon: "qr_code" },
   ];
 
   const diagnosticLinks = [
     { href: APP_ROUTES.DASHBOARD.TOPOLOGY, label: "Cluster Mesh", icon: "schema" },
     { href: APP_ROUTES.DASHBOARD.BATCHES, label: "Stream Flow", icon: "dataset" },
+    { href: APP_ROUTES.DASHBOARD.FINANCE, label: "Finance Ledger", icon: "payments" },
+    { href: APP_ROUTES.DASHBOARD.AUDIT, label: "Immutable Audit", icon: "shield_check" },
     { href: APP_ROUTES.DASHBOARD.EXPLORER, label: "Nodes & Pods", icon: "dns" },
     { href: APP_ROUTES.DASHBOARD.RESILIENCY, label: "Fault Logs", icon: "monitoring" },
   ];

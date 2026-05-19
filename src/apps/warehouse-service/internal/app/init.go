@@ -6,6 +6,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/worker"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
@@ -30,14 +31,20 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
+	producer := kafka.NewProducer(cfg.KafkaBrokers)
 	intakeUseCase := usecase.NewIntakeUseCase(db.DB)
-	consumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID, cfg.KafkaHarvestTopic)
-	harvestWorker := worker.NewHarvestWorker(consumer, intakeUseCase)
+	orderReservationUC := usecase.NewOrderReservationUseCase(db.DB, producer, cfg.KafkaStockReservedTopic, cfg.KafkaStockFailedTopic)
+	harvestConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-harvest", cfg.KafkaHarvestTopic)
+	orderConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-orders", cfg.KafkaOrderTopic)
+	harvestWorker := worker.NewHarvestWorker(harvestConsumer, intakeUseCase)
+	orderWorker := worker.NewOrderWorker(orderConsumer, orderReservationUC)
 
-	app := NewApp(&cfg, db, consumer, harvestWorker)
+	app := NewApp(&cfg, db, []kafka.Consumer{harvestConsumer, orderConsumer}, harvestWorker, orderWorker)
 
 	cleanup := func() {
-		_ = consumer.Close()
+		_ = producer.Close()
+		_ = harvestConsumer.Close()
+		_ = orderConsumer.Close()
 	}
 
 	return app, cleanup, nil
@@ -63,7 +70,16 @@ func configDefaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.KafkaHarvestTopic = "farm.harvest.events"
 	}
 	if cfg.KafkaStockTopic == "" {
-		cfg.KafkaStockTopic = "warehouse.stock.updated"
+		cfg.KafkaStockTopic = events.TopicWarehouseStockUpdated
+	}
+	if cfg.KafkaOrderTopic == "" {
+		cfg.KafkaOrderTopic = events.TopicPaymentCompleted
+	}
+	if cfg.KafkaStockReservedTopic == "" {
+		cfg.KafkaStockReservedTopic = events.TopicWarehouseStockReserved
+	}
+	if cfg.KafkaStockFailedTopic == "" {
+		cfg.KafkaStockFailedTopic = events.TopicWarehouseStockReservationFailed
 	}
 	return cfg
 }

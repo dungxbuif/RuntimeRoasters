@@ -19,20 +19,20 @@ const (
 
 // Intake represents raw coffee received from a farm
 type Intake struct {
-	ID         string       `gorm:"type:uuid;primaryKey"`
+	ID         string       `gorm:"type:varchar(64);primaryKey"`
 	HarvestID  string       `gorm:"type:varchar(64);not null;index"`
 	CoffeeType string       `gorm:"size:20;not null"`
 	OriginCode string       `gorm:"size:10;not null"`
 	Quantity   float64      `gorm:"type:decimal(10,2);not null"`
 	Status     IntakeStatus `gorm:"size:20;not null;default:'UNASSIGNED'"`
-	BatchID    *string      `gorm:"type:uuid;index"` // Link to ProductionBatch
+	BatchID    *string      `gorm:"type:varchar(80);index"` // Link to ProductionBatch
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
 
 // ProductionBatch represents a production run aggregating multiple intakes
 type ProductionBatch struct {
-	ID                string      `gorm:"type:uuid;primaryKey"`
+	ID                string      `gorm:"type:varchar(80);primaryKey"`
 	BatchID           string      `gorm:"uniqueIndex;not null"`
 	Status            BatchStatus `gorm:"size:20;not null;default:'DRAFT'"`
 	Intakes           []Intake    `gorm:"foreignKey:BatchID"`
@@ -46,8 +46,8 @@ type ProductionBatch struct {
 
 // RoastRun represents a simulated roasting cycle within a batch
 type RoastRun struct {
-	ID           string  `gorm:"type:uuid;primaryKey"`
-	BatchID      string  `gorm:"type:uuid;index;not null"`
+	ID           string  `gorm:"type:varchar(64);primaryKey"`
+	BatchID      string  `gorm:"type:varchar(80);index;not null"`
 	RunNumber    int     `gorm:"not null"`
 	InputWeight  float64 `gorm:"type:decimal(10,2);not null"`
 	OutputWeight float64 `gorm:"type:decimal(10,2);not null"`
@@ -56,7 +56,8 @@ type RoastRun struct {
 }
 
 type InboxEvent struct {
-	ID          string `gorm:"type:uuid;primaryKey"`
+	ID          string `gorm:"type:varchar(64);primaryKey"`
 	MessageID   string `gorm:"uniqueIndex;not null"`
+	EventType   string `gorm:"size:160;index"`
 	ProcessedAt time.Time
 }

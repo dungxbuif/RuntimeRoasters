@@ -56,12 +56,18 @@ func (u *userUsecase) CreateUser(ctx context.Context, req domain.CreateUserReque
 	log := logger.FromContext(ctx)
 	log.Info("Creating new user", zap.String("email", req.Email), zap.String("role", req.Role))
 
+	storeIDs := req.StoreIDs
+	if storeIDs == nil {
+		storeIDs = []string{}
+	}
 	identityBody := *client.NewCreateIdentityBody(
 		"default",
 		map[string]interface{}{
-			"email": req.Email,
-			"name":  req.Name,
-			"role":  req.Role,
+			"email":     req.Email,
+			"name":      req.Name,
+			"role":      req.Role,
+			"org_id":    req.OrgID,
+			"store_ids": storeIDs,
 		},
 	)
 	identityBody.Credentials = &client.IdentityWithCredentials{
@@ -90,10 +96,12 @@ func (u *userUsecase) CreateUser(ctx context.Context, req domain.CreateUserReque
 	u.publishPolicyChanged(ctx, userId, "user_role_assigned")
 
 	user := &domain.User{
-		ID:    userId,
-		Email: req.Email,
-		Name:  req.Name,
-		Role:  req.Role,
+		ID:       userId,
+		Email:    req.Email,
+		Name:     req.Name,
+		Role:     req.Role,
+		OrgID:    req.OrgID,
+		StoreIDs: storeIDs,
 	}
 
 	event := map[string]interface{}{
@@ -130,6 +138,8 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 		traits := id.Traits.(map[string]interface{})
 		email, _ := traits["email"].(string)
 		name, _ := traits["name"].(string)
+		orgID, _ := traits["org_id"].(string)
+		storeIDs := traitStringSlice(traits["store_ids"])
 
 		roles, _ := u.enforcer.GetRolesForUser(id.Id)
 		role := ""
@@ -146,10 +156,12 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 		}
 
 		users[i] = &domain.User{
-			ID:    id.Id,
-			Email: email,
-			Name:  name,
-			Role:  role,
+			ID:       id.Id,
+			Email:    email,
+			Name:     name,
+			Role:     role,
+			OrgID:    orgID,
+			StoreIDs: storeIDs,
 		}
 	}
 
@@ -160,19 +172,22 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 	log := logger.FromContext(ctx)
 	log.Info("Accepting Hydra login request", zap.String("subject", req.Subject))
 
+	var traits map[string]interface{}
+	id, _, identityErr := u.kratosClient.IdentityAPI.GetIdentity(ctx, req.Subject).Execute()
+	if identityErr == nil {
+		if parsed, ok := id.Traits.(map[string]interface{}); ok {
+			traits = parsed
+		}
+	}
+
 	// 1. Fetch Role (Priority: Casbin -> Kratos Traits)
 	roles, _ := u.enforcer.GetRolesForUser(req.Subject)
 	role := ""
 	if len(roles) > 0 {
 		role = roles[0]
-	} else {
-		// Fetch from Kratos to find the trait
-		id, _, err := u.kratosClient.IdentityAPI.GetIdentity(ctx, req.Subject).Execute()
-		if err == nil {
-			traits := id.Traits.(map[string]interface{})
-			if r, ok := traits["role"].(string); ok {
-				role = r
-			}
+	} else if traits != nil {
+		if r, ok := traits["role"].(string); ok {
+			role = r
 		}
 	}
 
@@ -185,7 +200,10 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 	// 2. Accept Login with Session Claims
 	accept := *hydra.NewAcceptOAuth2LoginRequest(req.Subject)
 	accept.SetContext(map[string]interface{}{
-		"role": role,
+		"email":     stringTrait(traits, "email"),
+		"role":      role,
+		"org_id":    stringTrait(traits, "org_id"),
+		"store_ids": traitStringSlice(traits["store_ids"]),
 	})
 	/*
 	   TODO: Fix custom claims for Hydra v2 Go SDK.
@@ -207,6 +225,31 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 	return &domain.AcceptLoginResponse{
 		RedirectTo: res.RedirectTo,
 	}, nil
+}
+
+func stringTrait(traits map[string]interface{}, key string) string {
+	if traits == nil {
+		return ""
+	}
+	value, _ := traits[key].(string)
+	return value
+}
+
+func traitStringSlice(raw interface{}) []string {
+	switch values := raw.(type) {
+	case []string:
+		return append([]string(nil), values...)
+	case []interface{}:
+		out := make([]string, 0, len(values))
+		for _, value := range values {
+			if str, ok := value.(string); ok && str != "" {
+				out = append(out, str)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 func (u *userUsecase) SyncCasbinWithKratos(ctx context.Context) error {

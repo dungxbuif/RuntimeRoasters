@@ -44,8 +44,10 @@ func VerifyAndParseJWT(rawToken string, keyProvider provider.KeyProvider, expect
 
 func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {
 	sub, _ := jwtClaims.GetSubject()
-	orgID, _ := jwtClaims[ClaimOrgID].(string)
+	email := stringClaim(jwtClaims, ClaimEmail)
+	orgID := stringClaim(jwtClaims, ClaimOrgID)
 	jti, _ := jwtClaims[ClaimJTI].(string)
+	storeIDs := stringSliceClaim(jwtClaims, ClaimStoreIDs)
 
 	log := logger.GetLogger().With(zap.String("sub", sub))
 	log.Debug("Extracting claims from JWT")
@@ -85,9 +87,71 @@ func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {
 	}
 
 	return &identity.Claims{
-		Subject: sub,
-		Role:    role,
-		OrgID:   orgID,
-		JTI:     jti,
+		Subject:  sub,
+		Email:    email,
+		Role:     role,
+		OrgID:    orgID,
+		StoreIDs: storeIDs,
+		JTI:      jti,
+	}
+}
+
+func stringClaim(claims jwt.MapClaims, key string) string {
+	if value, ok := claims[key].(string); ok {
+		return value
+	}
+	if ext, ok := extMap(claims); ok {
+		if value, ok := ext[key].(string); ok {
+			return value
+		}
+	}
+	return ""
+}
+
+func stringSliceClaim(claims jwt.MapClaims, key string) []string {
+	if values := toStringSlice(claims[key]); values != nil {
+		return values
+	}
+	if ext, ok := extMap(claims); ok {
+		return toStringSlice(ext[key])
+	}
+	return nil
+}
+
+func extMap(claims jwt.MapClaims) (map[string]interface{}, bool) {
+	extRaw, exists := claims["ext"]
+	if !exists {
+		return nil, false
+	}
+	switch ext := extRaw.(type) {
+	case map[string]interface{}:
+		return ext, true
+	case map[interface{}]interface{}:
+		out := make(map[string]interface{}, len(ext))
+		for key, value := range ext {
+			if keyString, ok := key.(string); ok {
+				out[keyString] = value
+			}
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
+func toStringSlice(raw interface{}) []string {
+	switch values := raw.(type) {
+	case []string:
+		return append([]string(nil), values...)
+	case []interface{}:
+		out := make([]string, 0, len(values))
+		for _, value := range values {
+			if str, ok := value.(string); ok && str != "" {
+				out = append(out, str)
+			}
+		}
+		return out
+	default:
+		return nil
 	}
 }

@@ -3,6 +3,7 @@ package auth_tests
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"reflect"
 	"testing"
 	"time"
 
@@ -34,12 +35,14 @@ func TestVerifyAndParseJWT(t *testing.T) {
 
 	t.Run("successful verification", func(t *testing.T) {
 		claims := jwt.MapClaims{
-			"sub":      "user-123",
-			"iss":      issuer,
-			"exp":      time.Now().Add(time.Hour).Unix(),
-			"role":     "admin",
-			"org_id":   "org-1",
-			"jti":      "jti-1",
+			"sub":       "user-123",
+			"iss":       issuer,
+			"exp":       time.Now().Add(time.Hour).Unix(),
+			"email":     "user@example.com",
+			"role":      "admin",
+			"org_id":    "org-1",
+			"store_ids": []interface{}{"store-1", "store-2"},
+			"jti":       "jti-1",
 		}
 		rawToken := createToken(claims, privateKey, kid)
 
@@ -49,14 +52,39 @@ func TestVerifyAndParseJWT(t *testing.T) {
 		}
 
 		want := &identity.Claims{
-			Subject: "user-123",
-			Role:    "admin",
-			OrgID:   "org-1",
-			JTI:     "jti-1",
+			Subject:  "user-123",
+			Email:    "user@example.com",
+			Role:     "admin",
+			OrgID:    "org-1",
+			StoreIDs: []string{"store-1", "store-2"},
+			JTI:      "jti-1",
 		}
 
-		if *got != *want {
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("extracts custom claims from ext", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"sub": "user-123",
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+			"ext": map[string]interface{}{
+				"email":     "store@example.com",
+				"role":      "STORE_MGR",
+				"org_id":    "retail",
+				"store_ids": []interface{}{"store-a"},
+			},
+		}
+		rawToken := createToken(claims, privateKey, kid)
+
+		got, err := token.VerifyAndParseJWT(rawToken, keyProvider, issuer)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if got.Email != "store@example.com" || got.Role != "STORE_MGR" || got.OrgID != "retail" || !reflect.DeepEqual(got.StoreIDs, []string{"store-a"}) {
+			t.Fatalf("unexpected claims: %+v", got)
 		}
 	})
 

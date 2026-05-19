@@ -11,9 +11,13 @@ export const APP_ROUTES = {
     LOGISTICS: '/dashboard/logistics',
     WAREHOUSE: '/dashboard/warehouse',
     RETAIL: '/dashboard/retail',
+    RETAIL_ORDERS: '/dashboard/retail/orders',
     TOPOLOGY: '/dashboard/topology-mesh',
     EXPLORER: '/dashboard/explorer',
     RESILIENCY: '/dashboard/resiliency',
+    TRACEABILITY: '/dashboard/traceability',
+    FINANCE: '/dashboard/finance',
+    AUDIT: '/dashboard/audit',
     PROFILE: '/dashboard/profile',
   }
 } as const;

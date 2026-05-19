@@ -32,17 +32,14 @@ func GinLoggerMiddleware() gin.HandlerFunc {
 		}
 
 		if len(c.Errors) > 0 {
-			for _, e := range c.Errors.Errors() {
-				log.Error(e, fields...)
-			}
+			fields = append(fields, zap.Strings("errors", c.Errors.Errors()))
+		}
+		if status >= 500 {
+			log.Error("server error", fields...)
+		} else if status >= 400 {
+			log.Warn("client error", fields...)
 		} else {
-			if status >= 500 {
-				log.Error("server error", fields...)
-			} else if status >= 400 {
-				log.Warn("client error", fields...)
-			} else {
-				log.Info(path, fields...)
-			}
+			log.Info(path, fields...)
 		}
 	}
 }

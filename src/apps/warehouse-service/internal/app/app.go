@@ -15,26 +15,39 @@ type App struct {
 	Cfg           *svcconfig.Config
 	DB            *database.DB
 	HarvestWorker *worker.HarvestWorker
-	Consumer      kafka.Consumer
+	OrderWorker   *worker.OrderWorker
+	Consumers     []kafka.Consumer
 }
 
-func NewApp(cfg *svcconfig.Config, db *database.DB, consumer kafka.Consumer, harvestWorker *worker.HarvestWorker) *App {
+func NewApp(cfg *svcconfig.Config, db *database.DB, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker) *App {
 	return &App{
 		Cfg:           cfg,
 		DB:            db,
-		Consumer:      consumer,
+		Consumers:     consumers,
 		HarvestWorker: harvestWorker,
+		OrderWorker:   orderWorker,
 	}
 }
 
 func (a *App) Run(ctx context.Context) error {
 	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
 	log.Info("service started, waiting for harvest events", zap.String("topic", a.Cfg.KafkaHarvestTopic))
+	go func() {
+		if err := a.OrderWorker.Start(ctx); err != nil {
+			log.Error("order worker stopped with error", zap.Error(err))
+		}
+	}()
 	return a.HarvestWorker.Start(ctx)
 }
 
 func (a *App) Shutdown() error {
 	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
 	log.Info("shutting down")
-	return a.Consumer.Close()
+	var err error
+	for _, consumer := range a.Consumers {
+		if closeErr := consumer.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}
+	return err
 }

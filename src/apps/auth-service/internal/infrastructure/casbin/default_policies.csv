@@ -12,4 +12,18 @@ p, FARM_MANAGER, /runtime.farm.v1.FarmService/ListFarmHarvests, read
 p, FARM_MANAGER, farm, read|write
 p, FARM_MANAGER, farm, delete
 p, FARM_MANAGER, harvest, read|write
+p, STORE_MGR, /v1/stores, read
+p, STORE_MGR, /v1/orders, read|write
+p, STORE_MGR, /v1/orders/:id, read
+p, STORE_MGR, /v1/payments, read
+p, STORE_MGR, /v1/payments/orders/:order_id, read
+p, STORE_MGR, /v1/shipments, read
+p, STORE_MGR, /v1/shipments/:id/deliver, write
+p, STORE_MGR, /v1/drivers/location, write
+p, STORE_MGR, /v1/trace/:id, read
+p, STORE_MGR, /v1/trace/:id/document, read
+p, STORE_MGR, /v1/audit/:partition, read
+p, ADMIN, /v1/*, .*
 g, ADMIN, FARM_ADMIN
+g, ADMIN, FARM_MANAGER
+g, ADMIN, STORE_MGR

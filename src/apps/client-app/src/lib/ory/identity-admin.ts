@@ -16,9 +16,22 @@ function readInternalSecret(): string | undefined {
   }
 }
 
-export async function resolveIdentityRole(subject?: string | null): Promise<string> {
+export interface IdentityClaims {
+  email: string;
+  role: string;
+  org_id: string;
+  store_ids: string[];
+}
+
+export async function resolveIdentityClaims(subject?: string | null): Promise<IdentityClaims> {
+  const fallback: IdentityClaims = {
+    email: '',
+    role: 'GUEST',
+    org_id: 'org-root-001',
+    store_ids: [],
+  };
   if (!subject) {
-    return 'GUEST';
+    return fallback;
   }
 
   const headers = new Headers();
@@ -37,12 +50,29 @@ export async function resolveIdentityRole(subject?: string | null): Promise<stri
     );
 
     if (!response.ok) {
-      return 'GUEST';
+      return fallback;
     }
 
-    const identity = (await response.json()) as { traits?: { role?: string } };
-    return identity.traits?.role || 'GUEST';
+    const identity = (await response.json()) as {
+      traits?: {
+        email?: string;
+        role?: string;
+        org_id?: string;
+        store_ids?: string[];
+      };
+    };
+    return {
+      email: identity.traits?.email || '',
+      role: identity.traits?.role || 'GUEST',
+      org_id: identity.traits?.org_id || fallback.org_id,
+      store_ids: Array.isArray(identity.traits?.store_ids) ? identity.traits.store_ids : [],
+    };
   } catch {
-    return 'GUEST';
+    return fallback;
   }
+}
+
+export async function resolveIdentityRole(subject?: string | null): Promise<string> {
+  const claims = await resolveIdentityClaims(subject);
+  return claims.role;
 }

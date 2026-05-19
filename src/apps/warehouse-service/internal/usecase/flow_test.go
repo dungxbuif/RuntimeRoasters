@@ -29,7 +29,9 @@ func (m *MockProducer) Close() error {
 
 func TestFullWarehouseFlow(t *testing.T) {
 	// Setup In-Memory DB
-	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, _ := gorm.Open(sqlite.Open("file:warehouse-flow?mode=memory&cache=shared"), &gorm.Config{})
+	sqlDB, _ := db.DB()
+	sqlDB.SetMaxOpenConns(1)
 	db.AutoMigrate(&domain.Intake{}, &domain.ProductionBatch{}, &domain.RoastRun{}, &domain.Inventory{}, &domain.InboxEvent{})
 
 	ctx := context.Background()
@@ -80,7 +82,7 @@ func TestFullWarehouseFlow(t *testing.T) {
 	// 4. Finalize to Stock
 	mockProducer := new(MockProducer)
 	mockProducer.On("Publish", mock.Anything, "warehouse.stock.updated", mock.Anything, mock.Anything).Return(nil)
-	
+
 	invUC := NewInventoryUseCase(db, mockProducer, "warehouse.stock.updated")
 	err = invUC.FinalizeBatch(ctx, batch.ID)
 	assert.NoError(t, err)

@@ -12,9 +12,11 @@ const (
 )
 
 const (
-	ClaimRole  = "role"
-	ClaimOrgID = "org_id"
-	ClaimJTI   = "jti"
+	ClaimEmail    = "email"
+	ClaimRole     = "role"
+	ClaimOrgID    = "org_id"
+	ClaimStoreIDs = "store_ids"
+	ClaimJTI      = "jti"
 )
 
 const (

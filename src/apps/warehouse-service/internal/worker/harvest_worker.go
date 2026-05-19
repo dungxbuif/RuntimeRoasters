@@ -24,7 +24,7 @@ func NewHarvestWorker(consumer kafka.Consumer, usecase *usecase.IntakeUseCase) *
 func (w *HarvestWorker) Start(ctx context.Context) error {
 	handler := func(ctx context.Context, msg kafka_go.Message) error {
 		msgID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
-		
+
 		return w.usecase.ProcessHarvestEvent(ctx, msgID, msg.Value)
 	}
 

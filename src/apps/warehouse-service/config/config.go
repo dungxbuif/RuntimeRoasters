@@ -3,11 +3,14 @@ package config
 import "github.com/dungxbuif/RuntimeRoasters/pkg/config"
 
 type Config struct {
-	config.BaseConfig `mapstructure:",squash"`
-	KafkaBrokers      []string `mapstructure:"KAFKA_BROKERS"`
-	KafkaGroupID      string   `mapstructure:"KAFKA_GROUP_ID"`
-	KafkaHarvestTopic string   `mapstructure:"KAFKA_HARVEST_TOPIC"`
-	KafkaStockTopic   string   `mapstructure:"KAFKA_STOCK_TOPIC"`
+	config.BaseConfig       `mapstructure:",squash"`
+	KafkaBrokers            []string `mapstructure:"KAFKA_BROKERS"`
+	KafkaGroupID            string   `mapstructure:"KAFKA_GROUP_ID"`
+	KafkaHarvestTopic       string   `mapstructure:"KAFKA_HARVEST_TOPIC"`
+	KafkaStockTopic         string   `mapstructure:"KAFKA_STOCK_TOPIC"`
+	KafkaOrderTopic         string   `mapstructure:"KAFKA_ORDER_CREATED_TOPIC"`
+	KafkaStockReservedTopic string   `mapstructure:"KAFKA_STOCK_RESERVED_TOPIC"`
+	KafkaStockFailedTopic   string   `mapstructure:"KAFKA_STOCK_FAILED_TOPIC"`
 }
 
 func Load() Config {

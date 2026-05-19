@@ -22,6 +22,8 @@ func InitLogger(env string, levelStr string) {
 	} else {
 		cfg = zap.NewDevelopmentConfig()
 		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.EncoderConfig.StacktraceKey = "stacktrace"
+		cfg.DisableStacktrace = true
 	}
 
 	level, err := zapcore.ParseLevel(levelStr)
@@ -29,7 +31,11 @@ func InitLogger(env string, levelStr string) {
 		cfg.Level.SetLevel(level)
 	}
 
-	logger, err := cfg.Build()
+	opts := []zap.Option{}
+	if env != "production" {
+		opts = append(opts, zap.AddStacktrace(zapcore.ErrorLevel))
+	}
+	logger, err := cfg.Build(opts...)
 	if err != nil {
 		panic(err)
 	}

@@ -1,8 +1,10 @@
 package identity
 
 type Claims struct {
-	Subject string
-	Role    string
-	OrgID   string
-	JTI     string
+	Subject  string
+	Email    string
+	Role     string
+	OrgID    string
+	StoreIDs []string
+	JTI      string
 }

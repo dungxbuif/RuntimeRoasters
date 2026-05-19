@@ -2,6 +2,7 @@ package identity_tests
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
@@ -22,7 +23,7 @@ func TestInjectAndFromContext(t *testing.T) {
 		if !ok {
 			t.Fatal("expected identity in context, got none")
 		}
-		if got != want {
+		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got %+v, want %+v", got, want)
 		}
 	})
