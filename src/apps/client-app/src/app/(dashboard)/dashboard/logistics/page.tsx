@@ -1,157 +1,230 @@
-import React from 'react';
+'use client';
 
-export default function LogisticsRealTimeTransitPage() {
-  return (
-    <div className="h-full relative flex font-body bg-slate-950 overflow-hidden">
-      {/* Map Background (Simulated) */}
-      <div className="absolute inset-0 z-0 bg-slate-900 overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')] bg-cover bg-center" 
-          style={{ filter: 'grayscale(100%) contrast(120%) brightness(50%)' }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-transparent to-slate-950/90"></div>
+import React, { useEffect, useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { logisticsService } from '@/services/logistics.service';
+import { Location, Shipment, RouteData } from '@/types/logistics';
+import LogisticsMap from '@/components/features/logistics/LogisticsMap';
+import { Activity, Gauge, MapPin, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+
+export default function LogisticsDashboard() {
+  const [activeDriverLocations, setActiveDriverLocations] = useState<Record<string, [number, number]>>({});
+  const [simulationActive, setSimulationActive] = useState(true);
+
+  const { data: locations = [] } = useQuery({
+    queryKey: ['logistics', 'locations'],
+    queryFn: () => logisticsService.listLocations(),
+  });
+
+  const { data: shipmentsData = [] } = useQuery({
+    queryKey: ['logistics', 'shipments'],
+    queryFn: () => logisticsService.listShipments(),
+    refetchInterval: 5000,
+  });
+
+  const shipments = useMemo(() => {
+    if (shipmentsData.length > 0) return shipmentsData;
+    // Mock data for demo if API returns empty
+    return [
+      { id: 'shp-001', order_id: 'ORD-7721', driver_id: 'driver-1', status: 'IN_TRANSIT', destination_address: 'Xưởng rang Sóng Thần', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), delivered_at: null },
+      { id: 'shp-002', order_id: 'ORD-8832', driver_id: 'driver-2', status: 'IN_TRANSIT', destination_address: 'Cửa hàng Quận 1', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), delivered_at: null },
+      { id: 'shp-003', order_id: 'ORD-9943', driver_id: 'driver-3', status: 'PENDING', destination_address: 'Xưởng rang Hòa Khánh', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), delivered_at: null },
+    ] as Shipment[];
+  }, [shipmentsData]);
+
+  const { data: routes = [] } = useQuery({
+    queryKey: ['logistics', 'routes'],
+    queryFn: () => logisticsService.getRoutes(),
+  });
+
+  // Client-side simulation logic
+  useEffect(() => {
+    if (!simulationActive || routes.length === 0) return;
+
+    const interval = setInterval(() => {
+      setActiveDriverLocations(prev => {
+        const next = { ...prev };
         
-        {/* Simulated Glowing Paths and Nodes */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-          <path 
-            className="animate-dash" 
-            d="M 300 400 C 400 300, 600 500, 800 350" 
-            fill="none" 
-            stroke="rgba(34, 197, 94, 0.3)" 
-            strokeDasharray="4 4" 
-            strokeWidth="2"
-          ></path>
-          <path d="M 300 400 C 400 300, 600 500, 800 350" fill="none" stroke="#22c55e" strokeWidth="1"></path>
-          <circle cx="300" cy="400" fill="#22c55e" r="4" className="shadow-[0_0_10px_#22c55e]"></circle>
-          <circle cx="800" cy="350" fill="#00daf3" r="6" className="shadow-[0_0_15px_#00daf3]"></circle>
-          <circle cx="500" cy="200" fill="#f59e0b" r="4" className="shadow-[0_0_10px_#f59e0b]"></circle>
-          <g transform="translate(550, 410)">
-            <circle cx="0" cy="0" fill="#0f172a" r="8" stroke="#22c55e" strokeWidth="2"></circle>
-            <text fill="#22c55e" fontSize="10" textAnchor="middle" x="0" y="3.5" className="material-symbols-outlined">local_shipping</text>
-          </g>
-        </svg>
+        // Simulate a few drivers on routes
+        routes.forEach((route, idx) => {
+          const driverId = `driver-${idx + 1}`;
+          const currentPos = prev[driverId];
+          let nextPos: [number, number];
+          
+          if (!currentPos) {
+            nextPos = route.coordinates[0];
+          } else {
+            // Find current index in coordinates
+            const currentIndex = route.coordinates.findIndex(
+              p => p[0] === currentPos[0] && p[1] === currentPos[1]
+            );
+            
+            if (currentIndex === -1 || currentIndex === route.coordinates.length - 1) {
+              nextPos = route.coordinates[0]; // Reset to start
+            } else {
+              nextPos = route.coordinates[currentIndex + 1];
+            }
+          }
+
+          next[driverId] = nextPos;
+
+          // BRIDGE TO BACKEND: Update driver location in Valkey
+          // We only do this if simulation is active to avoid overwhelming backend when paused
+          const shipmentId = shipments.find(s => s.driver_id === driverId)?.id || '';
+          logisticsService.updateDriverLocation({
+            driver_id: driverId,
+            shipment_id: shipmentId,
+            latitude: nextPos[0],
+            longitude: nextPos[1]
+          }).catch(err => console.error(`Failed to update location for ${driverId}`, err));
+        });
+        
+        return next;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [routes, simulationActive]);
+
+  return (
+    <div className="h-full flex flex-col gap-6">
+      {/* Header Info */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900 flex items-center gap-3 italic">
+            <Truck className="w-8 h-8 text-primary" />
+            Real-time Logistics Control
+          </h1>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
+            Monitoring {shipments.length} active shipments across Vietnam network
+          </p>
+        </div>
+        
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setSimulationActive(!simulationActive)}
+            className={`px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest border transition-all ${
+              simulationActive 
+                ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(0,74,198,0.2)]' 
+                : 'bg-slate-100 border-slate-200 text-slate-400'
+            }`}
+          >
+            {simulationActive ? '● SIMULATION ACTIVE' : '○ SIMULATION PAUSED'}
+          </button>
+        </div>
       </div>
 
-      {/* Floating Command Panels */}
-      <div className="relative z-10 w-full h-full flex p-6 gap-6 overflow-hidden">
-        {/* Left Column: Active Shipments */}
-        <div className="w-[420px] flex flex-col gap-4 h-full">
-          <div className="glass-card rounded-xl p-6 border border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden bg-slate-900/60 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-              <h2 className="font-headline text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 font-bold">
-                <span className="material-symbols-outlined text-blue-400 text-lg">radar</span>
-                Transit Telemetry
-              </h2>
-              <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300 tabular-nums font-black tracking-widest italic border border-slate-700">4 EN ROUTE</span>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-              {/* Shipment Card 1 */}
-              <div className="bg-slate-950/40 rounded-lg p-4 border-l-4 border-primary hover:bg-slate-800/80 transition-all cursor-pointer group">
-                <div className="flex justify-between items-start mb-3 text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-lg group-hover:scale-110 transition-transform font-black">local_shipping</span>
-                    <span className="font-headline text-sm font-black tracking-tight uppercase italic">SHP-8924-A</span>
-                  </div>
-                  <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter border border-primary/20 italic">En Route</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-[10px] font-bold uppercase tracking-tighter">
-                  <div className="bg-slate-950/80 rounded p-2 flex flex-col border border-slate-800">
-                    <span className="text-slate-500 text-[8px] mb-1">Origin</span>
-                    <span className="text-slate-300 truncate">Farm Node 04</span>
-                  </div>
-                  <div className="bg-slate-950/80 rounded p-2 flex flex-col border border-slate-800">
-                    <span className="text-slate-500 text-[8px] mb-1">Destination</span>
-                    <span className="text-slate-300 truncate">WH-Alpha</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center justify-between bg-slate-950/80 rounded p-2.5 border border-slate-800 group-hover:border-primary/30 transition-colors text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-tertiary-fixed text-[16px]">thermostat</span>
-                    <span className="text-tertiary-fixed font-black tabular-nums text-xs italic">18.4°C</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-500 font-black">
-                    <span className="material-symbols-outlined text-[16px]">speed</span>
-                    <span className="tabular-nums text-[10px]">64 km/h</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipment Card 2 */}
-              <div className="bg-slate-950/40 rounded-lg p-4 border-l-4 border-error hover:bg-slate-800/80 transition-all cursor-pointer text-white">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-error text-lg font-black">warning</span>
-                    <span className="font-headline text-sm font-black tracking-tight uppercase italic">SHP-7712-B</span>
-                  </div>
-                  <span className="text-[9px] bg-error/10 text-error px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter border border-error/20 italic">Delayed</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between bg-slate-950/80 rounded p-2.5 border border-error/20 shadow-[0_0_10px_rgba(186,26,26,0.1)]">
-                  <div className="flex items-center gap-2 font-black">
-                    <span className="material-symbols-outlined text-error text-[16px] animate-pulse">thermostat</span>
-                    <span className="text-error tabular-nums text-xs italic">24.1°C</span>
-                  </div>
-                  <span className="text-[8px] text-error uppercase font-black italic tracking-widest">Delta +2.1°</span>
-                </div>
-              </div>
-
-              {/* Shipment Card 3 */}
-              <div className="bg-slate-950/40 rounded-lg p-4 border-l-4 border-slate-700 opacity-60 text-slate-400 italic">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2 font-black">
-                    <span className="material-symbols-outlined text-slate-500 text-lg">done_all</span>
-                    <span className="font-headline text-sm tracking-tight uppercase">SHP-6641-X</span>
-                  </div>
-                  <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter">Delivered</span>
-                </div>
-                <div className="text-[10px] flex items-center gap-1 font-bold">
-                  <span className="material-symbols-outlined text-[14px]">schedule</span> Offloaded 14m ago
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 flex gap-6 overflow-hidden min-h-0">
+        {/* Left: Map Visualization */}
+        <div className="flex-1 min-w-0">
+          <LogisticsMap 
+            locations={locations}
+            shipments={shipments}
+            routes={routes}
+            activeDriverLocations={activeDriverLocations}
+          />
         </div>
 
-        {/* Right Column: Micro-stats & Map Overlay Controls */}
-        <div className="flex-1 flex flex-col justify-end items-end gap-6 pointer-events-none">
-          {/* Map Controls */}
-          <div className="glass-card rounded-lg flex flex-col p-1.5 border border-slate-800 shadow-2xl pointer-events-auto bg-slate-900/80">
-            <button className="p-2.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded transition-colors group">
-              <span className="material-symbols-outlined !text-lg group-active:scale-90 transition-transform">add</span>
-            </button>
-            <div className="h-px w-full bg-slate-800 my-1"></div>
-            <button className="p-2.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded transition-colors group">
-              <span className="material-symbols-outlined !text-lg group-active:scale-90 transition-transform">remove</span>
-            </button>
-            <div className="h-px w-full bg-slate-800 my-1"></div>
-            <button className="p-2.5 text-primary bg-primary/10 rounded transition-colors shadow-inner">
-              <span className="material-symbols-outlined !text-lg font-black">my_location</span>
-            </button>
-          </div>
-          
-          {/* Warehouse Stock Mini-View */}
-          <div className="glass-card rounded-xl p-8 border border-slate-800 shadow-2xl w-[360px] pointer-events-auto transform hover:translate-y-[-4px] transition-transform bg-slate-900/90 text-white">
-            <h3 className="font-headline text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary text-lg font-black">inventory_2</span>
-              Node Capacities
-            </h3>
-            <div className="space-y-8 font-black uppercase tracking-tighter italic">
-              <div>
-                <div className="flex justify-between text-[11px] mb-2">
-                  <span className="text-slate-300">WH-Alpha (Primary)</span>
-                  <span className="text-primary tabular-nums">82% [LOAD]</span>
+        {/* Right: Shipment Telemetry */}
+        <div className="w-96 flex flex-col gap-4 overflow-hidden">
+          <div className="glass-card flex flex-col h-full bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                Transit Telemetry
+              </h2>
+              <span className="text-[9px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded italic">
+                {shipments.filter(s => s.status === 'IN_TRANSIT').length} EN ROUTE
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {shipments.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50 grayscale py-20">
+                  <Truck className="w-12 h-12 mb-2 stroke-[1]" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">No active shipments</p>
                 </div>
-                <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden flex border border-slate-800 shadow-inner">
-                  <div className="bg-primary h-full shadow-[0_0_12px_rgba(0,74,198,0.6)]" style={{ width: '82%' }}></div>
+              ) : (
+                shipments.map(shipment => (
+                  <div 
+                    key={shipment.id}
+                    className={`p-4 rounded-lg border-l-4 transition-all hover:translate-x-1 cursor-pointer ${
+                      shipment.status === 'IN_TRANSIT' 
+                        ? 'bg-blue-50/50 border-primary' 
+                        : shipment.status === 'FAILED'
+                        ? 'bg-red-50/50 border-error'
+                        : 'bg-slate-50 border-slate-300'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black font-mono text-slate-900">
+                          {shipment.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        {shipment.status === 'DELIVERED' && <CheckCircle2 className="w-3 h-3 text-green-500" />}
+                        {shipment.status === 'FAILED' && <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse" />}
+                      </div>
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                        shipment.status === 'IN_TRANSIT' 
+                          ? 'bg-primary/10 border-primary/20 text-primary' 
+                          : 'bg-slate-200 border-slate-300 text-slate-500'
+                      }`}>
+                        {shipment.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+                      <div className="flex flex-col">
+                        <span className="text-[7px] text-slate-400">Order</span>
+                        <span className="text-slate-700 truncate">{shipment.order_id.slice(0, 8)}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[7px] text-slate-400">Dest</span>
+                        <span className="text-slate-700 truncate">{shipment.destination_address || '---'}</span>
+                      </div>
+                    </div>
+
+                    {shipment.status === 'IN_TRANSIT' && (
+                      <div className="mt-3 pt-3 border-t border-blue-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 text-blue-600 font-black italic">
+                            <Gauge className="w-3 h-3" />
+                            <span className="tabular-nums">64 km/h</span>
+                          </div>
+                        </div>
+                        <div className="flex -space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-primary border-2 border-white flex items-center justify-center text-[8px] text-white font-bold">
+                            {shipment.driver_id?.slice(-1) || 'D'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Micro-stats */}
+            <div className="p-4 bg-slate-900 text-white rounded-t-2xl mt-auto">
+              <h3 className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Network Health</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-[9px] font-black mb-1 italic">
+                    <span className="text-slate-400">Avg Transit Time</span>
+                    <span className="text-primary">4h 12m</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-primary h-full w-[65%]"></div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-[11px] mb-2">
-                  <span className="text-slate-300">WH-Beta (Transit)</span>
-                  <span className="text-error tabular-nums">94% [CRIT]</span>
-                </div>
-                <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden flex border border-slate-800 shadow-inner">
-                  <div className="bg-error h-full shadow-[0_0_12px_rgba(186,26,26,0.6)] animate-pulse" style={{ width: '94%' }}></div>
+                <div>
+                  <div className="flex justify-between text-[9px] font-black mb-1 italic">
+                    <span className="text-slate-400">Success Rate</span>
+                    <span className="text-green-400">99.8%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                    <div className="bg-green-400 h-full w-[99%]"></div>
+                  </div>
                 </div>
               </div>
             </div>
