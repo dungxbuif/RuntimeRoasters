@@ -1,16 +1,17 @@
 package main
 
 import (
+	"log"
+
 	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/app"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	"go.uber.org/zap"
 )
 
 func main() {
 	application, cleanup, err := app.InitializeApp()
 	if err != nil {
-		logger.GetLogger().Fatal("failed to initialize logistics service", zap.Error(err))
+		log.Fatalf("failed to initialize application: %v", err)
 	}
 	defer cleanup()
+
 	application.Run()
 }

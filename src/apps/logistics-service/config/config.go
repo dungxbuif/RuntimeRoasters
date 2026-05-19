@@ -4,6 +4,7 @@ import "github.com/dungxbuif/RuntimeRoasters/pkg/config"
 
 type Config struct {
 	config.BaseConfig `mapstructure:",squash"`
+	ValkeyAddr        string `mapstructure:"VALKEY_ADDR"`
 }
 
 // Load loads the logistics-service configuration

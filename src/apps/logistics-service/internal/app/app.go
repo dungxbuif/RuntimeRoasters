@@ -31,8 +31,6 @@ func NewApp(
 }
 
 func (a *App) Run() {
-	a.Base.FinalizeRoutes()
-
 	// Register readiness check
 	a.Base.RegisterReadiness(func() error {
 		if err := a.DB.Ping(context.Background()); err != nil {
@@ -40,10 +38,6 @@ func (a *App) Run() {
 		}
 		return nil
 	})
-
-	if a.Cfg.GRPCPort == 0 {
-		a.Cfg.GRPCPort = 50055 // Using 50055 for logistics
-	}
 
 	a.Base.Run(a.Cfg.AppPort, a.Cfg.GRPCPort)
 }
