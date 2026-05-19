@@ -40,6 +40,15 @@
           "type": "string",
           "title": "Organization ID",
           "description": "UUID of the organization this user belongs to"
+        },
+        "store_ids": {
+          "type": "array",
+          "title": "Managed Store IDs",
+          "description": "Retail stores this identity can operate",
+          "items": {
+            "type": "string"
+          },
+          "default": []
         }
       },
       "required": ["email"],

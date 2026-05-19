@@ -2,7 +2,7 @@
 
 This is the working context for AI agents in this repository. Treat it as the first file to read before changing code.
 
-Last updated: 2026-05-15
+Last updated: 2026-05-19
 
 ## Mission
 
@@ -23,10 +23,17 @@ Local ports:
 - KrakenD gateway: `http://localhost:8081`
 - auth-service HTTP/gRPC: `8082` / `50052`
 - farm-service HTTP/gRPC: `8083` / `50053`
+- retail-service HTTP/gRPC: `8084` / `50054`
+- logistics-service HTTP/gRPC: `8085` / `50055`
+- payment-service HTTP/gRPC: `8086` / `50056`
+- trace-service HTTP/gRPC: `8087` / `50057`
+- audit-service HTTP/gRPC: `8088` / `50058`
 - Ory Kratos public/admin through identity proxy: `4433` / `4434`
 - Ory Hydra public/admin: `4444` / `4445`
 - Kafka UI: `http://localhost:8090`
 - Postgres host port: `54321`
+- Elasticsearch: `http://localhost:9200`
+- Cassandra: `localhost:9042`
 
 ## Architecture Decisions
 
@@ -38,11 +45,23 @@ Local ports:
   - `internal/app/init.go`: manual dependency wiring. Do not add DI frameworks.
 - Internal service APIs are gRPC-first. Browser traffic goes through Next.js and KrakenD REST endpoints.
 - Authorization is centralized-management, distributed-enforcement:
+  - Gate 1 is KrakenD JWT validation on protected REST endpoints.
+  - Gate 2 is service-local JWT verification plus Casbin enforcement.
   - `auth-service` is the centralized Casbin writer and owns `auth_db.casbin_rule`.
-  - business services enforce locally using an in-memory Casbin reader.
+  - business services enforce locally using an in-memory Casbin reader from `pkg/base/security`.
   - readers bootstrap with gRPC `AuthService.GetFullSnapshot`.
   - readers listen to Kafka topic `auth.policy.changed` for live policy refresh.
   - polling is fallback only, not the primary sync mechanism.
+- Payment integrations are demo/simulated:
+  - Stripe and VNPay provider adapters validate the demo contract only.
+  - `/v1/webhooks/stripe` and `/v1/webhooks/vnpay` stay public at the route-auth layer because they represent provider callbacks, but provider signature/business validation still runs in payment-service.
+- Retail order SAGA is the current backend happy path:
+  - retail creates orders and emits `retail.order.created`.
+  - warehouse reserves stock and emits stock events.
+  - payment simulates Stripe/VNPay and emits payment events.
+  - logistics assigns/delivers shipments.
+  - trace-service builds Postgres plus Elasticsearch read models.
+  - audit-service writes immutable event audit logs to Cassandra with Postgres fallback.
 - Current farm role model:
   - `FARMER` has been removed.
   - Farm operations use `FARM_MANAGER`.
@@ -66,6 +85,8 @@ Local ports:
 - Data-level `GormScoper` evaluates role permissions and scopes non-admin results by JWT subject ownership.
 - `GET /v1/harvests` is not currently a proto route. The frontend harvest list should use `GET /v1/farms/{id}/harvests`.
 - farm-service must not crash when auth-service is not yet ready. Its resilient reader background bootstrap should retry snapshot sync.
+- REST business services from retail/payment/logistics/trace/audit require auth-service at startup because their HTTP guards bootstrap JWKS and the Casbin snapshot.
+- Kafka consumers default to latest-offset startup for demo flows. Use `deployments/reset-demo-state.sh` before clean local SAGA demos.
 
 ## Frontend Rules
 
@@ -85,6 +106,11 @@ GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./pkg/base/casbin/... ./a
 ```
 
 ```bash
+cd src
+GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./pkg/base/auth/... ./pkg/base/casbin/... ./pkg/base/security/... ./apps/auth-service/... ./apps/retail-service/... ./apps/payment-service/... ./apps/logistics-service/... ./apps/trace-service/... ./apps/audit-service/... ./apps/warehouse-service/...
+```
+
+```bash
 cd src/apps/client-app
 npm run lint
 ```
@@ -95,10 +121,12 @@ Useful runtime checks:
 curl -s http://127.0.0.1:8081/v1/users
 curl -s -i http://127.0.0.1:8082/health/live
 curl -s -i http://127.0.0.1:8083/health/live
+curl -s -i http://127.0.0.1:8081/v1/orders/test-id
 curl -s -I http://127.0.0.1:3000/
 ```
 
 Expected `/v1/users` local demo users are `ADMIN` and `FARM_MANAGER` only.
+Expected unauthenticated protected gateway calls return `401`.
 
 ## Documentation Pointers
 

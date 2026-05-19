@@ -2,10 +2,14 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/spf13/viper"
 )
+
+// ... BaseConfig remains the same ...
 
 // BaseConfig contains fields that every service needs
 type BaseConfig struct {
@@ -24,9 +28,9 @@ type BaseConfig struct {
 	TracingSampleRate float64 `mapstructure:"OTEL_TRACES_SAMPLE_RATE"`
 }
 
-// LoadConfig loads configuration from a path into the provided out struct.
+// LoadConfig loads configuration and validates that all fields are set
 func LoadConfig(path string, name string, out any) error {
-	v := viper.New() // Use a new instance to avoid global state issues
+	v := viper.New()
 	v.AddConfigPath(path)
 	v.SetConfigName(name)
 	v.SetConfigType("env")
@@ -40,8 +44,53 @@ func LoadConfig(path string, name string, out any) error {
 		}
 	}
 
-	err := v.Unmarshal(out)
-	return err
+	if err := v.Unmarshal(out); err != nil {
+		return err
+	}
+
+	return validateConfig(out)
+}
+
+// validateConfig ensures no string fields are empty and no int fields are zero (unless allowed)
+// This enforces the "No Fallback / Fail Fast" rule.
+func validateConfig(out any) error {
+	val := reflect.ValueOf(out)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		fieldType := typ.Field(i)
+		tag := fieldType.Tag.Get("mapstructure")
+
+		if tag == "" || tag == ",squash" {
+			if field.Kind() == reflect.Struct {
+				if err := validateConfig(field.Addr().Interface()); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
+		// Fail fast if the field is empty (No fallbacks allowed)
+		switch field.Kind() {
+		case reflect.String:
+			if field.String() == "" {
+				return fmt.Errorf("missing required environment variable for field: %s (tag: %s)", fieldType.Name, tag)
+			}
+		case reflect.Int:
+			if field.Int() == 0 {
+				return fmt.Errorf("missing required environment variable (or zero value) for field: %s (tag: %s)", fieldType.Name, tag)
+			}
+		case reflect.Slice:
+			if field.Len() == 0 {
+				return fmt.Errorf("missing required environment variable (empty slice) for field: %s (tag: %s)", fieldType.Name, tag)
+			}
+		}
+	}
+	return nil
 }
 
 // LoadFirstConfig loads configuration from the first path that satisfies the validator.

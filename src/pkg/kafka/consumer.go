@@ -2,6 +2,8 @@ package kafka
 
 import (
 	"context"
+	"errors"
+	"io"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
@@ -20,7 +22,7 @@ func NewConsumer(brokers []string, groupID string, topic string) Consumer {
 			Brokers:               brokers,
 			GroupID:               groupID,
 			Topic:                 topic,
-			StartOffset:           kafka.FirstOffset,
+			StartOffset:           kafka.LastOffset,
 			MaxWait:               1 * time.Second,
 			ReadBackoffMin:        100 * time.Millisecond,
 			ReadBackoffMax:        1 * time.Second,
@@ -32,14 +34,14 @@ func NewConsumer(brokers []string, groupID string, topic string) Consumer {
 func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 	log := logger.GetLogger().With(
 		zap.String("component", "kafka-consumer"),
-		zap.String("topic", c.reader.Config().Topic),
+		zap.String("topic", c.Topic()),
 	)
 	log.Info("consumer listening")
 
 	for {
 		m, err := c.reader.ReadMessage(ctx)
 		if err != nil {
-			if ctx.Err() != nil {
+			if ctx.Err() != nil || errors.Is(err, io.EOF) {
 				return nil
 			}
 			log.Warn("failed to read message", zap.Error(err))
@@ -58,6 +60,10 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 			continue
 		}
 	}
+}
+
+func (c *consumer) Topic() string {
+	return c.reader.Config().Topic
 }
 
 func (c *consumer) Close() error {

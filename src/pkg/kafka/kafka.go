@@ -27,6 +27,7 @@ type Producer interface {
 // Consumer defines the interface for subscribing to messages
 type Consumer interface {
 	Listen(ctx context.Context, handler Handler) error
+	Topic() string
 	Close() error
 }
 

@@ -6,10 +6,27 @@
   "cache_ttl": "300s",
   "extra_config": {
     "security/cors": {
-      "allow_origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
-      "allow_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      "allow_headers": ["Origin", "Authorization", "Content-Type", "Accept"],
-      "expose_headers": ["Content-Length"],
+      "allow_origins": [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+      ],
+      "allow_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "allow_headers": [
+        "Origin",
+        "Authorization",
+        "Content-Type",
+        "Accept"
+      ],
+      "expose_headers": [
+        "Content-Length"
+      ],
       "allow_credentials": true,
       "max_age": "12h"
     }
@@ -19,14 +36,18 @@
       "endpoint": "/v1/auth/login/accept",
       "method": "POST",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/auth/login/accept",
           "encoding": "no-op",
           "sd": "static",
           "method": "POST",
-          "host": ["http://host.docker.internal:8082"],
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
           "disable_host_sanitize": true
         }
       ]
@@ -35,177 +56,727 @@
       "endpoint": "/v1/users",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/users",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8082"],
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/users",
       "method": "POST",
       "output_encoding": "no-op",
-      "input_headers": ["Authorization", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/users",
           "encoding": "no-op",
           "sd": "static",
           "method": "POST",
-          "host": ["http://host.docker.internal:8082"],
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms",
       "method": "POST",
       "output_encoding": "no-op",
-      "input_headers": ["Authorization", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms",
           "encoding": "no-op",
           "sd": "static",
           "method": "POST",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms/{id}",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms/{id}",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms/{id}",
       "method": "PUT",
       "output_encoding": "no-op",
-      "input_headers": ["Authorization", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms/{id}",
           "encoding": "no-op",
           "sd": "static",
           "method": "PUT",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms/{id}",
       "method": "DELETE",
       "output_encoding": "no-op",
-      "input_headers": ["Authorization", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms/{id}",
           "encoding": "no-op",
           "sd": "static",
           "method": "DELETE",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/harvests",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/harvests",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/harvests",
       "method": "POST",
       "output_encoding": "no-op",
-      "input_headers": ["Authorization", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/harvests",
           "encoding": "no-op",
           "sd": "static",
           "method": "POST",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/harvests/{id}",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/harvests/{id}",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/farms/{id}/harvests",
       "method": "GET",
       "output_encoding": "no-op",
-      "input_headers": ["*"],
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
       "backend": [
         {
           "url_pattern": "/v1/farms/{id}/harvests",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",
-          "host": ["http://host.docker.internal:8083"],
+          "host": [
+            "http://host.docker.internal:8083"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/trace/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/trace/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8087"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/trace/{id}/document",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/trace/{id}/document",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8087"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/stores",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/stores",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8084"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/orders",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Idempotency-Key",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/orders",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8084"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/orders/{id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/orders/{id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8084"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/payments",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/payments",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8086"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/payments/orders/{order_id}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/payments/orders/{order_id}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8086"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/webhooks/stripe",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Stripe-Signature"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/webhooks/stripe",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8086"
+          ],
           "disable_host_sanitize": true
         }
       ]
+    },
+    {
+      "endpoint": "/v1/webhooks/vnpay",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "X-VNPAY-Timestamp",
+        "X-VNPAY-Signature"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/webhooks/vnpay",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8086"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/v1/shipments",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/shipments",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8085"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/shipments/{id}/deliver",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/shipments/{id}/deliver",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8085"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/drivers/location",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/drivers/location",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8085"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/audit/{partition}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/audit/{partition}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8088"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     }
   ]
 }

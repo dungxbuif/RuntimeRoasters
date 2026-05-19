@@ -8,6 +8,7 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
+| [RR-21.5](./RR-21.5.md) | [Tech] Retail Store Seeding & Management | 🕒 To Do | Tech Lead |
 | [RR-22](./RR-22.md) | [BA] Hệ thống đặt hàng tại quầy (POS) | 🕒 To Do | Store Manager |
 | [RR-23](./RR-23.md) | [Tech] Retail Service & Saga Orchestrator | 🕒 To Do | Tech Lead |
 

@@ -117,6 +117,72 @@ services:
       - rr-network
 
   # ---------------------------------------------------------------------------
+  # Elasticsearch — CQRS read model/search backend for Trace Service
+  # ---------------------------------------------------------------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: rr-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  # ---------------------------------------------------------------------------
+  # Kibana — Local Elasticsearch inspection UI
+  # Truy cập: http://localhost:5601
+  # ---------------------------------------------------------------------------
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    container_name: rr-kibana
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - rr-network
+
+  # ---------------------------------------------------------------------------
+  # Cassandra — Immutable audit log storage
+  # ---------------------------------------------------------------------------
+  cassandra:
+    image: cassandra:4.1
+    container_name: rr-cassandra
+    restart: unless-stopped
+    environment:
+      CASSANDRA_CLUSTER_NAME: RuntimeRoasters
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      MAX_HEAP_SIZE: 768M
+      HEAP_NEWSIZE: 192M
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - rr-network
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' 127.0.0.1 9042 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  # ---------------------------------------------------------------------------
   # Ory Kratos — Identity Management
   #
   # Vai trò: Quản lý người dùng, hồ sơ (identities) và đăng nhập (sessions).
@@ -285,4 +351,6 @@ networks:
     driver: bridge
 
 volumes:
+  cassandra_data:
   postgres_data:
+  elasticsearch_data:

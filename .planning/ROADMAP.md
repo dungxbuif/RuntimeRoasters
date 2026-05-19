@@ -20,11 +20,12 @@
 ### Phase 6: Retail & Order Saga
 **Goal:** Build the Retail Service and Saga Orchestrator for Order management.
 **Requirements:** [RR-22, RR-23]
-**Plans:** 4 plans
+**Plans:** 5 plans
 - [ ] 06-01-PLAN.md — Retail Service Core & Order Management
 - [ ] 06-02-PLAN.md — Outbox Relay & Kafka Integration
-- [ ] 06-03-PLAN.md — Saga Choreography & State Machine
-- [ ] 06-04-PLAN.md — Delivery & Integration
+- [ ] 06-03-PLAN.md — Saga Choreography - Warehouse Integration
+- [ ] 06-04-PLAN.md — Payment Mocking & Saga Completion
+- [ ] 06-05-PLAN.md — Integration Testing & Saga Verification
 
 ### Phase 7: Real-time Logistics
 **Goal:** Build the Logistics Service and Driver Tracking system.
