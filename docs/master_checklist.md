@@ -1,78 +1,79 @@
 # Runtime Roasters — Master Checklist
 
-Tài liệu này là "Single Source of Truth" để rà soát toàn bộ hệ thống (Whole App) từ hạ tầng, bảo mật, code đến quy trình triển khai. Checklist này sẽ được cập nhật liên tục qua từng task.
+This document is the "Single Source of Truth" for reviewing the entire system (Whole App) from infrastructure, security, code to deployment processes. This checklist will be continuously updated through each task.
 
 ---
 
-## 🏗 PHASE 1: Hạ tầng & Cấu hình (Infrastructure & Config)
-Đảm bảo nền tảng vững chắc trước khi chạy Application logic.
+## 🏗 PHASE 1: Infrastructure & Config
+Ensure a solid foundation before running Application logic.
 
 ### 1.1. Databases & Storage
-- [ ] **Postgres**: Đã chạy migration đầy đủ (`identity_db`, `demo_db`, ...).
-- [ ] **Redis**: Đã cấu hình làm Session Store và Token Blacklist.
-- [ ] **Kafka**: (Nếu sử dụng) Đã tạo sẵn các topic cần thiết (`token-revocation`, ...).
-- [ ] **Healthchecks**: Mọi service hạ tầng phải có cấu hình `healthcheck` trong Docker/K8s.
+- [ ] **Postgres**: Full migrations have been run (`identity_db`, `demo_db`, ...).
+- [ ] **Redis**: Configured as Session Store and Token Blacklist.
+- [ ] **Kafka**: (If used) Necessary topics have been created (`token-revocation`, ...).
+- [ ] **Healthchecks**: Every infrastructure service must have a `healthcheck` configuration in Docker/K8s.
 
 ### 1.2. Identity & Auth (Core Security)
-- [ ] `EXPECTED_ISSUER`: Khớp với `iss` claim (vd: `http://localhost:4444/`).
-- [ ] `JWKS_URL`: Trỏ đúng endpoint nội bộ (`http://identity:4434/...`).
-- [ ] `INTERNAL_SECRET`: Đã đổi từ giá trị mặc định và đồng bộ giữa Nginx Proxy & Backend.
-- [ ] **OIDC Client Secret**: Đã cấu hình chuỗi ngẫu nhiên bảo mật cao.
+- [ ] `EXPECTED_ISSUER`: Matches the `iss` claim (e.g., `http://localhost:4444/`).
+- [ ] `JWKS_URL`: Points correctly to the internal endpoint (`http://identity:4434/...`).
+- [ ] `INTERNAL_SECRET`: Changed from the default value and synchronized between Nginx Proxy & Backend.
+- [ ] **OIDC Client Secret**: Configured with a high-security random string.
 
 ### 1.3. Environment Variables
-- [ ] **Centralized Config**: Mọi biến môi trường nhạy cảm (`*_SECRET`, `*_PASSWORD`) phải được quản lý qua Secret Manager hoặc `.env.local`.
-- [ ] **Frontend Env**: `NEXT_PUBLIC_*` đã được kiểm tra tính đúng đắn khi build production.
+- [ ] **Centralized Config**: Every sensitive environment variable (`*_SECRET`, `*_PASSWORD`) must be managed via Secret Manager or `.env.local`.
+- [ ] **Frontend Env**: `NEXT_PUBLIC_*` has been checked for correctness when building for production.
 
 ---
 
-## 🔒 PHASE 2: Bảo mật & Resilience (Security & Resilience)
-Đảm bảo hệ thống an toàn và có khả năng tự phục hồi.
+## 🔒 PHASE 2: Security & Resilience
+Ensure the system is safe and self-healing.
 
 ### 2.1. Code Audit
-- [ ] **Fail-Fast & Retry**: Code fetch dữ liệu khởi động (như JWKS) đã có Exponential Backoff Retry.
-- [ ] **Error Handling**: Đã sử dụng chuẩn RFC 9457 (Problem Details), không leak thông tin lỗi nội bộ.
-- [ ] **Input Validation**: Mọi API endpoint đã có validation cho request body/params.
-- [ ] **Transactional Outbox**: Các sự kiện quan trọng (Event) phải được lưu cùng transaction với dữ liệu nghiệp vụ.
-- [ ] **Idempotency (Inbox)**: Hệ thống phải có cơ chế chống xử lý trùng lặp (Inbox Pattern) cho Kafka Consumers và Webhooks.
+- [ ] **Fail-Fast & Retry**: Code fetching startup data (like JWKS) has Exponential Backoff Retry.
+- [ ] **Error Handling**: Uses RFC 9457 (Problem Details) standard, no internal error information leaks.
+- [ ] **Input Validation**: Every API endpoint has validation for request body/params.
+- [ ] **Transactional Outbox**: Critical events must be saved in the same transaction as business data.
+- [ ] **Idempotency (Inbox)**: The system must have a mechanism to prevent duplicate processing (Inbox Pattern) for Kafka Consumers and Webhooks.
 
 ### 2.2. Network Security
-- [ ] **CORS**: Chỉ whitelist các domain chính thống.
-- [ ] **API Gateway Mapping**: Mọi endpoint resource phải sử dụng danh từ số nhiều (Plural: `/v1/users`, `/v1/farms`).
-- [ ] **Gateway Config Sync**: Đã chạy `force-recreate` hoặc `reload` gateway để đảm bảo bản đồ routing mới nhất được nạp.
-- [ ] **TLS/SSL**: Đảm bảo HTTPS được cấu hình cho mọi traffic public.
+- [ ] **CORS**: Only whitelist official domains.
+- [ ] **API Gateway Mapping**: Every resource endpoint must use plural nouns (Plural: `/v1/users`, `/v1/farms`).
+- [ ] **Gateway Config Sync**: Run `force-recreate` or `reload` on the gateway to ensure the latest routing map is loaded.
+- [ ] **TLS/SSL**: Ensure HTTPS is configured for all public traffic.
 
 ---
 
-## 🧪 PHASE 3: Kiểm chứng luồng & Tính năng (Feature Verification)
-Xác nhận nghiệp vụ chạy đúng thực tế.
+## 🧪 PHASE 3: Feature Verification
+Confirm business logic runs correctly in practice.
 
 ### 3.1. Auth Flow (OIDC)
-- [ ] **Login/Logout**: Hoạt động trơn tru, xóa sạch session/cookie khi logout.
-- [ ] **Seamless Consent**: Người dùng không bị hỏi lại quyền nếu đã được tin tưởng.
-- [ ] **Identity Context**: Identity của user được truyền chính xác vào UseCase layer.
+- [ ] **Login/Logout**: Operates smoothly, clears session/cookies upon logout.
+- [ ] **Seamless Consent**: Users are not asked for permissions again if already trusted.
+- [ ] **Identity Context**: User identity is correctly passed into the UseCase layer.
 
-### 3.2. Observability (Giám sát)
-- [ ] **Tracing**: Mỗi request đều sinh ra Trace ID, User ID xuất hiện trong Span Attributes.
-- [ ] **Logging**: Log theo format JSON (Structured Logging) để dễ dàng query.
-- [ ] **Metrics**: Các metrics cơ bản (Request count, Latency, Error rate) đã được export.
+### 3.2. Observability
+- [ ] **Tracing**: Each request generates a Trace ID, User ID appears in Span Attributes.
+- [ ] **Logging**: Logs in JSON format (Structured Logging) for easy querying.
+- [ ] **Metrics**: Basic metrics (Request count, Latency, Error rate) have been exported.
 
 ---
 
-## 🚀 PHASE 4: Triển khai & Vận hành (Deployment & Ops)
-Các bước cuối cùng trước khi "Go Live".
+## 🚀 PHASE 4: Deployment & Ops
+Final steps before "Go Live".
 
 ### 4.1. Orchestration
-- [ ] **Dependency Order**: Microservices có `depends_on` kèm `condition: service_healthy`.
-- [ ] **Init Containers**: (K8s) Có container chờ DB/Identity sẵn sàng trước khi app chạy.
-- [ ] **Resource Limits**: Đã cấu hình CPU/Memory Requests & Limits cho từng container.
+- [ ] **Dependency Order**: Microservices have `depends_on` with `condition: service_healthy`.
+- [ ] **Init Containers**: (K8s) Containers waiting for DB/Identity to be ready before the app runs.
+- [ ] **Resource Limits**: CPU/Memory Requests & Limits configured for each container.
 
 ### 4.2. CI/CD
-- [ ] **Unit Tests**: Đã pass 100% trước khi merge.
-- [ ] **Linter**: Không còn lỗi linting nghiêm trọng.
-- [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).
+- [ ] **Unit Tests**: Passed 100% before merging.
+- [ ] **Linter**: No serious linting errors remaining.
+- [ ] **Image Security**: Docker images scanned for vulnerabilities.
 
 ---
-- [ ] **Unit Tests**: Đã pass 100% trước khi merge.
-- [ ] **Linter**: Không còn lỗi linting nghiêm trọng.
-- [ ] **Image Security**: Docker images đã được quét lỗ hổng (Scan vulnerabilities).
-*Cập nhật lần cuối: 2026-05-13 bởi TechLead Agent*
+- [ ] **Unit Tests**: Passed 100% before merging.
+- [ ] **Linter**: No serious linting errors remaining.
+- [ ] **Image Security**: Docker images scanned for vulnerabilities.
+
+*Last updated: 2026-05-13 by TechLead Agent*

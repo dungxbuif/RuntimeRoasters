@@ -1,6 +1,6 @@
 # Sprint 10: Observability & Audit
 
-**Epic Goal:** Giám sát toàn diện hệ thống và lưu trữ Audit Log bất biến.
+**Epic Goal:** Comprehensive system monitoring and immutable Audit Log storage.
 
 ---
 
@@ -14,5 +14,5 @@
 ---
 
 ## 🛠️ Technical Focus
-- **Cassandra:** Lưu trữ dữ liệu Audit Log khổng lồ với khả năng ghi cực nhanh.
-- **SigNoz/OTEL:** Thu thập Trace và Metrics để giám sát performance từng service.
+- **Cassandra:** Store massive amounts of Audit Log data with extremely fast write capabilities.
+- **SigNoz/OTEL:** Collect Traces and Metrics to monitor the performance of each service.

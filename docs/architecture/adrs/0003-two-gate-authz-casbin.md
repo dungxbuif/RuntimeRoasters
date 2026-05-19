@@ -1,23 +1,23 @@
-# ADR 0003: Phân quyền bằng mô hình Two-Gate Hybrid (Casbin + Data Scoping)
+# ADR 0003: Authorization using Two-Gate Hybrid model (Casbin + Data Scoping)
 
-## Trạng thái
+## Status
 **Accepted**
 
-## Bối cảnh (Context)
-Trong hệ thống Multi-tenant và Microservices, việc phân quyền không chỉ dừng lại ở việc "User này có quyền gọi API này hay không?" (RBAC), mà còn phải kiểm tra "User này có sở hữu dữ liệu này hay không?" (ABAC). Nếu dồn toàn bộ logic này vào code, các UseCase sẽ bị phình to bởi các câu lệnh `if-else`.
+## Context
+In multi-tenant and microservices systems, authorization is not just about "Does this user have the right to call this API?" (RBAC), but also "Does this user own this data?" (ABAC). If all this logic is embedded in the code, UseCases will bloat with `if-else` statements.
 
-## Quyết định (Decision)
-Áp dụng mô hình **Two-Gate Hybrid AuthZ**:
-1. **Gate 1 (Biên giới/Middleware):** Sử dụng **Casbin** để kiểm tra RBAC (Role-Based Access Control). Chặn các request không hợp lệ ngay tại Middleware của Gin hoặc Interceptor của gRPC. Sử dụng gRPC Method Name làm tên định danh Resource trong file policy để đồng nhất.
-2. **Gate 2 (Database Layer):** Áp dụng **Data Scoping** trong tầng Repository. Mọi truy vấn SQL đều bị ép thêm mệnh đề `WHERE owner_id = $1` để bảo vệ dữ liệu ở mức dòng (Row-level security).
+## Decision
+Apply the **Two-Gate Hybrid AuthZ** model:
+1. **Gate 1 (Edge/Middleware):** Use **Casbin** to check RBAC (Role-Based Access Control). Block invalid requests at Gin Middleware or gRPC Interceptors. Use gRPC Method Name as the Resource identifier in the policy file for consistency.
+2. **Gate 2 (Database Layer):** Apply **Data Scoping** in the Repository layer. All SQL queries are forced to include a `WHERE owner_id = $1` clause to protect data at the row level (Row-level security).
 
-Ngoài ra, Casbin policy sẽ được đồng bộ theo kiến trúc **Resilient Sync** (Snapshot qua gRPC + Live Update qua Kafka).
+Additionally, Casbin policy will be synchronized using a **Resilient Sync** architecture (Snapshot via gRPC + Live Update via Kafka).
 
-## Hậu quả (Consequences)
-- **Tích cực:** Tầng Business Logic (UseCase) hoàn toàn sạch sẽ, không chứa logic phân quyền. Bảo mật nhiều lớp (Defense in depth).
-- **Tiêu cực:** Đòi hỏi Developer phải luôn nhớ truyền `ownerID` vào các hàm Repository. Cấu trúc đồng bộ quyền (Casbin Sync) làm tăng độ phức tạp của hạ tầng.
+## Consequences
+- **Positive:** The Business Logic layer (UseCase) remains completely clean, containing no authorization logic. Multiple layers of security (Defense in depth).
+- **Negative:** Requires developers to always remember to pass `ownerID` to Repository functions. The authorization synchronization structure (Casbin Sync) increases infrastructure complexity.
 
-## Nguồn tham khảo
+## References
 - **Sprint:** Sprint 2.
 - **Ticket:** RR-12 (Fine-grained Authorization).
-- Xem chi tiết tại: [Resilient AuthZ Sync](../README.md#resilient-authz-sync-architecture).
+- See details at: [Resilient AuthZ Sync](../README.md#resilient-authz-sync-architecture).

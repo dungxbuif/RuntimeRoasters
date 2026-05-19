@@ -1,11 +1,11 @@
 # Sprint 1: Infrastructure Foundation & Baseline
 
-**Trạng thái:** ✅ Hoàn thành (Completed)
-**Mục tiêu:** Thiết lập nền tảng hạ tầng kỹ thuật (Infrastructure) vững chắc, đảm bảo môi trường phát triển đồng nhất cho toàn bộ hệ sinh thái Microservices.
+**Status:** ✅ Completed
+**Goal:** Establish a solid technical infrastructure foundation, ensuring a consistent development environment for the entire Microservices ecosystem.
 
 ---
 
-## 📋 Trạng thái Ticket (Kanban)
+## 📋 Ticket Status (Kanban)
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
@@ -20,12 +20,12 @@
 
 ---
 
-## 💡 Tầm nhìn Kỹ thuật (Technical Vision)
-- **Zero-Config Onboarding:** Một lệnh `docker compose up` khởi động toàn bộ vũ trụ RuntimeRoasters.
-- **Canonical Template:** `demo-service` là mẫu mực để các service sau copy theo (Clean Arch, DI, OTel).
-- **Early Observability:** Tracing phải hoạt động ngay từ ngày đầu tiên để debug luồng gRPC.
+## 💡 Technical Vision
+- **Zero-Config Onboarding:** A single `docker compose up` command starts the entire RuntimeRoasters universe.
+- **Canonical Template:** `demo-service` serves as the exemplary model for subsequent services to follow (Clean Arch, DI, OTel).
+- **Early Observability:** Tracing must be functional from day one to debug gRPC flows.
 
-## 📊 Kết quả đạt được (Sprint Result)
-- Toàn bộ hạ tầng (Postgres, Valkey, Kafka, Jaeger) đã sẵn sàng.
-- Luồng gRPC-Gateway qua KrakenD hoạt động ổn định.
-- Framework chung (`pkg/`) đã được kiểm chứng qua Demo Service.
+## 📊 Sprint Result
+- The entire infrastructure (Postgres, Valkey, Kafka, Jaeger) is ready.
+- The gRPC-Gateway flow via KrakenD is stable.
+- The common framework (`pkg/`) has been verified through the Demo Service.

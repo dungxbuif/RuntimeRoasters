@@ -1,6 +1,6 @@
 # Sprint 11: Hardening & Grand Finale
 
-**Epic Goal:** Bảo mật tối đa và tối ưu hóa hiệu năng hệ thống.
+**Epic Goal:** Maximum security and optimization of system performance.
 
 ---
 
@@ -15,6 +15,6 @@
 ---
 
 ## 🛠️ Technical Focus
-- **mTLS:** Mã hóa giao tiếp giữa các Microservices.
-- **Valkey:** Sử dụng để quản lý danh sách token bị thu hồi (Blacklist).
-- **Chaos Engineering:** Thử nghiệm độ bền của hệ thống khi có service bị die.
+- **mTLS:** Encrypt communication between Microservices.
+- **Valkey:** Used to manage the revoked token list (Blacklist).
+- **Chaos Engineering:** Test system resilience when a service dies.

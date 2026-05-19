@@ -1,107 +1,107 @@
 # Testing Patterns
 
-**Analysis Date:** 2025-02-13
+**Analysis Date:** 2025-05-14
 
 ## Test Framework
 
 **Runner:**
-- Go: Standard `go test`
-- Frontend: Playwright (`@playwright/test`)
+- Standard Go `testing` package.
+- `testify` for assertions and mocking.
 
 **Assertion Library:**
-- `testify/assert` and `testify/require` for Go.
+- `github.com/stretchr/testify/assert`
+- `github.com/stretchr/testify/suite`
 
 **Run Commands:**
 ```bash
-go test ./...              # Run all backend tests
-cd src/apps/farm-service && go test ./... # Run tests for specific service
-npm run test:e2e           # Run frontend E2E tests (Playwright)
+go test ./...              # Run all tests
+go test -v ./...           # Verbose mode
+go test -cover ./...       # Coverage
+make test                  # Shortcut via Makefile
 ```
 
 ## Test File Organization
 
 **Location:**
-- Backend: Co-located in `__tests__` subdirectories within the package they test (e.g., `internal/usecase/__tests__/`).
-- Frontend: `tests/` or co-located with components.
+- Unit tests are often in a `tests` or `__tests__` subdirectory within the component directory:
+  - `src/apps/farm-service/internal/usecase/tests/`
+  - `src/apps/farm-service/internal/infrastructure/repository/tests/`
+- Integration and E2E tests are located in:
+  - `src/apps/farm-service/__tests__/`
+  - `src/apps/farm-service/__tests__/e2e/`
 
 **Naming:**
-- Go: `[file]_test.go`
-- TypeScript: `[file].spec.ts` or `[file].test.ts`
+- Standard Go pattern: `*_test.go`.
 
 **Structure:**
 ```
-src/apps/[service]/
+[component]/
 ├── internal/
 │   ├── usecase/
 │   │   ├── farm_usecase.go
-│   │   └── __tests__/
+│   │   └── tests/
 │   │       └── farm_usecase_test.go
-│   └── infrastructure/
-│       └── repository/
-│           ├── farm_repository.go
-│           └── tests/
-│               └── farm_repository_test.go
-└── __tests__/
-    └── e2e/
-        └── security_test.go
+├── __tests__/
+│   ├── farm_test.go
+│   └── e2e/
+│       └── security_test.go
 ```
 
 ## Test Structure
 
-**Suite Organization (Go):**
+**Suite Organization:**
 ```go
-func TestCreateFarm(t *testing.T) {
-    // Setup
-    repo := new(MockRepository)
-    u := usecase.NewFarmUsecase(repo)
-    ctx := context.Background()
+// Using testify suite for E2E tests
+type SecurityTestSuite struct {
+	suite.Suite
+	// ... context
+}
 
-    // Mocking
-    repo.On("Create", mock.Anything, mock.Anything).Return(nil)
+func (s *SecurityTestSuite) SetupSuite() { /* ... */ }
+func (s *SecurityTestSuite) Test_Case() { /* ... */ }
 
-    // Execute
-    result, err := u.CreateFarm(ctx, farmReq)
-
-    // Assert
-    assert.NoError(t, err)
-    assert.NotNil(t, result)
-    repo.AssertExpectations(t)
+func TestSecuritySuite(t *testing.T) {
+	suite.Run(t, new(SecurityTestSuite))
 }
 ```
 
 **Patterns:**
-- **Setup pattern:** Initialize mocks and inject them into the service/usecase.
-- **Teardown pattern:** Not frequently needed in unit tests, but used in `testify/suite` for E2E.
-- **Assertion pattern:** Use `testify/assert` for non-fatal checks and `testify/require` for fatal ones.
+- **Setup/Teardown:** `SetupSuite` and `TearDownSuite` in `testify/suite`.
+- **Identity Mocking:** Injecting `identity.Claims` into `context.Context` using `identity.InjectContext`.
+- **Table-driven tests:** Often used for unit tests with multiple edge cases.
 
 ## Mocking
 
-**Framework:** `testify/mock`
+**Framework:** `github.com/stretchr/testify/mock`
 
 **Patterns:**
 ```go
 type MockRepository struct {
-    mock.Mock
+	mock.Mock
 }
 
 func (m *MockRepository) Create(ctx context.Context, farm *domain.Farm) error {
-    args := m.Called(ctx, farm)
-    return args.Error(0)
+	args := m.Called(ctx, farm)
+	return args.Error(0)
 }
+
+// In test:
+repo := new(MockRepository)
+repo.On("Create", ctx, mock.Anything).Return(nil)
 ```
 
 **What to Mock:**
-- Databases (Repositories)
-- External Service Clients (Kratos, Hydra, etc.)
-- Message Brokers (Kafka)
+- External dependencies (Repositories, Event Publishers, External APIs).
+- Identity/Authentication in context.
 
 **What NOT to Mock:**
-- Domain Entities
-- Internal helper functions or pure logic
+- Domain entities and their internal logic (`Validate()` methods).
+- Pure utility functions.
 
 ## Fixtures and Factories
 
 **Test Data:**
+- Domain objects are manually instantiated in tests:
 ```go
 farmReq := &domain.Farm{
     Name:       "Test Farm",
@@ -112,12 +112,11 @@ farmReq := &domain.Farm{
 ```
 
 **Location:**
-- Usually defined within the test file or a `shared_test.go` in the same `__tests__` directory.
+- Inline in test files or shared in a `tests` package if used across multiple files.
 
 ## Coverage
 
-**Requirements:**
-- Target: >80% code coverage for core business logic (UseCases).
+**Requirements:** None explicitly enforced in the current configuration, but standard coverage reporting is available.
 
 **View Coverage:**
 ```bash
@@ -128,32 +127,27 @@ go tool cover -html=coverage.out
 ## Test Types
 
 **Unit Tests:**
-- Focus: Business logic in `usecase` layer.
-- Isolation: Mocks all external dependencies.
-- Location: `internal/usecase/__tests__/`.
+- Test individual components (Usecases, Entities) in isolation.
+- Dependencies are mocked using `testify/mock`.
+- Files located in `internal/.../tests/`.
 
 **Integration Tests:**
-- Focus: Database queries and repository logic.
-- Isolation: Uses real (test) database, often via Docker/Testcontainers.
-- Location: `internal/infrastructure/repository/tests/`.
+- Test components with real dependencies (e.g., PostgreSQL, Casbin enforcer).
+- Databases are often cleaned up and migrated per test run: `src/apps/farm-service/internal/infrastructure/repository/tests/farm_repository_test.go`.
 
 **E2E Tests:**
-- Focus: Full request-response cycle, security gates, and service-to-service communication.
-- Setup: Requires full infrastructure (Postgres, Kafka, KrakenD, Kratos) to be running.
-- Location: `src/apps/[service]/__tests__/e2e/`.
-- Frontend: Playwright tests in `src/apps/client-app/`.
+- Test full flows through the API Gateway (KrakenD).
+- Verify cross-cutting concerns like security (Two-Gate AuthZ).
+- Files located in `__tests__/e2e/`.
 
 ## Common Patterns
 
 **Async Testing:**
-- Use channels or `Eventually` from Gomega (though not widely used here, standard `testify` patterns are preferred).
+- Use `go func()` with channels or `waitgroups` for testing background processes like the Outbox Relay.
 
 **Error Testing:**
-```go
-_, err := u.CreateFarm(ctx, invalidReq)
-assert.ErrorIs(t, err, errs.ErrValidation)
-```
+- Asserting specific sentinel errors: `assert.ErrorIs(t, err, errs.ErrValidation)`.
 
 ---
 
-*Testing analysis: 2025-02-13*
+*Testing analysis: 2025-05-14*

@@ -1,27 +1,27 @@
 # Sprint 4: The Resilient Farm (Transactional Outbox)
 
-**Trạng thái:** ✅ Hoàn thành (Completed)
-**Mục tiêu:** Đảm bảo mọi mẻ thu hoạch được ghi nhận 100% không mất dữ liệu ngay cả khi hệ thống phân tán gặp sự cố. Triển khai mẫu thiết kế Transactional Outbox Blueprint cho toàn dự án.
+**Status:** ✅ Completed
+**Goal:** Ensure every harvest batch is recorded with 100% data integrity even when the distributed system encounters failures. Implement the Transactional Outbox Blueprint as a project-wide pattern.
 
 ---
 
-## 📋 Trạng thái Ticket (Kanban)
+## 📋 Ticket Status (Kanban)
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
 | [RR-4.0](./RR-4.0/ticket.md) | [Tech] Refactor Farm Service: Migration & DI cleanup | ✅ Done | Tech Lead |
-| [RR-4.1](./RR-4.1/ticket.md) | [BA] Khai báo mẻ thu hoạch (Harvesting Management) | ✅ Done | Farm Manager |
+| [RR-4.1](./RR-4.1/ticket.md) | [BA] Harvest Batch Declaration (Harvesting Management) | ✅ Done | Farm Manager |
 | [RR-4.2](./RR-4.2/ticket.md) | [Tech] Transactional Outbox: Event Reliability | ✅ Done | Tech Lead |
 | [RR-22](./RR-22.md) | [Tech] Trace Service & CQRS Bootstrap | ✅ Done | Backend |
 
 ---
 
-## 💡 Tầm nhìn Nghiệp vụ (Business Vision)
-- **Data Integrity:** "Một hạt rơi, hệ thống biết". Tuyệt đối không để mất dữ liệu thu hoạch khi chuyển giao sang nhà máy.
-- **Real-time Awareness:** Các bộ phận phía sau (Warehouse) nhận được thông báo ngay khi có hàng rời khỏi nông trại.
-- **Professionalism:** Áp dụng chuẩn CloudEvents 1.0 để giao tiếp giữa các service chuyên nghiệp và dễ mở rộng.
+## 💡 Business Vision
+- **Data Integrity:** "A single bean drops, the system knows." Absolutely no harvest data should be lost when transitioning to the factory.
+- **Real-time Awareness:** Downstream departments (Warehouse) receive notifications as soon as goods leave the farm.
+- **Professionalism:** Adopt the CloudEvents 1.0 standard for professional and extensible inter-service communication.
 
-## 📊 Kết quả đạt được (Sprint Result)
-- Triển khai thành công bảng `outbox_events` và Relay Worker trong Farm Service.
-- Hoàn thiện API thu hoạch tích hợp cơ chế GORM Transaction (Atomic Write).
-- Sự kiện thu hoạch đã được bắn lên Kafka thành công và sẵn sàng để Warehouse tiêu thụ.
+## 📊 Sprint Result
+- Successfully implemented the `outbox_events` table and Relay Worker in the Farm Service.
+- Completed the Harvesting API integrated with the GORM Transaction mechanism (Atomic Write).
+- Harvest events are successfully published to Kafka and ready for consumption by the Warehouse.

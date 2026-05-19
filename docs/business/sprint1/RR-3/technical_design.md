@@ -1,15 +1,15 @@
 # Technical Plan - [RR-3] Core Framework - Base App & Error Handling
 
-## 🎯 Chiến lược triển khai (Strategy)
-- Xây dựng base app quản lý vòng đời ứng dụng.
-- Chuẩn hóa format lỗi theo RFC 9457.
+## 🎯 Strategy
+- Build a base app for application lifecycle management.
+- Standardize error format according to RFC 9457.
 
-## 🛠️ Các bước thực hiện (Implementation Steps)
+## 🛠️ Implementation Steps
 - [ ] Implement `pkg/base/app.go`.
-    - Quản lý signal và wait group cho graceful shutdown.
-    - Setup cơ chế Health Check cơ bản.
-- [ ] Implement `pkg/errs/problem.go` map các error Go sang struct Problem JSON.
+    - Manage signals and wait groups for graceful shutdown.
+    - Setup basic Health Check mechanism.
+- [ ] Implement `pkg/errs/problem.go` to map Go errors to the Problem JSON struct.
 
-## 🧪 Xác minh (Verification)
-- [ ] Kiểm tra cơ chế Graceful Shutdown bằng lệnh kill.
-- [ ] Mock lỗi và kiểm tra response body có đúng chuẩn RFC 9457.
+## 🧪 Verification
+- [ ] Verify the Graceful Shutdown mechanism using the kill command.
+- [ ] Mock errors and verify the response body follows the RFC 9457 standard.

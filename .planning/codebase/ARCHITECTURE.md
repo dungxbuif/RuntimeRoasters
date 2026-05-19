@@ -1,35 +1,41 @@
-<!-- refreshed: 2025-02-13 -->
+<!-- refreshed: 2025-05-15 -->
 # Architecture
 
-**Analysis Date:** 2025-02-13
+**Analysis Date:** 2025-05-15
 
 ## System Overview
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                      Client App / Frontend                   │
-│         `src/apps/client-app`                                │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-                            ▼
+│                      Edge & Client Layer                    │
+│      Next.js Client App / KrakenD API Gateway               │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      API Gateway (KrakenD)                   │
-│         `deployments/krakend`                                │
-├──────────────────┬──────────────────┬───────────────────────┤
-│   auth-service   │  farm-service    │ warehouse-service     │
-│ `src/apps/auth-*`│ `src/apps/farm-*`│ `src/apps/warehouse-*`│
-└────────┬─────────┴────────┬─────────┴──────────┬────────────┘
-         │                  │                     │
-         ▼                  ▼                     ▼
+│                    Identity & Security                      │
+│        Ory Kratos (Identity) / Ory Hydra (OAuth2)           │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Shared Infrastructure                     │
-│         `src/pkg/` (database, kafka, telemetry, etc.)        │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
+│                    Core Business Services                   │
+│  `src/apps/farm-service`     `src/apps/retail-service`      │
+│  `src/apps/warehouse-service` `src/apps/logistics-service`   │
+└────────┬─────────────────┬──────────────────┬───────────────┘
+         │                 │                  │
+         ▼                 ▼                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  PostgreSQL / Valkey / Kafka / Ory Kratos                    │
-│  `deployments/docker-compose.dev.yaml`                       │
+│                    Support & Intelligence                   │
+│  `src/apps/trace-service` (CQRS)                            │
+│  `src/apps/audit-service` (Immutable Logs)                  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Data & Messaging Backbone                  │
+│  Kafka (Events) / Postgres (ACID) / Elasticsearch (Search)  │
+│  Cassandra (Audit) / Valkey (Cache)                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -37,133 +43,109 @@
 
 | Component | Responsibility | File |
 |-----------|----------------|------|
-| API Gateway | Entry point, routing, JWT validation (Gate 1) | `deployments/krakend/krakend.json` |
-| Microservices | Domain logic, data processing, async events | `src/apps/farm-service/cmd/main.go` |
-| Auth Service | Centralized role management (Casbin snapshot) | `src/apps/auth-service/cmd/main.go` |
-| Client App | UI for user interaction | `src/apps/client-app/src/app/page.tsx` |
-| Common Libs | Database, logging, telemetry, kafka clients | `src/pkg/base/app.go` |
+| **API Gateway** | Entry point, JWT validation, rate limiting, request muxing. | `deployments/krakend/krakend.json` |
+| **Auth Service** | Casbin policy authority and user proxy. | `src/apps/auth-service` |
+| **Farm Service** | Manages plantations, coffee batches, and harvest records. | `src/apps/farm-service` |
+| **Retail Service** | Handles the Order SAGA, customer profiles, and storefront logic. | `src/apps/retail-service` |
+| **Warehouse Service** | Inventory management and real-time stock reservation. | `src/apps/warehouse-service` |
+| **Logistics Service** | Real-time driver GPS tracking and route calculation. | `src/apps/logistics-service` |
+| **Trace Service** | The "Read Model" for supply chain traceability using CQRS. | `src/apps/trace-service` |
+| **Audit Service** | Immutable append-only log of significant system events. | `src/apps/audit-service` |
 
 ## Pattern Overview
 
-**Overall:** Microservices with Clean Architecture
+**Overall:** Microservices + Clean Architecture (Hexagonal)
 
 **Key Characteristics:**
-- **Calculated Consistency:** Uses Transactional Outbox for critical event publishing.
-- **Observability by Design:** Built-in W3C tracing, metrics, and log correlation via OpenTelemetry.
-- **Fail-Closed Security:** Three-Gate Authorization (KrakenD -> Interceptor -> Repository scope).
-- **Stateless Services:** Designed for horizontal scalability.
+- **Event-Driven Core:** Asynchronous communication via Apache Kafka for eventual consistency.
+- **Transactional Outbox:** Ensures data consistency between database updates and Kafka publishing.
+- **Polyglot Persistence:** Different databases optimized for specific workloads (Postgres, Cassandra, ES, Valkey).
 
 ## Layers
 
-**Domain Layer:**
-- Purpose: Core entities and domain-specific errors. No external dependencies.
-- Location: `src/apps/farm-service/internal/domain/`
-- Contains: Structs, enums, pure functions.
-- Depends on: Nothing outside the project.
-- Used by: UseCase, Infrastructure, Delivery.
-
-**UseCase Layer:**
-- Purpose: Application business rules, coordinates domain entities and repositories.
-- Location: `src/apps/farm-service/internal/usecase/`
-- Contains: Interactors, Repository Interfaces.
-- Depends on: Domain layer.
-- Used by: Delivery layer.
-
-**Infrastructure Layer:**
-- Purpose: Database implementations, external API clients, message brokers.
-- Location: `src/apps/farm-service/internal/infrastructure/`
-- Contains: GORM Repositories, Kafka Publishers, Outbox Relays.
-- Depends on: UseCase, Domain, `src/pkg/*`.
-- Used by: Main (Composition Root).
-
-**Delivery Layer:**
-- Purpose: Exposing the application to external consumers (gRPC, HTTP).
-- Location: `src/apps/farm-service/internal/delivery/grpc/`
-- Contains: gRPC handlers, DTO mapping.
-- Depends on: UseCase layer.
-- Used by: Framework routing (`src/pkg/base`).
+**Service Layer (Clean Architecture):**
+- **Purpose:** Decouples business logic from infrastructure and external interfaces.
+- **Location:** `src/apps/[service]/internal/`
+- **Contains:** 
+  - `domain/`: Business entities and repository interfaces.
+  - `usecase/`: Application logic and business rules.
+  - `app/`: Dependency injection and application bootstrapping.
+- **Depends on:** Nothing (Domain), Domain (Usecase).
+- **Used by:** External transport layers (gRPC/HTTP).
 
 ## Data Flow
 
-### Primary Request Path (gRPC Gateway)
+### Primary Request Path (Synchronous)
 
-1. Client request hits Gateway (`deployments/krakend`)
-2. Request routed to Service Gateway / HTTP fallback (`src/pkg/base/app.go`)
-3. gRPC Interceptor validates AuthZ (`src/pkg/base/casbin/transport/grpc/interceptor.go`)
-4. Delivery Handler receives request (`src/apps/farm-service/internal/delivery/grpc/farm_handler.go`)
-5. UseCase executes business logic (`src/apps/farm-service/internal/usecase/farm_usecase.go`)
-6. Repository persists data (`src/apps/farm-service/internal/infrastructure/repository/farm_repository.go`)
+1. **Client Request:** Next.js app sends REST request to KrakenD.
+2. **Gateway:** KrakenD validates JWT via Hydra and checks RBAC. (`deployments/krakend/krakend.json`)
+3. **Muxing:** KrakenD forwards request to backend service via gRPC.
+4. **Service App:** `init.go` handles gRPC server and routes to `usecase`. (`src/apps/[service]/internal/app/init.go`)
+5. **Usecase:** Business logic executes, interacting with `domain` models. (`src/apps/[service]/internal/usecase/service.go`)
+6. **Persistence:** GORM saves state to Postgres. (`src/apps/[service]/internal/domain/models.go`)
 
-### Asynchronous Event Publishing (Transactional Outbox)
+### Event-Driven Path (Asynchronous)
 
-1. UseCase saves entity AND `OutboxEvent` in one DB transaction (`src/apps/farm-service/internal/usecase/harvest_usecase.go`).
-2. Outbox Relay worker polls/listens for new events (`src/apps/farm-service/internal/infrastructure/event/outbox_relay.go`).
-3. Publisher sends event to Kafka (`src/apps/farm-service/internal/infrastructure/event/publisher.go`).
-4. Relay marks Outbox event as processed.
+1. **Transaction:** Service updates DB and writes to `outbox_events` in one transaction.
+2. **Relay:** A background worker (or DB trigger) picks up outbox events and publishes to Kafka.
+3. **Consumption:** Downstream services (e.g., `trace-service`) consume from Kafka.
+4. **Projection:** `trace-service` updates its read model in Elasticsearch. (`src/apps/trace-service/internal/search/elasticsearch.go`)
+
+**State Management:**
+- Stateless services; all persistent state is in databases or Kafka. Session data managed by Ory Kratos.
 
 ## Key Abstractions
 
-**Base App Framework:**
-- Purpose: Standardized microservice bootstrapping (Gin, gRPC, OTel, Zap, Health).
-- Examples: `src/pkg/base/app.go`
-- Pattern: Builder / Composition.
+**Transactional Outbox:**
+- Purpose: Guarantees "at-least-once" delivery of events.
+- Examples: `src/pkg/events/contracts.go`
+- Pattern: Local table + background publisher.
 
-**Auth Enforcer:**
-- Purpose: In-memory Casbin enforcer with background sync.
-- Examples: `src/pkg/base/casbin/resilient_reader.go`
-- Pattern: Polling/Snapshot replication.
-
-**Transactional Outbox/Inbox:**
-- Purpose: Reliable messaging without dual-write issues.
-- Examples: `src/apps/farm-service/internal/domain/outbox_event.go`
-- Pattern: Outbox Pattern.
+**Two-Gate Authorization:**
+- Purpose: Secure the system at the edge and at the service level.
+- Examples: `deployments/krakend/krakend.json` (Gate 1), `src/pkg/base/casbin/` (Gate 2).
+- Pattern: KrakenD (RBAC) + Casbin Enforcer (Fine-grained AuthZ).
 
 ## Entry Points
 
-**Microservice Bootstrap:**
-- Location: `src/apps/farm-service/cmd/main.go` -> `src/apps/farm-service/internal/app/init.go`
-- Triggers: Application startup.
-- Responsibilities: Manual Dependency Injection, connecting to DB/Kafka, starting base app.
+**gRPC Server:**
+- Location: `src/apps/[service]/internal/app/init.go`
+- Triggers: Inbound gRPC calls from Gateway or other services.
+- Responsibilities: Server lifecycle, interceptors (telemetry, auth).
+
+**Main CMD:**
+- Location: `src/apps/[service]/cmd/main.go`
+- Triggers: Service startup.
+- Responsibilities: Config loading, logging setup, app initialization.
 
 ## Architectural Constraints
 
-- **Dependency Rule:** Inner layers (Domain) MUST NOT import outer layers (Infrastructure/Delivery).
-- **Internal Communication:** Exclusively gRPC between services. No HTTP internal calls.
-- **Manual DI:** No reflection-based DI frameworks (like Uber Dig). Services use manual composition in `init.go`.
-- **Three-Gate Authorization:** 
-  1. Identity via KrakenD
-  2. RPC Method authz via Casbin gRPC Interceptor
-  3. Data-level authz via Scoped Repositories (Gorm Scopes)
+- **Single Module:** All code resides in one Go module `github.com/dungxbuif/RuntimeRoasters` located in `src/`.
+- **Statelessness:** Services must not store session state locally.
+- **Observability:** Every service must use OTel for tracing. (`src/pkg/telemetry/`)
 
 ## Anti-Patterns
 
-### Direct Database Access from Delivery Layer
+### Circular Dependencies
 
-**What happens:** Delivery handler directly calls DB functions.
-**Why it's wrong:** Bypasses business logic, violates Clean Architecture, makes unit testing difficult.
-**Do this instead:** Define an interface in `usecase`, implement it in `infrastructure/repository`, and inject it into the handler via the usecase.
-
-### Dual-Write to DB and Kafka
-
-**What happens:** Calling DB save and Kafka publish synchronously in the same function.
-**Why it's wrong:** If Kafka is down, the DB transaction succeeds but the event is lost, causing system inconsistency.
-**Do this instead:** Use the Transactional Outbox pattern (`src/apps/farm-service/internal/infrastructure/event/outbox_relay.go`).
+**What happens:** Attempting to import `service A` in `service B` and vice versa.
+**Why it's wrong:** Breaks Go compilation and creates tight coupling.
+**Do this instead:** Use Kafka events for decoupling or move shared logic to `src/pkg/`.
 
 ## Error Handling
 
-**Strategy:** Centralized RFC 9457 (Problem Details).
+**Strategy:** Centralized error handling using a custom error package.
 
 **Patterns:**
-- Errors generated in domain/usecase use standard types (`src/pkg/errs`).
-- Delivery layer translates them to gRPC/HTTP status codes via middlewares/interceptors.
-- `src/pkg/errs/renderer.go` formats the output.
+- **Domain Errors:** Defined in `src/pkg/errs/`.
+- **gRPC Interceptors:** Translate internal errors to gRPC status codes. (`src/pkg/base/auth/transport/grpc/interceptor.go`)
 
 ## Cross-Cutting Concerns
 
-**Logging:** Structured logging using Uber Zap (`src/pkg/logger`). Enriched with Trace IDs.
-**Validation:** Domain entities contain `Validate()` methods (`src/apps/farm-service/internal/domain/farm.go`).
-**Authentication:** Ory Kratos/Hydra via OAuth2/OIDC. Interceptors extract Identity from context (`src/pkg/base/identity`).
+**Logging:** Structured JSON logging using Zap. (`src/pkg/logger/`)
+**Validation:** Request validation using `go-playground/validator`.
+**Authentication:** JWT-based identity propagation. (`src/pkg/base/identity/`)
 
 ---
 
-*Architecture analysis: 2025-02-13*
+*Architecture analysis: 2025-05-15*

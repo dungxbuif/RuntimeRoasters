@@ -1,13 +1,14 @@
-# Lộ trình Phát triển RuntimeRoasters (Master Plan)
+# RuntimeRoasters Development Roadmap (Master Plan)
 
-**Mục tiêu cốt lõi:** Xây dựng hệ thống Microservices mẫu mực — kiến trúc phân tán, Event-Driven, Saga Pattern, Observability (Ưu tiên Manual DI & Selective Outbox).
+**Core Goal:** Build an exemplary Microservices system — distributed architecture, Event-Driven, Saga Pattern, Observability (Priority on Manual DI & Selective Outbox).
 
 ---
 
-## 🚀 Tổng quan Roadmap (Sprints 4-12)
+## 🚀 Roadmap Overview (Sprints 4-12)
 
 | Sprint | Goal | Key Deliverables (Business + Tech) |
 | :--- | :--- | :--- |
+| **Emergency** | **Final Demo Flow Recovery** | TraceId verification, end-to-end Farm -> Warehouse -> Paid Order -> Retail logistics, public QR trace demo. |
 | **S4** | **The Resilient Farm** | Transactional Outbox, Reliable Harvesting API, CloudEvents Blueprint. |
 | **S5** | **Warehouse & Processing** | Unified Warehouse Service, Coffee Processing State Machine, Inventory & Saga Participant. |
 | **S6** | **Retail & Order Saga** | Retail Service, Saga Orchestrator (Choreography), Idempotent Ordering. |
@@ -20,44 +21,49 @@
 
 ---
 
-## 📋 Chi tiết các Sprint (Tiến độ)
+## 📋 Sprint Details (Progress)
 
 ### [x] Sprint 1-3: Foundation & Farm Core (Completed)
-Hoàn tất hạ tầng cơ bản và các API CRUD cho Farm Service.
+Completion of basic infrastructure and CRUD APIs for the Farm Service.
 
 ### [x] Sprint 4: The Resilient Farm (Completed)
-- **Goal:** Đảm bảo thu hoạch không bao giờ mất dữ liệu và dọn dẹp nợ kỹ thuật Sprint 3.
+- **Goal:** Ensure harvest data is never lost and clean up Sprint 3 technical debt.
 - **Tickets:** [RR-4.0], [RR-4.1], [RR-4.2].
-- Chi tiết: [`docs/business/sprint4/main.md`](./sprint4/main.md)
+- Details: [`docs/business/sprint4/main.md`](./sprint4/main.md)
+
+### [ ] Emergency Sprint: Final Demo Flow Recovery
+- **Goal:** Recover missing cross-sprint end-to-end demo flow before production-demo review.
+- **Critical First Ticket:** Verify traceId propagation across the whole system.
+- Details: [`docs/business/sprint-emergency-final-demo/main.md`](./sprint-emergency-final-demo/main.md)
 
 ### [ ] Sprint 5: Warehouse & Processing
-- **Goal:** Hợp nhất quy trình nhà máy và kho bãi. Xử lý hạt từ lúc nhập kho sau thu hoạch, qua rang xay đến lưu kho thành phẩm và giữ hàng cho Saga.
-- Chi tiết: [`docs/business/sprint5/main.md`](./sprint5/main.md)
+- **Goal:** Consolidate factory and warehouse processes. Handle beans from post-harvest intake, through roasting to finished goods storage and inventory reservation for Saga.
+- Details: [`docs/business/sprint5/main.md`](./sprint5/main.md)
 
 ### [ ] Sprint 6: Retail & Order Saga
-- **Goal:** Đặt hàng và điều phối chuỗi cung ứng tự động (Choreography Saga).
-- Chi tiết: [`docs/business/sprint6/main.md`](./sprint6/main.md)
+- **Goal:** Automated ordering and supply chain coordination (Choreography Saga).
+- Details: [`docs/business/sprint6/main.md`](./sprint6/main.md)
 
 ### [ ] Sprint 7: Real-time Logistics
-- **Goal:** Theo dõi xe vận chuyển trên bản đồ.
-- Chi tiết: [`docs/business/sprint7/main.md`](./sprint7/main.md)
+- **Goal:** Real-time transport vehicle tracking on a map.
+- Details: [`docs/business/sprint7/main.md`](./sprint7/main.md)
 
 ### [ ] Sprint 8: Financial Integrity
-- **Goal:** Thanh toán thực và hoàn tiền tự động.
-- Chi tiết: [`docs/business/sprint8/main.md`](./sprint8/main.md)
+- **Goal:** Real payments and automated refunds.
+- Details: [`docs/business/sprint8/main.md`](./sprint8/main.md)
 
 ### [ ] Sprint 9: Traceability (CQRS)
-- **Goal:** Truy xuất nguồn gốc tốc độ cao.
-- Chi tiết: [`docs/business/sprint9/main.md`](./sprint9/main.md)
+- **Goal:** High-speed origin traceability.
+- Details: [`docs/business/sprint9/main.md`](./sprint9/main.md)
 
 ### [ ] Sprint 10: Observability & Audit
-- **Goal:** Giám sát toàn diện và Audit log bất biến.
-- Chi tiết: [`docs/business/sprint10/main.md`](./sprint10/main.md)
+- **Goal:** Comprehensive monitoring and immutable audit logs.
+- Details: [`docs/business/sprint10/main.md`](./sprint10/main.md)
 
 ### [ ] Sprint 11: Hardening & Grand Finale
-- **Goal:** Bảo mật mTLS, xử lý nợ kỹ thuật tồn đọng (PgBouncer, Token Revocation).
-- Chi tiết: [`docs/business/sprint11/main.md`](./sprint11/main.md)
+- **Goal:** mTLS security, handling outstanding technical debt (PgBouncer, Token Revocation).
+- Details: [`docs/business/sprint11/main.md`](./sprint11/main.md)
 
 ### [ ] Sprint 12: Project Polish
-- **Goal:** Load testing, dọn dẹp code và Demo tổng thể.
-- Chi tiết: [`docs/business/sprint12/main.md`](./sprint12/main.md)
+- **Goal:** Load testing, code cleanup, and overall Demo.
+- Details: [`docs/business/sprint12/main.md`](./sprint12/main.md)

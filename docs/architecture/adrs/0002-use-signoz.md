@@ -1,13 +1,13 @@
-# ADR 0002: Lựa chọn SigNoz thay cho Stack truyền thống (Prometheus/Jaeger/Loki)
+# ADR 0002: Choosing SigNoz over traditional stack (Prometheus/Jaeger/Loki)
 
-**Trạng thái:** 🔴 REVERTED (Đã gỡ bỏ - 2026-05-10)
+**Status:** 🔴 REVERTED (Removed - 2026-05-10)
 
-## Bối cảnh (Context)
-Dự án ban đầu lựa chọn SigNoz làm nền tảng Observability tập trung để thay thế cho việc dựng lẻ tẻ các container Jaeger, Prometheus, v.v.
+## Context
+The project initially chose SigNoz as a centralized Observability platform to replace individual containers for Jaeger, Prometheus, etc.
 
-## Quyết định (Decision)
-Dừng sử dụng SigNoz và ClickHouse trong giai đoạn hiện tại để giảm bớt tài nguyên máy local cho Developer. Hệ thống sẽ quay lại sử dụng các giải pháp nhẹ hơn (ví dụ: Jaeger chạy lẻ) hoặc tập trung hoàn thiện logic nghiệp vụ trước.
+## Decision
+Discontinue the use of SigNoz and ClickHouse for now to reduce local resource usage for developers. The system will revert to lighter solutions (e.g., standalone Jaeger) or focus on completing business logic first.
 
-## Hậu quả (Consequences)
-- Phải cập nhật lại `docker-compose.dev.yaml` và cấu hình telemetry trong code.
-- Giảm tải cho RAM/CPU máy dev (ClickHouse chiếm khá nhiều tài nguyên).
+## Consequences
+- Must update `docker-compose.dev.yaml` and telemetry configuration in the code.
+- Reduces RAM/CPU load on dev machines (ClickHouse consumes significant resources).

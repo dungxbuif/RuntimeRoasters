@@ -1,27 +1,27 @@
 # Sprint 3: Farm Service & Vertical Slice
 
-**Trạng thái:** ✅ Hoàn thành (Completed)
-**Mục tiêu:** Hoàn thiện dịch vụ Quản lý Nông trại (Farm Service) với đầy đủ tính năng nghiệp vụ, áp dụng phong cách Vertical Slice kết hợp với Clean Architecture để đảm bảo tính sẵn sàng cho quy trình thu hoạch.
+**Status:** ✅ Completed
+**Goal:** Finalize the Farm Management Service with full business features, applying a Vertical Slice approach combined with Clean Architecture to ensure readiness for the harvesting process.
 
 ---
 
-## 📋 Trạng thái Ticket (Kanban)
+## 📋 Ticket Status (Kanban)
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
 | [RR-15](./RR-15/ticket.md) | [Tech] Farm Service: Scaffolding & Composition Root | ✅ Done | Tech Lead |
-| [RR-16](./RR-16/ticket.md) | [BA] Quản lý Danh mục Nông trại (Create & List) | ✅ Done | Product Owner |
+| [RR-16](./RR-16/ticket.md) | [BA] Farm Catalog Management (Create & List) | ✅ Done | Product Owner |
 | [RR-17](./RR-17/ticket.md) | [Tech] Farm CRUD: Update & Delete Logic | ✅ Done | Backend |
-| [RR-18](./RR-18/ticket.md) | [BA] Quản lý Lô đất & Quy hoạch Vùng trồng | ✅ Done | Farm Manager |
+| [RR-18](./RR-18/ticket.md) | [BA] Land Parcel & Growing Region Planning | ✅ Done | Farm Manager |
 
 ---
 
-## 💡 Tầm nhìn Nghiệp vụ (Business Vision)
-- **Digital Farm Twin:** Mỗi nông trại thực tế phải được phản ánh chính xác trên hệ thống với các thông số về diện tích, độ cao và loại cà phê chủ đạo.
-- **Resource Management:** Giúp người quản lý nắm bắt được năng lực sản xuất của từng vùng nguyên liệu (Cầu Đất, Buôn Ma Thuột,...).
-- **Foundation for Traceability:** Thông tin nông trại là "gốc" của toàn bộ chuỗi truy xuất nguồn gốc phía sau.
+## 💡 Business Vision
+- **Digital Farm Twin:** Every real-world farm must be accurately reflected in the system with parameters such as area, altitude, and primary coffee type.
+- **Resource Management:** Help managers grasp the production capacity of each raw material region (Cau Dat, Buon Ma Thuot, etc.).
+- **Foundation for Traceability:** Farm information is the "root" of the entire subsequent traceability chain.
 
-## 📊 Kết quả đạt được (Sprint Result)
-- Khởi tạo thành công Farm Service với đầy đủ các tầng Clean Architecture.
-- Hoàn thiện bộ API quản lý Nông trại (CRUD).
-- Tích hợp phân quyền Casbin: Chỉ Farm Manager/FarmAdmin mới được quản lý dữ liệu nông trại của họ.
+## 📊 Sprint Result
+- Successfully initialized the Farm Service with all Clean Architecture layers.
+- Completed the Farm Management API suite (CRUD).
+- Integrated Casbin authorization: Only Farm Managers/Farm Admins can manage their respective farm data.

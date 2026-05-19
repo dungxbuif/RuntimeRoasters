@@ -1,103 +1,101 @@
 # Codebase Structure
 
-**Analysis Date:** 2025-02-13
+**Analysis Date:** 2025-05-15
 
 ## Directory Layout
 
 ```
 [project-root]/
-├── api/                # Protobuf definitions (Contracts)
-├── deployments/        # Infrastructure & Environment Config
-├── docs/               # Architecture, Engineering, Business docs
-└── src/                # Polyglot Source Code
-    ├── apps/           # Microservices (Go/Next.js)
-    ├── pkg/            # Shared Go Libraries (Internal Framework)
-    ├── runtime/        # Generated Go code from Protos
-    └── scripts/        # Utility scripts
+├── api/                # gRPC/Protobuf contract definitions (Buf)
+├── deployments/        # Infrastructure configuration (Docker, SQL, Ory, KrakenD)
+├── docs/               # Technical and business documentation
+├── src/                # Core Go source code (Monorepo module)
+│   ├── apps/           # Microservice implementations
+│   ├── pkg/            # Shared libraries and internal framework
+│   ├── runtime/        # Generated gRPC code and local service stubs
+│   └── scripts/        # Utility scripts (seeders, simulations)
+├── go.work             # Go workspace configuration
+└── Taskfile.yml        # Project-wide task runner (automation)
 ```
 
 ## Directory Purposes
 
 **api/:**
-- Purpose: Source of truth for service contracts (gRPC/Protobuf).
-- Contains: `.proto` files organized by service and version.
-- Key files: `api/runtime/farm/v1/farm.proto`
+- Purpose: Source of truth for all service interfaces and event schemas.
+- Contains: `.proto` files organized by domain.
+- Key files: `api/buf.yaml`, `api/runtime/farm/v1/farm.proto`.
 
 **src/apps/:**
-- Purpose: Individual microservices implementation.
-- Contains: Subdirectories for each service (`farm-service`, `auth-service`, `client-app`).
-- Key files: `src/apps/farm-service/cmd/main.go`
+- Purpose: Isolated microservice implementations.
+- Contains: Business logic, persistence adapters, and service bootstrap code.
+- Key directories: `src/apps/farm-service`, `src/apps/retail-service`.
 
 **src/pkg/:**
-- Purpose: Shared internal libraries to ensure consistency across services.
-- Contains: Core modules like `base` (app framework), `database`, `kafka`, `telemetry`.
-- Key files: `src/pkg/base/app.go`, `src/pkg/database/postgres.go`
-
-**src/runtime/:**
-- Purpose: Target for Protobuf code generation.
-- Contains: Generated Go gRPC and Gateway code.
-- Key files: `src/runtime/farm/v1/farm.pb.go`
+- Purpose: Reusable code shared across multiple services.
+- Contains: Database helpers, logging, telemetry, and base security logic.
+- Key packages: `src/pkg/base` (Auth/Casbin), `src/pkg/telemetry` (OTel), `src/pkg/logger`.
 
 **deployments/:**
-- Purpose: Orchestration and configuration for local and production environments.
-- Contains: `docker-compose.yaml`, gateway configs (`krakend/`), identity configs (`kratos/`, `hydra/`).
+- Purpose: Environment setup and infrastructure as code.
+- Contains: Docker Compose files, SQL seed scripts, and configuration for edge services (Ory, KrakenD).
+- Key files: `deployments/docker-compose.dev.yaml`, `deployments/krakend/krakend.json`.
 
 ## Key File Locations
 
 **Entry Points:**
-- `src/apps/farm-service/cmd/main.go`: Farm service entry point.
-- `src/apps/client-app/src/app/page.tsx`: Web client entry point.
+- `src/apps/[service]/cmd/main.go`: Service startup logic.
+- `deployments/seed.sh`: Main data seeding script.
 
 **Configuration:**
-- `src/apps/farm-service/config/config.go`: Service-specific configuration loader.
-- `deployments/krakend/krakend.json`: API Gateway routing and security config.
+- `src/apps/[service]/config/config.go`: Service-specific configuration structures.
+- `.env.example`: Template for environment variables.
 
 **Core Logic:**
-- `src/apps/farm-service/internal/usecase/`: Business rules and application logic.
-- `src/apps/farm-service/internal/domain/`: Domain entities and pure logic.
+- `src/apps/[service]/internal/usecase/service.go`: Primary business logic implementation.
+- `src/apps/[service]/internal/domain/models.go`: Domain entities and interfaces.
 
 **Testing:**
-- `src/apps/farm-service/__tests__/`: Integration tests for the service.
-- `src/apps/farm-service/internal/usecase/tests/`: Unit tests for use cases.
+- `src/pkg/**/__tests__/`: Unit tests for shared packages.
+- `src/apps/[service]/internal/**_test.go`: Service-level tests.
 
 ## Naming Conventions
 
 **Files:**
-- Go: snake_case (e.g., `farm_repository.go`)
-- TypeScript: kebab-case or PascalCase for components (e.g., `FarmList.tsx`)
+- Go Source: `snake_case.go` (e.g., `init_db.go`).
+- Protobuf: `snake_case.proto` (e.g., `farm_service.proto`).
 
 **Directories:**
-- Go packages: lowercase, single word where possible.
-- Components: lowercase kebab-case.
+- Services: `kebab-case` (e.g., `farm-service`).
+- Go Packages: `lowercase` (e.g., `telemetry`).
 
 ## Where to Add New Code
 
-**New Feature (Backend):**
-- Primary code: `src/apps/[service]/internal/usecase/`
-- Data access: `src/apps/[service]/internal/infrastructure/repository/`
-- API contract: `api/runtime/[service]/v[N]/[feature].proto`
-- Delivery: `src/apps/[service]/internal/delivery/grpc/`
-- Tests: `src/apps/[service]/internal/usecase/tests/`
+**New Microservice:**
+1. Create directory in `src/apps/[new-service]`.
+2. Define structure: `cmd/`, `config/`, `internal/app`, `internal/domain`, `internal/usecase`.
+3. Register in `Taskfile.yml` if needed.
 
-**New Component (Frontend):**
-- Implementation: `src/apps/client-app/src/components/`
-- Page: `src/apps/client-app/src/app/[route]/`
+**New API Endpoint:**
+1. Define in `api/runtime/[domain]/v1/[service].proto`.
+2. Run `buf generate` to update generated code in `src/runtime/`.
+3. Implement handler in `src/apps/[service]/internal/app/init.go`.
 
-**Utilities:**
-- Shared Go helpers: `src/pkg/[relevant-package]/`
-- Shared React hooks: `src/apps/client-app/src/hooks/`
+**New Shared Utility:**
+1. Create new package in `src/pkg/[utility-name]`.
+2. Ensure it doesn't depend on `src/apps/`.
 
 ## Special Directories
 
 **src/runtime/:**
-- Purpose: Contains code generated by `buf`.
-- Generated: Yes
-- Committed: Yes (standard for this project to ensure builds are reproducible without local `buf` installation).
+- Purpose: Contains code generated from Protobuf definitions.
+- Generated: Yes (via Buf).
+- Committed: Yes.
 
-**deployments/hydra/ & deployments/kratos/:**
-- Purpose: Specific configuration for Ory Identity Stack.
-- Committed: Yes
+**.planning/:**
+- Purpose: GSD-specific planning and codebase mapping documents.
+- Generated: Yes.
+- Committed: Yes.
 
 ---
 
-*Structure analysis: 2025-02-13*
+*Structure analysis: 2025-05-15*

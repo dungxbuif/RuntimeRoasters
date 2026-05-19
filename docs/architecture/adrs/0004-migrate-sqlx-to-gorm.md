@@ -1,23 +1,23 @@
-# ADR 0004: Chuyển đổi từ sqlx sang GORM
+# ADR 0004: Migrating from sqlx to GORM
 
-## Trạng thái
+## Status
 **Accepted**
 
-## Bối cảnh (Context)
-Trong Sprint 1 và đầu Sprint 2, dự án sử dụng `sqlx` để tương tác với cơ sở dữ liệu PostgreSQL. `sqlx` mang lại tốc độ cao và cho phép viết Raw SQL linh hoạt.
-Tuy nhiên, khi tiến vào Sprint 3 (Farm Service - RR-16) và các tính năng phức tạp hơn, việc quản lý quan hệ (Relationships), tự động hóa các thao tác CRUD cơ bản, và xử lý Transaction bằng raw SQL trở nên lặp đi lặp lại và dễ xảy ra lỗi con người.
+## Context
+In Sprint 1 and early Sprint 2, the project used `sqlx` to interact with the PostgreSQL database. `sqlx` offered high performance and flexibility for writing raw SQL.
+However, entering Sprint 3 (Farm Service - RR-16) with more complex features, managing relationships, automating basic CRUD operations, and handling transactions with raw SQL became repetitive and prone to human error.
 
-## Quyết định (Decision)
-Thay thế hoàn toàn `sqlx` bằng **GORM**.
-- Cập nhật wrapper trong `pkg/database/postgres.go` để khởi tạo kết nối thông qua `gorm.DB`.
-- Sửa lại các Repositories (ví dụ: FarmRepository) để tận dụng cú pháp Chain của GORM (`db.Where().First()`, `db.Create()`).
-- Bọc logic quản lý Database Transaction bằng hàm `WithTx` sử dụng `gorm.Transaction()`.
+## Decision
+Completely replace `sqlx` with **GORM**.
+- Update the wrapper in `pkg/database/postgres.go` to initialize connections through `gorm.DB`.
+- Refactor Repositories (e.g., FarmRepository) to leverage GORM's chaining syntax (`db.Where().First()`, `db.Create()`).
+- Wrap database transaction management logic with a `WithTx` function using `gorm.Transaction()`.
 
-## Hậu quả (Consequences)
-- **Tích cực:** Tăng tốc độ phát triển (Developer Velocity) do không phải viết boilerplate SQL cho các thao tác cơ bản. Dễ dàng xử lý các quan hệ dữ liệu phức tạp (Has-Many, Belongs-To) mà không cần JOIN thủ công.
-- **Tiêu cực:** Có độ trễ nhất định (overhead) so với Raw SQL do GORM sử dụng reflection. Đội ngũ cần hiểu rõ cơ chế Preload của GORM để tránh lỗi N+1 Query.
+## Consequences
+- **Positive:** Increases Developer Velocity by eliminating boilerplate SQL for basic operations. Simplifies handling complex data relationships (Has-Many, Belongs-To) without manual JOINs.
+- **Negative:** Introduces some overhead compared to raw SQL due to GORM's use of reflection. The team must understand GORM's Preload mechanism to avoid N+1 Query issues.
 
-## Nguồn tham khảo
+## References
 - **Sprint:** Cuối Sprint 2 / Đầu Sprint 3.
 - **Ticket:** RR-16 (Technical Design: Farm Repository).
-- **Thảo luận:** Yêu cầu chuyển đổi ORM từ phía Developer ("Chuyển thành gorm tôi sẽ dùng gorm").
+- **Discussion:** Developer request to switch ORM ("Switch to GORM, I will use GORM").

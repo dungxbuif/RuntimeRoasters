@@ -1,16 +1,16 @@
 # Technical Plan - [RR-2] Core Framework - Config & Logger
 
-## 🎯 Chiến lược triển khai (Strategy)
-- Sử dụng Viper để quản lý cấu hình từ nhiều nguồn (env, file).
-- Sử dụng Zap làm logger hiệu năng cao, hỗ trợ log có cấu trúc.
+## 🎯 Implementation Strategy
+- Use Viper to manage configuration from multiple sources (env, file).
+- Use Zap as a high-performance logger supporting structured logging.
 
-## 🛠️ Các bước thực hiện (Implementation Steps)
-- [ ] Implement `pkg/config/config.go` sử dụng `spf13/viper`.
-- [ ] Implement `pkg/logger/logger.go` sử dụng `uber-go/zap`.
-    - Hỗ trợ Log Level qua biến môi trường `LOG_LEVEL`.
-    - Hỗ trợ định dạng Console cho Dev và JSON cho Prod.
-- [ ] Tạo file `.env.example` làm mẫu.
+## 🛠️ Implementation Steps
+- [ ] Implement `pkg/config/config.go` using `spf13/viper`.
+- [ ] Implement `pkg/logger/logger.go` using `uber-go/zap`.
+    - Support Log Level via the `LOG_LEVEL` environment variable.
+    - Support Console format for Dev and JSON for Prod.
+- [ ] Create `.env.example` as a template.
 
-## 🧪 Xác minh (Verification)
-- [ ] Unit test cho module config.
-- [ ] Kiểm tra định dạng log trên terminal trong môi trường Dev/Prod.
+## 🧪 Verification
+- [ ] Unit test for the config module.
+- [ ] Verify log format on the terminal in Dev/Prod environments.

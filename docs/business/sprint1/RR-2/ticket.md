@@ -1,25 +1,25 @@
 # [RR-2] Core Framework - Config & Logger
 
-- **Goal:** Xây dựng hệ thống cấu hình và ghi log dùng chung (Shared Infrastructure).
-- **Business Value:** Thống nhất cách cấu hình và ghi log cho toàn bộ hệ thống, giúp dễ dàng vận hành và debug.
+- **Goal:** Build a shared infrastructure for configuration and logging.
+- **Business Value:** Unify configuration and logging across the entire system to simplify operations and debugging.
 - **Priority:** `HIGH`
 
 ## 📝 Description
-Implement module load config động (Viper) và Logger có cấu trúc (Uber Zap) để thống nhất cách vận hành cho 10+ services.
+Implement a dynamic configuration loading module (Viper) and a structured Logger (Uber Zap) to standardize operations for 10+ services.
 
 ## 🔍 Acceptance Criteria (BDD Specification)
 
-### Scenario 1: Load cấu hình động từ .env
-- **Given:** File `.env` chứa biến `APP_PORT=8080`.
-- **When:** Tôi khởi động service và gọi hàm `config.LoadConfig()`.
-- **Then:** Giá trị `8080` phải được map chính xác vào struct cấu hình của Go.
+### Scenario 1: Dynamically Loading Configuration from .env
+- **Given:** A `.env` file containing the variable `APP_PORT=8080`.
+- **When:** I start the service and call the `config.LoadConfig()` function.
+- **Then:** The value `8080` must be correctly mapped to the Go configuration struct.
 
-### Scenario 2: Ghi log có cấu trúc trong môi trường Development
-- **Given:** Service đang chạy ở chế độ `development`.
-- **When:** Tôi gọi `logger.Info("Hello World")`.
-- **Then:** Log phải hiển thị ở định dạng **Console** có màu sắc và thông tin dòng code (caller).
+### Scenario 2: Structured Logging in Development Environment
+- **Given:** The service is running in `development` mode.
+- **When:** I call `logger.Info("Hello World")`.
+- **Then:** The log must be displayed in **Console** format with colors and caller information (source code line).
 
-### Scenario 3: Ghi log có cấu trúc trong môi trường Production
-- **Given:** Service đang chạy ở chế độ `production`.
-- **When:** Tôi gọi `logger.Info("Hello World")`.
-- **Then:** Log phải hiển thị ở định dạng **JSON** chuẩn để công cụ quản lý log có thể đọc được.
+### Scenario 3: Structured Logging in Production Environment
+- **Given:** The service is running in `production` mode.
+- **When:** I call `logger.Info("Hello World")`.
+- **Then:** The log must be displayed in standard **JSON** format for log management tools to parse.

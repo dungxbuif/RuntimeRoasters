@@ -1,11 +1,11 @@
 # Sprint 2: Identity & Access Control
 
-**Trạng thái:** ✅ Hoàn thành (Completed)
-**Mục tiêu:** Xây dựng hệ thống định danh (Identity) và phân quyền (Authorization) tập trung, bảo vệ toàn bộ API và cung cấp luồng Đăng nhập/Đăng xuất chuẩn OIDC.
+**Status:** ✅ Completed
+**Goal:** Build a centralized Identity and Authorization system, protecting all APIs and providing standard OIDC Login/Logout flows.
 
 ---
 
-## 📋 Trạng thái Ticket (Kanban)
+## 📋 Ticket Status (Kanban)
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
@@ -18,12 +18,12 @@
 
 ---
 
-## 💡 Tầm nhìn Nghiệp vụ (Business Vision)
-- **Zero Trust Architecture:** Mọi request vào hệ thống đều phải được định danh và kiểm tra quyền một cách nghiêm ngặt.
-- **Seamless Experience:** Người dùng chỉ cần đăng nhập một lần (SSO) để sử dụng tất cả các dịch vụ trong hệ sinh thái.
-- **Fine-grained Control:** Phân quyền đến từng hành động cụ thể (VD: Farm Manager chỉ được tạo Harvest, không được duyệt Payment).
+## 💡 Business Vision
+- **Zero Trust Architecture:** Every request entering the system must be strictly identified and authorized.
+- **Seamless Experience:** Users only need to log in once (SSO) to access all services within the ecosystem.
+- **Fine-grained Control:** Authorization down to specific actions (e.g., Farm Manager can only create Harvests, not approve Payments).
 
-## 📊 Kết quả đạt được (Sprint Result)
-- Tích hợp thành công bộ giải pháp Ory (Kratos/Hydra) cho quản lý Identity.
-- Triển khai **Three-Gate Security** (Gateway -> JWT -> Casbin).
-- Hệ thống hỗ trợ thu hồi Token tức thì qua Valkey.
+## 📊 Sprint Result
+- Successfully integrated the Ory suite (Kratos/Hydra) for Identity management.
+- Implemented **Three-Gate Security** (Gateway -> JWT -> Casbin).
+- The system supports instantaneous Token revocation via Valkey.

@@ -1,21 +1,21 @@
 # Sprint 6 Technical Design: Retail & Order Saga
 
 ## 1. Overview
-Sprint 6 tập trung vào xây dựng **Retail Service**, đóng vai trò là điểm khởi đầu cho luồng **Order Saga (Choreography)**. Service này quản lý việc đặt hàng từ các cửa hàng bán lẻ (Stores) và theo dõi trạng thái đơn hàng xuyên suốt chuỗi cung ứng.
+Sprint 6 focuses on building the **Retail Service**, which serves as the starting point for the **Order Saga (Choreography)** flow. This service manages ordering from retail stores (Stores) and tracks order status throughout the supply chain.
 
 ## 2. Domain Models
 
-### 2.1 Retail Store (Cửa hàng)
-Đại diện cho các điểm bán lẻ của Runtime Roasters.
+### 2.1 Retail Store
+Represents the retail locations of Runtime Roasters.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | UUID | Primary Key |
-| `name` | String | Tên cửa hàng |
-| `city` | String | Thành phố (Hanoi, HCM, Da Nang) |
-| `address` | String | Địa chỉ chi tiết |
-| `manager_id` | UUID | ID của trưởng cửa hàng (Store Manager) |
-| `manager_email`| String | Email của trưởng cửa hàng (dùng cho seeding/audit) |
+| `name` | String | Store name |
+| `city` | String | City (Hanoi, HCM, Da Nang) |
+| `address` | String | Detailed address |
+| `manager_id` | UUID | ID of the Store Manager |
+| `manager_email`| String | Email of the Store Manager (used for seeding/audit) |
 | `status` | Enum | ACTIVE, INACTIVE |
 
 **Seed Data Plan:**
@@ -28,40 +28,40 @@ Sprint 6 tập trung vào xây dựng **Retail Service**, đóng vai trò là đ
 - **Da Nang:**
     - **Hai Chau Store** (15 Bach Dang). Manager: `mgr.dn.haichau@runtimeroasters.com`
 
-**Business Rule:** Mỗi cửa hàng có 1 Trưởng cửa hàng (Store Manager). Chỉ Trưởng cửa hàng mới có quyền thực hiện đặt hàng (Create Order) cho cửa hàng của mình.
+**Business Rule:** Each store has one Store Manager. Only the Store Manager has the authority to place orders (Create Order) for their respective store.
 
-### 2.2 Order (Đơn hàng)
-Quản lý trạng thái đơn hàng và thông tin khách hàng/nhân viên.
+### 2.2 Order
+Manages order status and customer/staff information.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | UUID | Primary Key |
 | `store_id` | UUID | Foreign Key -> Stores |
-| `total_amount` | Decimal | Tổng giá trị đơn hàng |
+| `total_amount` | Decimal | Total order value |
 | `status` | Enum | PENDING, PREPARING, SHIPPING, COMPLETED, REJECTED |
-| `idempotency_key` | String | Chống trùng lặp (Unique Index) |
+| `idempotency_key` | String | Duplication prevention (Unique Index) |
 
 ## 3. Saga Flow (Choreography)
 
-1. **Retail:** Tạo Order (`PENDING`) + Lưu `retail.order.created` vào Outbox.
-2. **Warehouse:** Nhận `retail.order.created` -> Kiểm tra kho -> Reserve Stock -> Bắn `warehouse.stock.reserved` (hoặc `failed`).
-3. **Logistics:** Nhận `warehouse.stock.reserved` -> Tìm xe -> Bắn `logistics.shipment.assigned`.
-4. **Retail:** Cập nhật status dựa trên các event tiếp theo:
+1. **Retail:** Create Order (`PENDING`) + Save `retail.order.created` to Outbox.
+2. **Warehouse:** Receive `retail.order.created` -> Check inventory -> Reserve Stock -> Publish `warehouse.stock.reserved` (or `failed`).
+3. **Logistics:** Receive `warehouse.stock.reserved` -> Find vehicle -> Publish `logistics.shipment.assigned`.
+4. **Retail:** Update status based on subsequent events:
     - `warehouse.stock.reserved` -> `PREPARING`
     - `logistics.shipment.assigned` -> `SHIPPING`
     - `logistics.shipment.delivered` -> `COMPLETED`
-    - Bất kỳ `failed` event nào -> `REJECTED` (Rollback/Compensate).
+    - Any `failed` event -> `REJECTED` (Rollback/Compensate).
 
 ## 4. Technical Mechanisms
 
 ### 4.1 Transactional Outbox
-Sử dụng chung pattern với `farm-service`:
+Uses the same pattern as `farm-service`:
 - `db.Transaction(func(tx *gorm.DB) error { ... })`
-- Lưu `orders` và `outbox_events` đồng thời.
+- Atomically save `orders` and `outbox_events`.
 
 ### 4.2 Idempotency
-- **API Level:** `Idempotency-Key` header lưu vào Redis/Valkey (TTL 24h).
-- **DB Level:** Unique Index trên `orders.idempotency_key`.
+- **API Level:** `Idempotency-Key` header stored in Redis/Valkey (24h TTL).
+- **DB Level:** Unique Index on `orders.idempotency_key`.
 
 ### 4.3 Authorization
-Sử dụng `Casbin` middleware để check role `STORE_MGR` chỉ được phép tạo đơn cho `store_id` mà họ quản lý.
+Uses `Casbin` middleware to ensure that the `STORE_MGR` role is only permitted to create orders for the `store_id` they manage.

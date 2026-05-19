@@ -1,6 +1,6 @@
 # Sprint 6: Retail & Order Saga
 
-**Epic Goal:** Xây dựng hệ thống đặt hàng và điều phối chuỗi cung ứng tự động qua Saga Pattern.
+**Epic Goal:** Build an automated ordering and supply chain coordination system using the Saga Pattern.
 
 ---
 
@@ -9,12 +9,12 @@
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
 | [RR-21.5](./RR-21.5.md) | [Tech] Retail Store Seeding & Management | 🕒 To Do | Tech Lead |
-| [RR-22](./RR-22.md) | [BA] Hệ thống đặt hàng tại quầy (POS) | 🕒 To Do | Store Manager |
+| [RR-22](./RR-22.md) | [BA] Point of Sale (POS) Ordering System | 🕒 To Do | Store Manager |
 | [RR-23](./RR-23.md) | [Tech] Retail Service & Saga Orchestrator | 🕒 To Do | Tech Lead |
 
 ---
 
 ## 🛠️ Technical Focus
-- **Saga Choreography:** Điều phối luồng qua Kafka Events (Order -> Warehouse -> Logistics).
-- **Transactional Outbox:** Đảm bảo lưu Order và bắn Event là một Transaction.
-- **Idempotency:** Sử dụng `Idempotency-Key` cho API và `Message_ID` cho Consumer.
+- **Saga Choreography:** Coordinate flows via Kafka Events (Order -> Warehouse -> Logistics).
+- **Transactional Outbox:** Ensure saving the Order and emitting the Event is a single Transaction.
+- **Idempotency:** Use `Idempotency-Key` for APIs and `Message_ID` for Consumers.

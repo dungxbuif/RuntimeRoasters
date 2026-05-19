@@ -1,87 +1,78 @@
 # Technology Stack
 
-**Analysis Date:** 2025-02-13
+**Analysis Date:** 2025-02-14
 
 ## Languages
 
 **Primary:**
-- Go 1.25.0 - Entire backend implementation (`src/`)
+- Go 1.25.0 - Backend microservices in `src/apps/` and shared packages in `src/pkg/`.
 
 **Secondary:**
-- Shell - Setup and seed scripts (`deployments/*.sh`, `Makefile`, `Taskfile.yml`)
-- Protobuf - API contracts (`api/runtime/`)
+- TypeScript/JavaScript - Frontend client application in `src/apps/client-app/`.
+- Protobuf - API contracts and service definitions in `api/`.
+- SQL - Database migrations and initialization in `deployments/init-db.sql`.
 
 ## Runtime
 
 **Environment:**
-- Docker - Containerized development and deployment (`deployments/docker-compose.dev.yaml`)
+- Docker / Docker Compose - Primary development and deployment environment.
 
 **Package Manager:**
-- Go Modules - Dependency management (`src/go.mod`)
-- Lockfile: `src/go.sum` present
+- Go Modules - Backend dependency management (`src/go.mod`).
+- NPM/PNPM - Frontend dependency management (inferred from `src/apps/client-app/`).
+- Lockfile: `src/go.sum` and `go.work.sum` are present.
 
 ## Frameworks
 
 **Core:**
-- Gin v1.12.0 - HTTP Web Framework for REST endpoints (`src/pkg/base/app.go`)
-- gRPC v1.80.0 - High-performance RPC framework for service-to-service communication
-- gRPC-Gateway v2.29.0 - gRPC-to-JSON proxy for REST compatibility
-- GORM v1.31.1 - ORM for database interactions (`src/pkg/database/postgres.go`)
+- Gin-Gonic v1.12.0 - HTTP web framework for REST APIs.
+- gRPC v1.80.0 - High-performance RPC framework for service-to-service communication.
+- GORM v1.25.x - ORM for database interactions.
+- Next.js / React - Frontend framework for `client-app`.
+- Casbin v3.10.0 - Authorization library (RBAC/ABAC).
 
 **Testing:**
-- Testify v1.11.1 - Assertion and mocking library
+- testify v1.11.1 - Assertion and mocking library for Go.
+- Go standard testing package.
 
 **Build/Dev:**
-- Taskfile/Task - Task runner for common operations (`Taskfile.yml`)
-- Buf - Protocol buffer management and generation (`api/buf.yaml`)
-
-## Core Framework Packages (`src/pkg/`)
-
-- `base/`: Modular service bootstrap for Gin and gRPC (`src/pkg/base/app.go`)
-- `config/`: Centralized configuration loading using Viper (`src/pkg/config/config.go`)
-- `database/`: GORM-based PostgreSQL client with transaction support (`src/pkg/database/postgres.go`)
-- `valkey/`: Valkey/Redis client supporting single-node and Sentinel (`src/pkg/valkey/client.go`)
-- `kafka/`: Consumer and Producer wrappers for segmentio/kafka-go (`src/pkg/kafka/`)
-- `logger/`: Structured logging with Zap and middleware for Gin/gRPC (`src/pkg/logger/`)
-- `telemetry/`: OpenTelemetry setup for tracing (`src/pkg/telemetry/`)
-- `errs/`: Standardized error handling and Gin middleware (`src/pkg/errs/`)
+- Taskfile - Task runner (`Taskfile.yml`).
+- Buf - Tooling for Protobuf/gRPC management (`api/buf.yaml`).
+- Makefile - Build automation in `src/Makefile`.
 
 ## Key Dependencies
 
 **Critical:**
-- Casbin v3.10.0 - Authorization library for ABAC/RBAC (`src/pkg/base/casbin/`)
-- Ory Kratos/Hydra SDKs - Identity and OAuth2 integration (`github.com/ory/client-go`, `github.com/ory/hydra-client-go/v2`)
-- OpenTelemetry (OTEL) - Distributed tracing and observability (`src/pkg/telemetry/`)
+- `segmentio/kafka-go` v0.4.51 - Kafka client for Go.
+- `redis/go-redis` v9.18.0 - Redis/Valkey client.
+- `ory/kratos-client-go` & `ory/hydra-client-go` - Identity and OAuth2 management.
+- `spf13/viper` v1.21.0 - Configuration management.
 
 **Infrastructure:**
-- Viper v1.21.0 - Configuration management (`src/pkg/config/`)
-- Zap v1.27.1 - Structured logging (`src/pkg/logger/`)
-- Go-Redis v9.18.0 - Client for Valkey/Redis interaction (`src/pkg/valkey/`)
-- Kafka-go v0.4.51 - Kafka client for event-driven architecture (`src/pkg/kafka/`)
+- OpenTelemetry (OTel) - Observability and tracing.
+- KrakenD - API Gateway.
 
 ## Configuration
 
 **Environment:**
-- Environment variables managed via `.env` files and `viper`
-- `src/pkg/config/` provides base configuration structures
+- Environment variables via `.env` files (e.g., `src/apps/auth-service/.env`).
+- Viper for loading and parsing configurations.
 
 **Build:**
-- `src/Makefile` and `Taskfile.yml` for building services
+- `src/Makefile`
+- `Taskfile.yml`
+- `api/buf.gen.yaml` for Protobuf generation.
 
 ## Platform Requirements
 
 **Development:**
-- Go 1.25+
 - Docker & Docker Compose
-- Task (optional but recommended)
-- Buf CLI
+- Go 1.25.0+
+- Node.js (for frontend)
 
 **Production:**
-- Linux-based containers
-- PostgreSQL 16+
-- Valkey 7.2+
-- Kafka 7.6+
+- Kubernetes (implied by microservices architecture and OTel setup).
 
 ---
 
-*Stack analysis: 2025-02-13*
+*Stack analysis: 2025-02-14*
