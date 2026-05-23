@@ -24,6 +24,7 @@ type TraceDocument struct {
 	Order      interface{} `json:"order,omitempty"`
 	Payment    interface{} `json:"payment,omitempty"`
 	Shipment   interface{} `json:"shipment,omitempty"`
+	TraceIDs   []string    `json:"trace_ids,omitempty"`
 	Timeline   interface{} `json:"timeline"`
 	Events     interface{} `json:"events"`
 	UpdatedAt  time.Time   `json:"updated_at"`
@@ -64,6 +65,9 @@ func (c *ElasticsearchClient) EnsureIndex(ctx context.Context) error {
 					"type": "keyword",
 				},
 				"status": map[string]string{
+					"type": "keyword",
+				},
+				"trace_ids": map[string]string{
 					"type": "keyword",
 				},
 				"updated_at": map[string]string{
@@ -108,6 +112,9 @@ func (c *ElasticsearchClient) EnsureIndex(ctx context.Context) error {
 							"type": "keyword",
 						},
 						"shipment_id": map[string]string{
+							"type": "keyword",
+						},
+						"trace_id": map[string]string{
 							"type": "keyword",
 						},
 						"payload": map[string]string{

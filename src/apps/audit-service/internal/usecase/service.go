@@ -6,12 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	cassandrastore "github.com/dungxbuif/RuntimeRoasters/apps/audit-service/internal/cassandra"
 	"github.com/dungxbuif/RuntimeRoasters/apps/audit-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
@@ -30,7 +30,7 @@ func NewService(db *gorm.DB, cassandra *cassandrastore.Store) *Service {
 }
 
 func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	partitionKey := partitionKey(msg.Value)
 	var existing domain.AuditLog
 	if err := s.db.WithContext(ctx).Where("message_id = ?", messageID).Take(&existing).Error; err == nil {

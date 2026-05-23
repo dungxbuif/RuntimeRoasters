@@ -12,6 +12,8 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -87,9 +89,17 @@ func (u *harvestUsecase) CreateHarvest(ctx context.Context, harvest *domain.Harv
 			Quantity:   harvest.Quantity,
 		})
 
+		traceHeaders := propagation.MapCarrier{}
+		otel.GetTextMapPropagator().Inject(ctx, traceHeaders)
 		metadata := map[string]interface{}{
 			"trace_id": traceID,
 			"user_id":  harvest.OwnerID,
+		}
+		if traceparent := traceHeaders.Get("traceparent"); traceparent != "" {
+			metadata["traceparent"] = traceparent
+		}
+		if tracestate := traceHeaders.Get("tracestate"); tracestate != "" {
+			metadata["tracestate"] = tracestate
 		}
 		metadataBytes, _ := json.Marshal(metadata)
 

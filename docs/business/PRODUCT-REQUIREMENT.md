@@ -379,7 +379,7 @@ Uses a combination of `.env` files and the `viper` library (Go):
 
 #### D. Distributed Tracing
 
-`OpenTelemetry` + `Jaeger`. Workflow:
+`OpenTelemetry` + `SigNoz/ClickHouse`. Workflow:
 
 1. `API Gateway` assigns a unique `Trace-ID` to each incoming request.
 2. The `Trace-ID` is injected into:
@@ -387,9 +387,9 @@ Uses a combination of `.env` files and the `viper` library (Go):
    - `HTTP Headers` (`traceparent`) when calling external services.
    - `Kafka Message Headers` when publishing events.
 3. Each service creates a child `Span`, linked to the root `Trace-ID`.
-4. `Jaeger UI` renders a `Gantt Chart` displaying the entire transaction timeline across multiple services.
+4. `SigNoz UI` renders a waterfall/timeline displaying the entire transaction across multiple services.
 
-> **Showcase value:** A `Trace-ID` from the store's order placement to Saga completion (through Payment → Warehouse → Logistics) is visualized intuitively on Jaeger — very impressive for TA reviewers.
+> **Showcase value:** A `Trace-ID` from the store's order placement to Saga completion (through Payment → Warehouse → Logistics) is visualized intuitively on SigNoz — very impressive for TA reviewers.
 
 ---
 
@@ -441,7 +441,7 @@ Uses a combination of `.env` files and the `viper` library (Go):
 | QR code generation + traceability lookup       | `CQRS Query` endpoint             |
 | `Audit Service` (Kafka → Cassandra, hash chain)| `Event Sourcing` (Lite)           |
 | `Hash Chaining` for data integrity             | `Data Integrity Pattern`          |
-| OpenTelemetry + Jaeger integration             | `Distributed Tracing`             |
+| OpenTelemetry + SigNoz integration             | `Distributed Tracing`             |
 | Prometheus + Grafana dashboards                | `Observability Stack`             |
 
 ### Phase 5: Control Plane Visualization Dashboard (Frontend)
@@ -473,7 +473,7 @@ Uses a combination of `.env` files and the `viper` library (Go):
 | **Security**     | Stripe Test Mode only — no real money processing in the demo        |
 | **Idempotency**  | `Inbox Pattern` for Stripe Webhook (at-least-once → exactly-once)   |
 | **Integrity**    | Hash chaining on Audit log (Cassandra) anti-tampering               |
-| **Observability**| Distributed tracing (OpenTelemetry + Jaeger) on every request       |
+| **Observability**| Distributed tracing (OpenTelemetry + SigNoz) on every request       |
 | **Observability**| Prometheus metrics + Grafana dashboard for each service             |
 | **Deployment**   | Full Docker Compose for local dev                                   |
 | **Deployment**   | Docker images ready for Cloud VPS deployment                        |
@@ -505,7 +505,7 @@ Uses a combination of `.env` files and the `viper` library (Go):
 | Visualization                | `React Flow`                | Node-based UI for service mesh visualization                       |
 | Animation                    | `Framer Motion`             | Micro-animations, glow effects                                     |
 | State management             | `Zustand`                   | Lightweight state for real-time WebSocket data                     |
-| Tracing                      | `OpenTelemetry` + `Jaeger`  | Trace-ID from Gateway, propagate via gRPC/Kafka/HTTP headers       |
+| Tracing                      | `OpenTelemetry` + `SigNoz`  | Trace-ID from Gateway, propagate via gRPC/Kafka/HTTP headers       |
 | Metrics                      | `Prometheus` + `Grafana`    | Industry standard monitoring stack                                 |
 | Host infrastructure          | `Proxmox`                   | Self-hosted hypervisor, VM-based Docker environment                |
 | Deployment                   | `Docker` + `Docker Compose` | Containerized, Cloud VPS ready                                     |

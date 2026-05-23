@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
@@ -27,7 +26,7 @@ func NewOrderReservationUseCase(db *gorm.DB, producer kafka.Producer, reservedTo
 }
 
 func (uc *OrderReservationUseCase) ProcessOrderCreated(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	event, err := decodeOrderReservationEvent(msg.Topic, msg.Value)
 	if err != nil {
 		return err

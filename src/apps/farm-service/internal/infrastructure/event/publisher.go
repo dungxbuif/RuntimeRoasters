@@ -2,11 +2,14 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 )
 
@@ -20,6 +23,7 @@ func NewKafkaPublisher(producer kafka.Producer, topic string) usecase.EventPubli
 }
 
 func (p *kafkaPublisher) Publish(ctx context.Context, event *domain.OutboxEvent) error {
+	ctx = contextFromOutboxMetadata(ctx, event.Metadata)
 	key := event.ID
 	logger.FromContext(ctx).Info("publishing kafka event",
 		zap.String("topic", p.topic),
@@ -41,4 +45,25 @@ func (m *mockPublisher) Publish(ctx context.Context, event *domain.OutboxEvent) 
 		zap.String("event_id", event.ID),
 	)
 	return nil
+}
+
+func contextFromOutboxMetadata(ctx context.Context, metadata []byte) context.Context {
+	if len(metadata) == 0 {
+		return ctx
+	}
+	values := map[string]string{}
+	if err := json.Unmarshal(metadata, &values); err != nil {
+		return ctx
+	}
+	carrier := propagation.MapCarrier{}
+	if traceparent := values["traceparent"]; traceparent != "" {
+		carrier.Set("traceparent", traceparent)
+	}
+	if tracestate := values["tracestate"]; tracestate != "" {
+		carrier.Set("tracestate", tracestate)
+	}
+	if len(carrier) == 0 {
+		return ctx
+	}
+	return otel.GetTextMapPropagator().Extract(ctx, carrier)
 }

@@ -8,6 +8,10 @@ import (
 
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -48,17 +52,35 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 			continue
 		}
 
-		log.Info("message received",
+		headers := kafkaHeadersCarrier(m.Headers)
+		msgCtx := otel.GetTextMapPropagator().Extract(ctx, &headers)
+		msgCtx, span := otel.Tracer("github.com/dungxbuif/RuntimeRoasters/pkg/kafka").Start(msgCtx, "kafka.consume "+m.Topic,
+			trace.WithSpanKind(trace.SpanKindConsumer),
+			trace.WithAttributes(
+				attribute.String("messaging.system", "kafka"),
+				attribute.String("messaging.destination.name", m.Topic),
+				attribute.Int("messaging.kafka.partition", m.Partition),
+				attribute.Int64("messaging.kafka.offset", m.Offset),
+				attribute.String("messaging.kafka.message.key", string(m.Key)),
+			),
+		)
+		msgLog := logger.FromContext(msgCtx)
+
+		msgLog.Info("message received",
 			zap.String("message_topic", m.Topic),
 			zap.Int("partition", m.Partition),
 			zap.Int64("offset", m.Offset),
 			zap.ByteString("key", m.Key),
 		)
 
-		if err := handler(ctx, m); err != nil {
-			log.Error("failed to handle message", zap.Error(err))
+		if err := handler(msgCtx, m); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			msgLog.Error("failed to handle message", zap.Error(err))
+			span.End()
 			continue
 		}
+		span.End()
 	}
 }
 

@@ -10,6 +10,7 @@ type TraceEvent struct {
 	OrderID    string    `gorm:"size:100;index" json:"order_id"`
 	ShipmentID string    `gorm:"size:100;index" json:"shipment_id"`
 	StoreID    string    `gorm:"size:100;index" json:"store_id"`
+	TraceID    string    `gorm:"size:64;index" json:"trace_id,omitempty"`
 	Payload    string    `gorm:"type:jsonb;not null" json:"payload"`
 	OccurredAt time.Time `gorm:"index;not null" json:"occurred_at"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -20,6 +21,7 @@ type TraceDocument struct {
 	EntityID   string    `gorm:"size:120;uniqueIndex;not null" json:"entity_id"`
 	EntityType string    `gorm:"size:40;index;not null" json:"entity_type"`
 	StoreID    string    `gorm:"size:100;index" json:"store_id"`
+	TraceIDs   string    `gorm:"type:jsonb;not null;default:'[]'" json:"trace_ids"`
 	Document   string    `gorm:"type:jsonb;not null" json:"document"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

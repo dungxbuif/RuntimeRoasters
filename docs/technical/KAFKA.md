@@ -17,6 +17,21 @@ Goal: Ensure the system achieves High Availability (HA) and safe Scale-out capab
 - **Implementation:**
     - Use an `inbox_events` table (UNIQUE `message_id`).
     - Store the `message_id` and execute Business Logic within the same Database Transaction.
+    - Derive `message_id` using the shared helper, not raw offsets:
+        1. `topic:event_id` when the payload has `event_id`.
+        2. `topic:key` when Kafka key is present.
+        3. `topic-partition-offset` only as a legacy fallback.
+
+**Important:** Kafka offsets are not stable across local broker recreation, topic resets, or demo-state resets. Consumers must not use only `topic-partition-offset` for business idempotency. Use `pkg/kafka.MessageID(msg)` unless there is a documented reason not to.
+
+### Shield 2.5: Trace Context Across Async Boundaries
+- **Rule:** Every Kafka message produced inside an active request/SAGA must carry W3C `traceparent`.
+- **Implementation:**
+    - Producers use `pkg/kafka.NewProducer`, which injects the current OTel context.
+    - Consumers use `pkg/kafka.NewConsumer`, which extracts `traceparent` before invoking handlers.
+    - Transactional outbox rows must persist `traceparent`/`tracestate` because the relay runs later and cannot rely on the original request context.
+
+**Important:** A relay publishing from `context.Background()` without restoring outbox trace metadata breaks the distributed trace.
 
 ### Shield 3: Distributed Locking (Shared Resource Protection)
 - **Rule:** When updating shared resources (e.g., Total SKU Inventory), a distributed lock must be used.

@@ -22,7 +22,9 @@
         "Origin",
         "Authorization",
         "Content-Type",
-        "Accept"
+        "Accept",
+        "traceparent",
+        "tracestate"
       ],
       "expose_headers": [
         "Content-Length"
@@ -75,7 +77,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -89,7 +91,9 @@
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
-        "Content-Type"
+        "Content-Type",
+        "traceparent",
+        "tracestate"
       ],
       "backend": [
         {
@@ -106,7 +110,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -137,7 +141,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -151,7 +155,9 @@
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
-        "Content-Type"
+        "Content-Type",
+        "traceparent",
+        "tracestate"
       ],
       "backend": [
         {
@@ -168,7 +174,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -199,7 +205,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -213,7 +219,9 @@
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
-        "Content-Type"
+        "Content-Type",
+        "traceparent",
+        "tracestate"
       ],
       "backend": [
         {
@@ -230,7 +238,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -244,7 +252,9 @@
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
-        "Content-Type"
+        "Content-Type",
+        "traceparent",
+        "tracestate"
       ],
       "backend": [
         {
@@ -261,7 +271,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -292,7 +302,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -306,7 +316,9 @@
       "output_encoding": "no-op",
       "input_headers": [
         "Authorization",
-        "Content-Type"
+        "Content-Type",
+        "traceparent",
+        "tracestate"
       ],
       "backend": [
         {
@@ -323,7 +335,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -354,7 +366,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -385,7 +397,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -416,7 +428,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -447,7 +459,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -478,7 +490,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -510,7 +522,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -541,7 +553,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -572,7 +584,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -603,7 +615,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -677,7 +689,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -708,7 +720,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -739,7 +751,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",
@@ -770,7 +782,7 @@
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "http://host.docker.internal:4434/.well-known/jwks.json",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
           "cache": true,
           "cache_duration": 900,
           "issuer": "http://localhost:4444/",

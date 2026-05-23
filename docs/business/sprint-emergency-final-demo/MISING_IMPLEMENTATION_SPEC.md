@@ -87,7 +87,9 @@ Docs:
 - `docs/technical/LOGISTICS_SIMULATION.md` describes route generation and a driver simulator concept.
 - `docs/technical/KAFKA.md` already calls out Valkey/Redlock for inventory-style shared resource locking.
 - `deployments/docker-compose.dev.yaml` already includes Valkey and Cassandra infrastructure.
-- `deployments/otel-collector-config.yaml` exists and can be extended to fork telemetry to trace-service internal ingest if live trace-history is implemented.
+- `deployments/docker-compose.dev.yaml` now defines SigNoz + ClickHouse + SigNoz OTel Collector for OpenTelemetry waterfall evidence.
+- SigNoz UI is exposed at `http://localhost:3301`; OTLP gRPC/HTTP remain `localhost:4317` and `localhost:4318`.
+- Kafka remains Apache Kafka without ZooKeeper. The SigNoz ClickHouse coordination service is separate observability infrastructure and must not be used by Kafka.
 
 ### 2.2 What Is Missing Or Inconsistent
 
@@ -573,6 +575,14 @@ Recommendation for final ticket:
 
 Extend trace-service if the final demo needs live topology and trace playback beyond existing Trace/Audit screens. Do not define a separate monitor microservice for this ticket.
 
+Current infrastructure status:
+
+- Application services already initialize OpenTelemetry and export to `localhost:4317` by default.
+- `deployments/docker-compose.dev.yaml` includes SigNoz, ClickHouse, the SigNoz OTel Collector, and a ClickHouse coordination service.
+- `deployments/otel-collector-config.yaml` is the collector pipeline used by the SigNoz collector.
+- SigNoz UI is available at `http://localhost:3301`.
+- RR-URG-01 final evidence must include the same `trace_id` in trace-service and SigNoz.
+
 Responsibilities:
 
 - Receive OTel spans from the collector through an internal ingest endpoint.
@@ -582,7 +592,7 @@ Responsibilities:
 
 Implementation notes:
 
-- Extend `deployments/otel-collector-config.yaml` with an additional exporter to trace-service internal ingest.
+- Extend `deployments/otel-collector-config.yaml` with an additional exporter to trace-service internal ingest if live trace-history from spans is implemented.
 - Do not store operational trace-history in the audit Cassandra table unless the schema and retention policy are intentionally shared.
 - Root/public architecture visualization may use unauthenticated public/demo data.
 - Role-specific operations dashboards should remain behind normal auth. SSE/socket auth is required when those dashboards receive private realtime operational streams.

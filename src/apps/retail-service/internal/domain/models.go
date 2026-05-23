@@ -48,14 +48,16 @@ type Order struct {
 }
 
 type OutboxEvent struct {
-	ID        string       `gorm:"type:uuid;primaryKey"`
-	EventType string       `gorm:"size:120;not null;index"`
-	Topic     string       `gorm:"size:160;not null;index"`
-	Key       string       `gorm:"size:128;not null;index"`
-	Payload   string       `gorm:"type:jsonb;not null"`
-	Status    OutboxStatus `gorm:"size:20;not null;default:'PENDING';index"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string       `gorm:"type:uuid;primaryKey"`
+	EventType   string       `gorm:"size:120;not null;index"`
+	Topic       string       `gorm:"size:160;not null;index"`
+	Key         string       `gorm:"size:128;not null;index"`
+	Payload     string       `gorm:"type:jsonb;not null"`
+	TraceParent string       `gorm:"size:128" json:"traceparent,omitempty"`
+	TraceState  string       `gorm:"size:512" json:"tracestate,omitempty"`
+	Status      OutboxStatus `gorm:"size:20;not null;default:'PENDING';index"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type InboxEvent struct {

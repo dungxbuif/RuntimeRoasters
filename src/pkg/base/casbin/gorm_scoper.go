@@ -2,6 +2,7 @@ package casbin
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
@@ -26,6 +27,11 @@ func NewGormScoper(e PolicyEnforcer) *GormScoper {
 // It looks for policies that define constraints on the object.
 func (s *GormScoper) ApplyScope(subject, role, object, action string, ownerField string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
+		normalizedRole := strings.ToUpper(role)
+		if normalizedRole == "ADMIN" || normalizedRole == "FARM_ADMIN" {
+			return db
+		}
+
 		// 1. Check if user has global access (*)
 		allowed, err := s.enforcer.Enforce(role, object, action)
 		if err != nil {
@@ -33,15 +39,8 @@ func (s *GormScoper) ApplyScope(subject, role, object, action string, ownerField
 		}
 
 		// 2. Determine IF we need to scope by owner.
-		isAdmin := role == "ADMIN"
-		isFarmAdmin := role == "FARM_ADMIN"
-
-		if allowed && !isAdmin && !isFarmAdmin {
-			return db.Where(fmt.Sprintf("%s = ?", ownerField), subject)
-		}
-
 		if allowed {
-			return db
+			return db.Where(fmt.Sprintf("%s = ?", ownerField), subject)
 		}
 
 		return db.Where("1 = 0")

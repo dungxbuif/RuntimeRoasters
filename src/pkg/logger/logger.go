@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -54,6 +55,10 @@ func GetLogger() *zap.Logger {
 // FromContext extracts the TraceID from context and attaches it to the logger
 func FromContext(ctx context.Context) *zap.Logger {
 	logger := GetLogger()
+	spanContext := trace.SpanContextFromContext(ctx)
+	if spanContext.HasTraceID() {
+		return logger.With(zap.String("trace_id", spanContext.TraceID().String()))
+	}
 	traceID, _ := ctx.Value(TraceIDKey).(string)
 	if traceID != "" {
 		return logger.With(zap.String("trace_id", traceID))

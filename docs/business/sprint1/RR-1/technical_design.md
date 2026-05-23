@@ -8,8 +8,8 @@
 ## 🛠️ Implementation Steps
 - [ ] Complete `deployments/docker-compose.yaml`.
     - Use `postgres:16-alpine` image.
-    - Use the latest version of `Redpanda` for gRPC/Kafka API compatibility.
-    - Configure Jaeger with OTLP protocol supporting gRPC.
+    - Use Apache Kafka for event-driven flows.
+    - Configure SigNoz OTel Collector with OTLP protocol supporting gRPC.
 - [ ] Complete `deployments/init-db.sql`.
 - [ ] Set up internal networking for containers.
 
@@ -17,4 +17,4 @@
 - [ ] Run `docker-compose up -d` and check container status.
 - [ ] Execute and inspect logs for each service.
 - [ ] Test connectivity to Postgres and created databases.
-- [ ] Access Redpanda Console (`localhost:8080`) and Jaeger UI (`localhost:16686`).
+- [ ] Access Kafka UI (`localhost:8090`) and SigNoz UI (`localhost:3301`).

@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 type PostgresConfig struct {
@@ -36,6 +37,9 @@ func NewPostgres(cfg PostgresConfig) (*DB, error) {
 
 	db, err := gorm.Open(postgres.Open(cfg.URL), gormCfg)
 	if err != nil {
+		return nil, err
+	}
+	if err := db.Use(tracing.NewPlugin()); err != nil {
 		return nil, err
 	}
 

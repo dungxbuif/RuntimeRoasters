@@ -120,7 +120,7 @@ func (s *Service) DeliverShipment(ctx context.Context, shipmentID string) error 
 }
 
 func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing domain.ProcessedKafkaMessage
 		if err := tx.Where("msg_key = ?", messageID).Take(&existing).Error; err == nil {

@@ -1,13 +1,18 @@
-# ADR 0002: Choosing SigNoz over traditional stack (Prometheus/Jaeger/Loki)
+# ADR 0002: Use SigNoz For Demo Observability
 
-**Status:** 🔴 REVERTED (Removed - 2026-05-10)
+**Status:** Accepted - 2026-05-23
 
 ## Context
-The project initially chose SigNoz as a centralized Observability platform to replace individual containers for Jaeger, Prometheus, etc.
+The final demo needs one observability surface for OpenTelemetry traces, metrics, and logs. RR-URG-01 also needs waterfall evidence for the same `trace_id` already stored in trace-service business documents.
 
 ## Decision
-Discontinue the use of SigNoz and ClickHouse for now to reduce local resource usage for developers. The system will revert to lighter solutions (e.g., standalone Jaeger) or focus on completing business logic first.
+Use SigNoz + ClickHouse in `deployments/docker-compose.dev.yaml`.
+
+- SigNoz UI is exposed at `http://localhost:3301`.
+- OTLP gRPC/HTTP are exposed at `localhost:4317` and `localhost:4318`.
+- The SigNoz ClickHouse coordinator is observability infrastructure only.
+- Kafka remains Apache Kafka without ZooKeeper.
 
 ## Consequences
-- Must update `docker-compose.dev.yaml` and telemetry configuration in the code.
-- Reduces RAM/CPU load on dev machines (ClickHouse consumes significant resources).
+- Local infrastructure is heavier, but the production-demo environment can show real OTel traces.
+- Trace-service remains the business traceability/read-model boundary; SigNoz is not the business trace source of truth.

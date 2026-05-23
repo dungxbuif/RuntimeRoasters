@@ -18,20 +18,7 @@ import (
 
 // InitTracer khởi tạo OTel Tracer và trả về shutdown function
 func InitTracer(serviceName string, otlpEndpoint string) (func(), error) {
-	if strings.TrimSpace(otlpEndpoint) == "" {
-		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-		return func() {}, nil
-	}
-
 	ctx := context.Background()
-
-	exporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(otlpEndpoint),
-		otlptracegrpc.WithInsecure(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)
-	}
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
@@ -42,10 +29,21 @@ func InitTracer(serviceName string, otlpEndpoint string) (func(), error) {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
+	options := []sdktrace.TracerProviderOption{
 		sdktrace.WithResource(res),
-	)
+	}
+	if strings.TrimSpace(otlpEndpoint) != "" {
+		exporter, err := otlptracegrpc.New(ctx,
+			otlptracegrpc.WithEndpoint(otlpEndpoint),
+			otlptracegrpc.WithInsecure(),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)
+		}
+		options = append(options, sdktrace.WithBatcher(exporter))
+	}
+
+	tp := sdktrace.NewTracerProvider(options...)
 
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))

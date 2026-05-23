@@ -1,0 +1,30 @@
+<clickhouse>
+  <remote_servers>
+    <cluster>
+      <shard>
+        <internal_replication>true</internal_replication>
+        <replica>
+          <host>signoz-clickhouse</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+    </cluster>
+  </remote_servers>
+
+  <zookeeper>
+    <node>
+      <host>signoz-zookeeper-1</host>
+      <port>2181</port>
+    </node>
+  </zookeeper>
+
+  <macros>
+    <cluster>cluster</cluster>
+    <shard>01</shard>
+    <replica>signoz-clickhouse</replica>
+  </macros>
+
+  <distributed_ddl>
+    <path>/clickhouse/task_queue/ddl</path>
+  </distributed_ddl>
+</clickhouse>

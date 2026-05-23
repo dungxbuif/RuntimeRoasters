@@ -18,10 +18,13 @@ This directory contains deep-dive technical specifications for the Runtime Roast
     *   Driver Client route simulation, realtime GPS updates, and OSRM route generation.
 7.  **🐝 [Kafka Engineering Conventions](./KAFKA.md)**
     *   Partitioning, idempotency, and high-availability configuration.
+8.  **📈 [Observability](./OBSERVABILITY.md)**
+    *   SigNoz, ClickHouse, OTel Collector, and trace evidence workflow.
 
 ## 📏 Engineering Standards
 - **[Code Style & Canonical Template](./standards/CODE_STYLE.md)**
 - **[Modular Bootstrap Pattern](./standards/BOOTSTRAP.md)**
+- **[Engineering Guardrails For Agents](./standards/ENGINEERING_RULES.md)**
 
 ---
 *Maintained by the Runtime Roasters Engineering Team.*

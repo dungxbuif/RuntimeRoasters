@@ -48,7 +48,7 @@ SigNoz UI nhúng qua iframe — toàn bộ tính năng: Traces, Metrics, Logs, D
 └─────────────────────────────────────────────────┘
 ```
 
-Proxy flow: `/signoz/*` → `next.config.ts` rewrite → `SIGNOZ_INTERNAL_URL` (internal Docker DNS). Port 3301 không expose ra host — chỉ admin đã auth mới đến được.
+Proxy flow option: `/signoz/*` → `next.config.ts` rewrite → `SIGNOZ_INTERNAL_URL` (internal Docker DNS). For local demo, SigNoz is also exposed directly at `http://localhost:3301`; admin-only embedding can be added later when the control page is implemented.
 
 ---
 

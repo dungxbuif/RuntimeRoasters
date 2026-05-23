@@ -2,7 +2,7 @@
 
 This is the working context for AI agents in this repository. Treat it as the first file to read before changing code.
 
-Last updated: 2026-05-19
+Last updated: 2026-05-23
 
 ## Mission
 
@@ -87,6 +87,18 @@ Local ports:
 - farm-service must not crash when auth-service is not yet ready. Its resilient reader background bootstrap should retry snapshot sync.
 - REST business services from retail/payment/logistics/trace/audit require auth-service at startup because their HTTP guards bootstrap JWKS and the Casbin snapshot.
 - Kafka consumers default to latest-offset startup for demo flows. Use `deployments/reset-demo-state.sh` before clean local SAGA demos.
+- Kafka dev infrastructure uses the official Apache Kafka image `apache/kafka:4.3.0` without ZooKeeper. Do not reintroduce ZooKeeper.
+- Observability uses SigNoz + ClickHouse through `otel-collector` in `deployments/docker-compose.dev.yaml`; SigNoz UI is `http://localhost:3301`.
+- The SigNoz ClickHouse coordination service is not part of Kafka. Do not connect Kafka to it.
+- SigNoz setup order matters: `signoz-zookeeper-1` -> `signoz-init-clickhouse` -> `signoz-clickhouse` -> `signoz-telemetrystore-migrator` -> `otel-collector` and `signoz`.
+- SigNoz config files live under `deployments/otel-collector-config.yaml` and `deployments/signoz/**`. Keep collector, ClickHouse cluster, and custom function config in sync when changing image versions.
+- SigNoz collector must expose `4317/4318`; host-local Go services use `OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317`.
+- In dev, run `otel-collector` directly with `--config=/etc/otel-collector-config.yaml`; do not enable OpAMP manager mode unless SigNoz org/agent enrollment is intentionally configured, because OpAMP can replace the repo config with a `nop` pipeline.
+- KrakenD runs inside Docker and must validate JWTs against internal Hydra DNS: `http://hydra:4444/.well-known/jwks.json`. Do not point KrakenD at the protected host JWKS proxy unless it can send the required internal header.
+- Outbox relays must preserve W3C trace context. Store `traceparent`/`tracestate` with outbox metadata and extract them before Kafka publish.
+- Kafka inbox/dedupe must prefer `event_id` or `topic:key`; offsets are a fallback only. Kafka offsets are not stable across broker/topic resets.
+- Worker-only services still need the same bootstrap baseline as HTTP services: logger, config, `telemetry.InitTracer`, `database.NewPostgres`, Kafka wrappers, and cleanup.
+- GORM `AutoMigrate` is not sufficient proof for existing demo DB compatibility. Inspect current table schemas before adding relationships or changing column types.
 
 ## Frontend Rules
 
@@ -128,8 +140,18 @@ curl -s -I http://127.0.0.1:3000/
 Expected `/v1/users` local demo users are `ADMIN` and `FARM_MANAGER` only.
 Expected unauthenticated protected gateway calls return `401`.
 
+End-to-end trace verification:
+
+```bash
+cd src/apps/client-app
+npx playwright test e2e/manual-live-evidence.spec.ts --project=chromium
+```
+
+Expected result: one browser-driven gateway flow produces one trace ID across `retail.order.created`, `payment.intent.created`, `payment.completed`, `warehouse.stock.reserved`, and `logistics.shipment.assigned`.
+
 ## Documentation Pointers
 
+- Mandatory engineering guardrails: `docs/technical/standards/ENGINEERING_RULES.md`
 - Latest implementation notes: `docs/engineering/current-context.md`
 - Architecture overview: `docs/architecture/README.md`
 - AuthZ ADR: `docs/architecture/adrs/0003-two-gate-authz-casbin.md`
@@ -143,4 +165,7 @@ Expected unauthenticated protected gateway calls return `401`.
 - Prefer `apply_patch` for edits.
 - Keep changes scoped to the task.
 - When changing behavior, update docs in the same turn if the decision affects app context.
-- When services are running for manual browser testing, keep them running and report URLs/status instead of killing them at the end.
+- Before making backend integration changes, read and follow `docs/technical/standards/ENGINEERING_RULES.md`.
+- For live verification, ensure only one instance of each service consumer is running; mixed old/new `go run` binaries invalidate evidence.
+- Do not close cross-service tickets using direct service-port tests when the real flow requires KrakenD/browser auth.
+- When services are running for manual browser testing, keep them running only if the user explicitly wants to review them live; otherwise clean up processes before final.

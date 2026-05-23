@@ -28,6 +28,7 @@ These variables are typically shared across the entire infrastructure.
 | `KAFKA_BROKERS` | List of Kafka brokers (comma-separated) | `localhost:9094` |
 | `INTERNAL_SECRET` | Shared secret for internal service auth | `dev-secret-xxxx` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `localhost:4317` |
+| `NEXT_PUBLIC_SIGNOZ_URL` | Public SigNoz UI URL for demo/ops links | `http://localhost:3301` |
 
 ---
 
@@ -46,7 +47,7 @@ Each service extends the `BaseConfig` with its own specific needs (mostly Kafka 
 
 To ensure all dependencies are ready, services should be started in this order:
 
-1.  **Infrastructure (`task infra`)**: Starts Postgres, Kafka, Valkey, Kratos, Hydra.
+1.  **Infrastructure (`task infra`)**: Starts Postgres, Kafka, Valkey, Kratos, Hydra, SigNoz, ClickHouse, and the OTel Collector.
 2.  **Seeding (`task seed`)**: Provisions the Admin user and OAuth2 clients.
 3.  **Auth Service**: Must be up first as it provides Casbin policies to others.
 4.  **Core Business Services**: Farm, Warehouse, Retail, etc.

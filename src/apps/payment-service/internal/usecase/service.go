@@ -49,7 +49,7 @@ func NewService(db *gorm.DB, producer kafka.Producer, providers *provider.Factor
 }
 
 func (s *Service) HandleOrderCreated(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	var event events.RetailOrderCreated
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
 		return err
@@ -87,7 +87,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, msg kafkago.Message) e
 }
 
 func (s *Service) HandleCompensationEvent(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	var failed events.WarehouseStockReservationFailed
 	if err := json.Unmarshal(msg.Value, &failed); err != nil {
 		return err

@@ -84,6 +84,8 @@ Public trace side:
 - Driver return-to-base is mandatory for farm pickup and retail delivery.
 - Retail order `COMPLETED` waits for driver return-to-base to be recorded.
 - Trace-history belongs to `trace-service`; do not introduce a separate monitor microservice in this sprint.
+- SigNoz + ClickHouse is the observability backend for OpenTelemetry waterfall evidence.
+- Kafka remains Apache Kafka without ZooKeeper. The SigNoz ClickHouse coordinator is a separate observability dependency and must not be reused by Kafka.
 - Elasticsearch is the business traceability read model.
 - Cassandra is append-only audit and optional trace-service live history.
 - PostgreSQL is source of truth for operational state.
@@ -114,7 +116,8 @@ Public trace side:
 
 ## 5. Definition Of Done
 
-- A single paid order or harvest demo produces connected `trace_id` across gateway, services, DB spans, Kafka publish/consume, and downstream handlers.
+- [x] RR-URG-01: A single paid order or harvest demo produces connected `trace_id` across gateway, services, DB spans, Kafka publish/consume, and downstream handlers.
+- [x] RR-URG-01: SigNoz at `http://localhost:3301` shows OTel spans for the same `trace_id` used by trace-service evidence.
 - Farm harvest creates pickup request, not intake.
 - Warehouse dispatches driver/vehicle for farm pickup.
 - Driver Client simulates route and posts GPS/status updates while logged in as `DRIVER`.
@@ -135,13 +138,13 @@ Public trace side:
 
 ### TraceId Foundation
 
-- [ ] KrakenD forwards or creates W3C `traceparent`.
-- [ ] Gin/gRPC handlers start child spans with the incoming context.
-- [ ] Kafka producer injects `traceparent` into message headers.
-- [ ] Kafka consumer extracts `traceparent` before business handling.
-- [ ] GORM/Postgres spans are child spans of business handlers.
-- [ ] Logs include `trace_id`.
-- [ ] One E2E command proves a single trace across services.
+- [x] KrakenD forwards configured W3C `traceparent`.
+- [x] Gin/gRPC handlers start child spans with the incoming context.
+- [x] Kafka producer injects `traceparent` into message headers.
+- [x] Kafka consumer extracts `traceparent` before business handling.
+- [x] GORM/Postgres tracing plugin is installed under shared DB bootstrap.
+- [x] Logs include `trace_id` from OTel context.
+- [x] One E2E command proves a single trace across services.
 
 ### Backend Flow
 

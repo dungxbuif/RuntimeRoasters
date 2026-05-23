@@ -87,3 +87,16 @@ Virtually unchanged, but the initialization logic will be cleaner as the passed 
 
 ## 💡 Philosophy
 "Base is the backbone, Service is the flesh." The backbone handles survival functions (Security, Health, Sync), while the flesh handles business functions (Business Logic).
+
+## 5. Mandatory Baseline For Every Service
+
+Every service must use `pkg/base.App` unless there is a documented worker-only exception. A worker-only exception must still initialize the same baseline manually:
+
+- `logger.InitLogger`
+- `telemetry.InitTracer`
+- `database.NewPostgres` for Postgres access
+- `pkg/kafka.NewProducer` and `pkg/kafka.NewConsumer` for Kafka
+- graceful shutdown for producers, consumers, DB, and tracer provider
+- idempotency via `pkg/kafka.MessageID(msg)` for consumed Kafka messages
+
+Do not accept a service as production-demo ready if it skips the shared bootstrap baseline only because it has no HTTP routes. Worker services still participate in distributed traces and SAGA correctness.

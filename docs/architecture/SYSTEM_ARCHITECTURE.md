@@ -142,10 +142,9 @@ We use a "Push-based" observability model for global request tracing.
 ```mermaid
 graph LR
     SERVICES[All Microservices] -->|gRPC/OTLP| OEL[OTel Collector]
-    OEL -->|Traces| JAEGER[Jaeger UI]
-    OEL -->|Metrics| PROM[Prometheus]
-    PROM -->|Dashboard| GRAFANA[Grafana]
-    JAEGER -->|Insight| ARCH[Architecture Map]
+    OEL -->|Traces / Metrics / Logs| SIGNOZ[SigNoz UI]
+    SIGNOZ -->|Storage| CLICKHOUSE[ClickHouse]
+    SIGNOZ -->|Insight| ARCH[Architecture Map]
 ```
 
 ---

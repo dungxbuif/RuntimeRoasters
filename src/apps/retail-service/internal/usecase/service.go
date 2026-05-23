@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/domain"
@@ -14,6 +13,8 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -105,6 +106,8 @@ func (s *Service) CreateOrder(ctx context.Context, req CreateOrderRequest, idemp
 	if err != nil {
 		return nil, err
 	}
+	traceHeaders := propagation.MapCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, traceHeaders)
 
 	order := &domain.Order{
 		ID:             orderID,
@@ -115,12 +118,14 @@ func (s *Service) CreateOrder(ctx context.Context, req CreateOrderRequest, idemp
 		IdempotencyKey: idempotencyKey,
 	}
 	outbox := &domain.OutboxEvent{
-		ID:        uuid.NewString(),
-		EventType: s.orderCreatedTopic,
-		Topic:     s.orderCreatedTopic,
-		Key:       orderID,
-		Payload:   string(payload),
-		Status:    domain.OutboxStatusPending,
+		ID:          uuid.NewString(),
+		EventType:   s.orderCreatedTopic,
+		Topic:       s.orderCreatedTopic,
+		Key:         orderID,
+		Payload:     string(payload),
+		TraceParent: traceHeaders.Get("traceparent"),
+		TraceState:  traceHeaders.Get("tracestate"),
+		Status:      domain.OutboxStatusPending,
 	}
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -149,8 +154,9 @@ func (s *Service) ProcessOutbox(ctx context.Context, limit int) error {
 		return err
 	}
 	for _, event := range outbox {
-		if err := s.producer.Publish(ctx, event.Topic, event.Key, json.RawMessage(event.Payload)); err != nil {
-			logger.FromContext(ctx).Warn("failed to publish retail outbox event", zap.Error(err), zap.String("event_id", event.ID))
+		eventCtx := contextFromOutboxTrace(ctx, event)
+		if err := s.producer.Publish(eventCtx, event.Topic, event.Key, json.RawMessage(event.Payload)); err != nil {
+			logger.FromContext(eventCtx).Warn("failed to publish retail outbox event", zap.Error(err), zap.String("event_id", event.ID))
 			_ = s.db.WithContext(ctx).Model(&event).Update("status", domain.OutboxStatusFailed).Error
 			continue
 		}
@@ -161,8 +167,22 @@ func (s *Service) ProcessOutbox(ctx context.Context, limit int) error {
 	return nil
 }
 
+func contextFromOutboxTrace(ctx context.Context, event domain.OutboxEvent) context.Context {
+	carrier := propagation.MapCarrier{}
+	if event.TraceParent != "" {
+		carrier.Set("traceparent", event.TraceParent)
+	}
+	if event.TraceState != "" {
+		carrier.Set("tracestate", event.TraceState)
+	}
+	if len(carrier) == 0 {
+		return ctx
+	}
+	return otel.GetTextMapPropagator().Extract(ctx, carrier)
+}
+
 func (s *Service) HandleSagaEvent(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing domain.InboxEvent
 		if err := tx.Where("message_id = ?", messageID).Take(&existing).Error; err == nil {

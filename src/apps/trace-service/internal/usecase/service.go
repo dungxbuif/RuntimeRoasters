@@ -9,9 +9,11 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/search"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -30,6 +32,7 @@ type TraceReadModel struct {
 	Order      map[string]interface{} `json:"order,omitempty"`
 	Payment    map[string]interface{} `json:"payment,omitempty"`
 	Shipment   map[string]interface{} `json:"shipment,omitempty"`
+	TraceIDs   []string               `json:"trace_ids,omitempty"`
 	Timeline   []TimelineEntry        `json:"timeline"`
 	Events     []domain.TraceEvent    `json:"events"`
 	UpdatedAt  time.Time              `json:"updated_at"`
@@ -49,8 +52,12 @@ func NewService(db *gorm.DB, searchClient *search.ElasticsearchClient) *Service 
 }
 
 func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
-	messageID := fmt.Sprintf("%s-%d-%d", msg.Topic, msg.Partition, msg.Offset)
+	messageID := kafka.MessageID(msg)
 	ids := extractIDs(msg.Value)
+	traceID := ""
+	if spanContext := trace.SpanContextFromContext(ctx); spanContext.HasTraceID() {
+		traceID = spanContext.TraceID().String()
+	}
 	event := domain.TraceEvent{
 		ID:         uuid.NewString(),
 		MessageID:  messageID,
@@ -59,6 +66,7 @@ func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 		OrderID:    ids["order_id"],
 		ShipmentID: ids["shipment_id"],
 		StoreID:    ids["store_id"],
+		TraceID:    traceID,
 		Payload:    string(msg.Value),
 		OccurredAt: time.Now(),
 	}
@@ -142,10 +150,14 @@ func (s *Service) rebuildDocument(ctx context.Context, tx *gorm.DB, entityType s
 	if err != nil {
 		return err
 	}
-	doc := domain.TraceDocument{ID: uuid.NewString(), EntityID: entityID, EntityType: entityType, StoreID: readModel.StoreID, Document: string(payload), UpdatedAt: time.Now()}
+	traceIDsJSON, err := json.Marshal(readModel.TraceIDs)
+	if err != nil {
+		return err
+	}
+	doc := domain.TraceDocument{ID: uuid.NewString(), EntityID: entityID, EntityType: entityType, StoreID: readModel.StoreID, TraceIDs: string(traceIDsJSON), Document: string(payload), UpdatedAt: time.Now()}
 	if err := tx.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "entity_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"entity_type", "store_id", "document", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"entity_type", "store_id", "trace_ids", "document", "updated_at"}),
 	}).Create(&doc).Error; err != nil {
 		return err
 	}
@@ -157,6 +169,7 @@ func (s *Service) rebuildDocument(ctx context.Context, tx *gorm.DB, entityType s
 			Order:      readModel.Order,
 			Payment:    readModel.Payment,
 			Shipment:   readModel.Shipment,
+			TraceIDs:   readModel.TraceIDs,
 			Timeline:   readModel.Timeline,
 			Events:     events,
 			UpdatedAt:  readModel.UpdatedAt,
@@ -176,7 +189,14 @@ func buildReadModel(entityID string, entityType string, events []domain.TraceEve
 		Events:     events,
 		UpdatedAt:  time.Now(),
 	}
+	seenTraceIDs := map[string]struct{}{}
 	for _, event := range events {
+		if event.TraceID != "" {
+			if _, ok := seenTraceIDs[event.TraceID]; !ok {
+				seenTraceIDs[event.TraceID] = struct{}{}
+				model.TraceIDs = append(model.TraceIDs, event.TraceID)
+			}
+		}
 		payload := parsePayload(event.Payload)
 		entry := timelineEntry(event, payload)
 		model.Timeline = append(model.Timeline, entry)

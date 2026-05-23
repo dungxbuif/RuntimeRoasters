@@ -21,10 +21,10 @@ Khi bạn nhấn "Trigger API Call" trên Client App, một Trace ID duy nhất 
     *   **Xử lý**: `otelgrpc.NewServerHandler` nhận request gRPC và tạo span cuối cùng cho logic nghiệp vụ.
     *   **File**: `src/pkg/base/app.go` (hàm `NewApp` & `RegisterGateway`).
 
-## 2. Jaeger thu nhận và hiển thị
-*   **Collector**: Jaeger lắng nghe tại cổng `4317` (gRPC OTLP).
-*   **Storage**: Các service "đẩy" (push) dữ liệu span về Jaeger ngay khi xử lý xong.
-*   **Visualization**: Jaeger UI nhóm các spans có cùng `Trace ID` thành một cây sơ đồ thời gian (Gantt Chart).
+## 2. SigNoz thu nhận và hiển thị
+*   **Collector**: SigNoz OTel Collector lắng nghe tại cổng `4317` (gRPC OTLP) và `4318` (HTTP OTLP).
+*   **Storage**: Các service "đẩy" (push) dữ liệu span về collector, collector ghi vào ClickHouse.
+*   **Visualization**: SigNoz UI tại `localhost:3301` nhóm các spans có cùng `Trace ID` thành waterfall/timeline.
 
 ## 3. Cách mở rộng Tracing
 Để thêm một span mới (ví dụ khi gọi Database), bạn chỉ cần:

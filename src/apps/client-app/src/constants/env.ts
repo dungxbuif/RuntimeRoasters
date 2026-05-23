@@ -1,5 +1,14 @@
 const getEnv = (key: string, required = true): string => {
-  const value = process.env[key];
+  const demoDefaults: Record<string, string> = {
+    NEXT_PUBLIC_KRATOS_PUBLIC_URL: 'http://localhost:4433',
+    NEXT_PUBLIC_HYDRA_PUBLIC_URL: 'http://localhost:4444',
+    NEXT_PUBLIC_GATEWAY_URL: 'http://localhost:8081',
+    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+    NEXT_PUBLIC_SIGNOZ_URL: 'http://localhost:3301',
+    NEXT_PUBLIC_JAEGER_URL: 'http://localhost:3301',
+    NEXT_PUBLIC_SWAGGER_JSON_URL: 'http://localhost:8081/swagger/demo.swagger.json',
+  };
+  const value = process.env[key] ?? demoDefaults[key];
   if (required && !value) {
     if (typeof window !== 'undefined') {
        // In browser, we might want to alert or just throw
@@ -17,6 +26,7 @@ export const ENV = {
   HYDRA_PUBLIC_URL: getEnv('NEXT_PUBLIC_HYDRA_PUBLIC_URL'),
   GATEWAY_URL: getEnv('NEXT_PUBLIC_GATEWAY_URL'),
   APP_URL: getEnv('NEXT_PUBLIC_APP_URL'),
+  SIGNOZ_URL: getEnv('NEXT_PUBLIC_SIGNOZ_URL'),
   JAEGER_URL: getEnv('NEXT_PUBLIC_JAEGER_URL'),
   SWAGGER_JSON_URL: getEnv('NEXT_PUBLIC_SWAGGER_JSON_URL'),
   
