@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/domain"
-	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
+	"RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/demo-service/internal/domain"
+	demov1 "RuntimeRoasters/runtime/demo/v1"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	"RuntimeRoasters/pkg/database"
 )
 
 type OutboxEventModel struct {

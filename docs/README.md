@@ -16,9 +16,10 @@ This directory holds the project harness and the product contract.
 ## Folders
 
 - `product/`: current product truth.
-    - `SPEC.md`: Business vision, requirements, and domain logic.
+    - `SPEC.md`: The broader technical feature specs and history.
     - `TECH.md`: System architecture, technical contracts, and infrastructure.
     - `GUIDE.md`: Developer guides, engineering logs, and operational setup.
+    - `domain/README.md`: **Master Business Specification** (Source of Truth).
 - `stories/`: feature packets and history of previous work.
 - `decisions/`: architecture decision records (ADRs).
 - `templates/`: reusable spec-intake, story, plan, decision, and validation

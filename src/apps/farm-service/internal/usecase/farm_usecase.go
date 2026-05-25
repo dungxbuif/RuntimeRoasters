@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/errs"
 )
 
 type FarmUsecase interface {

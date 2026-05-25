@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/token"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/base/auth/token"
+	"RuntimeRoasters/pkg/base/identity"
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/apps/logistics-service/internal/domain"
+	logisticsseed "RuntimeRoasters/apps/logistics-service/internal/seed"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	kafkago "github.com/segmentio/kafka-go"
@@ -50,11 +51,12 @@ func NewService(db *gorm.DB, rdb *redis.Client, producer kafka.Producer, assigne
 	}
 }
 
-func (s *Service) SeedDrivers(ctx context.Context) error {
-	vehicles := []domain.Vehicle{
-		{ID: "VEHICLE-DEMO-001", PlateNumber: "HN-51A-001", Type: "TRUCK", CapacityKG: 1500, HomeWarehouseID: "WAREHOUSE-HN-001", Status: domain.DriverStatusIdle, CurrentLatitude: 21.0285, CurrentLongitude: 105.8542},
-		{ID: "VEHICLE-DEMO-002", PlateNumber: "HN-51A-002", Type: "VAN", CapacityKG: 800, HomeWarehouseID: "WAREHOUSE-HN-001", Status: domain.DriverStatusIdle, CurrentLatitude: 21.0305, CurrentLongitude: 105.8562},
-		{ID: "VEHICLE-DEMO-003", PlateNumber: "HCM-51A-003", Type: "TRUCK", CapacityKG: 1200, HomeWarehouseID: "WAREHOUSE-HCM-001", Status: domain.DriverStatusIdle, CurrentLatitude: 10.7769, CurrentLongitude: 106.7009},
+func (s *Service) SeedDrivers(ctx context.Context, vehicles []domain.Vehicle, drivers []domain.Driver) error {
+	if len(vehicles) == 0 {
+		return errors.New("logistics vehicle seed is empty")
+	}
+	if len(drivers) == 0 {
+		return errors.New("logistics driver seed is empty")
 	}
 	for _, vehicle := range vehicles {
 		if err := s.db.WithContext(ctx).Where("id = ?", vehicle.ID).FirstOrCreate(&vehicle).Error; err != nil {
@@ -62,13 +64,6 @@ func (s *Service) SeedDrivers(ctx context.Context) error {
 		}
 	}
 
-	drivers := []domain.Driver{
-		{ID: "22222222-2222-2222-2222-222222222201", UserID: "driver@runtimeroasters.com", Name: "Driver Hanoi 1", Phone: "+84010000001", VehicleID: "VEHICLE-DEMO-001", Status: domain.DriverStatusIdle, IsAvailable: true},
-		{ID: "22222222-2222-2222-2222-222222222202", UserID: "driver.hn2@runtimeroasters.com", Name: "Driver Hanoi 2", Phone: "+84010000002", VehicleID: "VEHICLE-DEMO-002", Status: domain.DriverStatusIdle, IsAvailable: true},
-		{ID: "22222222-2222-2222-2222-222222222203", UserID: "driver.hcm@runtimeroasters.com", Name: "Driver HCM 1", Phone: "+84010000003", VehicleID: "VEHICLE-DEMO-003", Status: domain.DriverStatusIdle, IsAvailable: true},
-		{ID: "22222222-2222-2222-2222-222222222204", UserID: "driver.dn@runtimeroasters.com", Name: "Driver Da Nang 1", Phone: "+84010000004", Status: domain.DriverStatusIdle, IsAvailable: true},
-		{ID: "22222222-2222-2222-2222-222222222205", UserID: "driver.backup@runtimeroasters.com", Name: "Driver Backup", Phone: "+84010000005", Status: domain.DriverStatusIdle, IsAvailable: true},
-	}
 	for i, driver := range drivers {
 		if err := s.db.WithContext(ctx).Where("id = ?", driver.ID).FirstOrCreate(&driver).Error; err != nil {
 			return err
@@ -80,12 +75,9 @@ func (s *Service) SeedDrivers(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) SeedLocations(ctx context.Context) error {
-	locations := []domain.Location{
-		{ID: "WAREHOUSE-HN-001", Name: "Hanoi Warehouse", Type: domain.LocationTypeRoastery, Lat: 21.0285, Lng: 105.8542},
-		{ID: "FARM-CAUDAT-001", Name: "Cau Dat Farm", Type: domain.LocationTypeFarm, Lat: 11.9404, Lng: 108.4442},
-		{ID: "11111111-1111-1111-1111-111111111101", Name: "Hoan Kiem Store", Type: domain.LocationTypeRetailer, Lat: 21.0289, Lng: 105.8525},
-		{ID: "11111111-1111-1111-1111-111111111103", Name: "HCM District 1 Store", Type: domain.LocationTypeRetailer, Lat: 10.7769, Lng: 106.7009},
+func (s *Service) SeedLocations(ctx context.Context, locations []domain.Location) error {
+	if len(locations) == 0 {
+		return errors.New("logistics location seed is empty")
 	}
 	for _, location := range locations {
 		if err := s.db.WithContext(ctx).Where("id = ?", location.ID).FirstOrCreate(&location).Error; err != nil {
@@ -93,6 +85,59 @@ func (s *Service) SeedLocations(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) GetSystemStatus(ctx context.Context) (*domain.SystemStatus, error) {
+	var driverCount, locationCount, vehicleCount int64
+	s.db.WithContext(ctx).Model(&domain.Driver{}).Count(&driverCount)
+	s.db.WithContext(ctx).Model(&domain.Location{}).Count(&locationCount)
+	s.db.WithContext(ctx).Model(&domain.Vehicle{}).Count(&vehicleCount)
+
+	seeded := driverCount > 0 && locationCount > 0 && vehicleCount > 0
+
+	return &domain.SystemStatus{
+		Seeded:      seeded,
+		ServiceName: "logistics-service",
+		RecordCounts: map[string]int64{
+			"drivers":   driverCount,
+			"locations": locationCount,
+			"vehicles":  vehicleCount,
+		},
+	}, nil
+}
+
+func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult, error) {
+	status, err := s.GetSystemStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if status.Seeded && !force {
+		return &domain.SeedResult{
+			Success: true,
+			Message: "System already seeded",
+		}, nil
+	}
+
+	seedData, err := logisticsseed.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.SeedDrivers(ctx, seedData.Vehicles, seedData.Drivers); err != nil {
+		return nil, err
+	}
+	if err := s.SeedLocations(ctx, seedData.Locations); err != nil {
+		return nil, err
+	}
+
+	total := int64(len(seedData.Vehicles) + len(seedData.Drivers) + len(seedData.Locations))
+
+	return &domain.SeedResult{
+		Success:        true,
+		Message:        "Successfully seeded logistics data",
+		RecordsCreated: total,
+	}, nil
 }
 
 func (s *Service) ListShipments(ctx context.Context) ([]domain.Shipment, error) {
@@ -167,6 +212,9 @@ func (s *Service) UpdateDriverLocation(ctx context.Context, driverID string, shi
 	}
 	if driverID == "" {
 		return errors.New("driver_id is required")
+	}
+	if _, err := uuid.Parse(driverID); err != nil {
+		return errors.New("driver_id must be a UUID")
 	}
 	storeID := ""
 	if hasClaims && !claims.IsAdmin() {

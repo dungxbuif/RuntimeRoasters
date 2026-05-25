@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/events"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

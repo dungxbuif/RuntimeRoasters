@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/base/identity"
 	"gorm.io/gorm"
 )
 

@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	authhttp "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/http"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	authhttp "RuntimeRoasters/pkg/base/auth/transport/http"
+	"RuntimeRoasters/pkg/errs"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"crypto/rsa"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/events"
 	kafkago "github.com/segmentio/kafka-go"
 )
 

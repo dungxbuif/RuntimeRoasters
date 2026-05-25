@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/domain"
+	"RuntimeRoasters/apps/demo-service/internal/domain"
 )
 
 type DemoUsecase interface {

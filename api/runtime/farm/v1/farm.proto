@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package runtime.farm.v1;
 
-option go_package = "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1;farmv1";
+option go_package = "RuntimeRoasters/runtime/farm/v1;farmv1";
 
 import "google/api/annotations.proto";
 

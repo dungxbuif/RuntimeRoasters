@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

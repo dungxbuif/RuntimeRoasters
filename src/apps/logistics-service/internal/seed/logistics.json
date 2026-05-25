@@ -1,0 +1,109 @@
+{
+  "vehicles": [
+    {
+      "id": "VEHICLE-DEMO-001",
+      "plate_number": "HN-51A-001",
+      "type": "TRUCK",
+      "capacity_kg": 1500,
+      "home_warehouse_id": "WAREHOUSE-HN-001",
+      "status": "IDLE",
+      "current_latitude": 21.0285,
+      "current_longitude": 105.8542
+    },
+    {
+      "id": "VEHICLE-DEMO-002",
+      "plate_number": "HN-51A-002",
+      "type": "VAN",
+      "capacity_kg": 800,
+      "home_warehouse_id": "WAREHOUSE-HN-001",
+      "status": "IDLE",
+      "current_latitude": 21.0305,
+      "current_longitude": 105.8562
+    },
+    {
+      "id": "VEHICLE-DEMO-003",
+      "plate_number": "HCM-51A-003",
+      "type": "TRUCK",
+      "capacity_kg": 1200,
+      "home_warehouse_id": "WAREHOUSE-HCM-001",
+      "status": "IDLE",
+      "current_latitude": 10.7769,
+      "current_longitude": 106.7009
+    }
+  ],
+  "drivers": [
+    {
+      "id": "22222222-2222-2222-2222-222222222201",
+      "user_id": "driver@runtimeroasters.com",
+      "name": "Driver Hanoi 1",
+      "phone": "+84010000001",
+      "vehicle_id": "VEHICLE-DEMO-001",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222202",
+      "user_id": "driver.hn2@runtimeroasters.com",
+      "name": "Driver Hanoi 2",
+      "phone": "+84010000002",
+      "vehicle_id": "VEHICLE-DEMO-002",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222203",
+      "user_id": "driver.hcm@runtimeroasters.com",
+      "name": "Driver HCM 1",
+      "phone": "+84010000003",
+      "vehicle_id": "VEHICLE-DEMO-003",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222204",
+      "user_id": "driver.dn@runtimeroasters.com",
+      "name": "Driver Da Nang 1",
+      "phone": "+84010000004",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222205",
+      "user_id": "driver.backup@runtimeroasters.com",
+      "name": "Driver Backup",
+      "phone": "+84010000005",
+      "status": "IDLE",
+      "is_available": true
+    }
+  ],
+  "locations": [
+    {
+      "id": "WAREHOUSE-HN-001",
+      "name": "Hanoi Warehouse",
+      "type": "ROASTERY",
+      "lat": 21.0285,
+      "lng": 105.8542
+    },
+    {
+      "id": "FARM-CAUDAT-001",
+      "name": "Cau Dat Farm",
+      "type": "FARM",
+      "lat": 11.9404,
+      "lng": 108.4442
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111101",
+      "name": "Hoan Kiem Store",
+      "type": "RETAILER",
+      "lat": 21.0289,
+      "lng": 105.8525
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111103",
+      "name": "HCM District 1 Store",
+      "type": "RETAILER",
+      "lat": 10.7769,
+      "lng": 106.7009
+    }
+  ]
+}

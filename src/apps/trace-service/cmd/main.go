@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/app"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/apps/trace-service/internal/app"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 )
 

@@ -6,10 +6,10 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
 

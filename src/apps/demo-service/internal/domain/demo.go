@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+import "RuntimeRoasters/pkg/errs"
 
 type Demo struct {
 	ID      string

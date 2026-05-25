@@ -2,7 +2,7 @@ package casbin_tests
 
 import (
 	"testing"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
+	"RuntimeRoasters/pkg/base/casbin"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/events"
 	kafkago "github.com/segmentio/kafka-go"
 )
 

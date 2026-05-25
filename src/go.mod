@@ -1,4 +1,4 @@
-module github.com/dungxbuif/RuntimeRoasters
+module RuntimeRoasters
 
 go 1.25.0
 

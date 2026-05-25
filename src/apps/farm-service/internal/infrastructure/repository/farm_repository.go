@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	rr_casbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	rr_casbin "RuntimeRoasters/pkg/base/casbin"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/errs"
 	"gorm.io/gorm"
 )
 

@@ -1,5 +1,4 @@
 import api from "@/lib/axios";
-import { API_ENDPOINTS } from "@/constants/api";
 
 export interface Store {
   id: string;

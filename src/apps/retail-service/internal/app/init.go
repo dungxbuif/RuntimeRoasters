@@ -1,16 +1,15 @@
 package app
 
 import (
-	"context"
-
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/retail-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	svcconfig "RuntimeRoasters/apps/retail-service/config"
+	retailgrpc "RuntimeRoasters/apps/retail-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/retail-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 )
 
 func InitializeApp() (*App, func(), error) {
@@ -21,15 +20,10 @@ func InitializeApp() (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := AutoMigrate(db); err != nil {
-		return nil, nil, err
-	}
 
 	producer := kafka.NewProducer(cfg.KafkaBrokers)
 	svc := usecase.NewService(db.DB, producer, cfg.OrderCreatedTopic)
-	if err := svc.SeedStores(context.Background()); err != nil {
-		return nil, nil, err
-	}
+	systemHandler := retailgrpc.NewSystemHandler(svc)
 
 	consumers := []kafka.Consumer{
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-intent", cfg.PaymentIntentTopic),
@@ -59,7 +53,7 @@ func InitializeApp() (*App, func(), error) {
 	}
 
 	baseApp := base.NewApp(base.Options{Name: cfg.AppName, Config: cfg.BaseConfig})
-	app := NewApp(baseApp, &cfg, db, svc, consumers, guards)
+	app := NewApp(baseApp, &cfg, db, svc, systemHandler, consumers, guards)
 	cleanup := func() {
 		guards.Close()
 		_ = producer.Close()

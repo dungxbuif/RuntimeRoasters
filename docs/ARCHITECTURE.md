@@ -3,7 +3,7 @@
 The application stack for **Runtime Roasters** is selected and implemented as a **Go-based Microservices Ecosystem** with **Apache Kafka** and **OpenTelemetry** integration.
 
 For the definitive technical blueprint, service catalog, and infrastructure map, see:
-👉 **[Master System Architecture Specification](./product/system-architecture.md)**
+👉 **[Master Technical Specification](./product/TECH.md)**
 
 This document defines the generic architecture discovery rules, boundary rules, and dependency patterns that agents must follow when extending the system.
 

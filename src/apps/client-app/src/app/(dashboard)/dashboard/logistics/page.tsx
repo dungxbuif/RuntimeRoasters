@@ -3,13 +3,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { logisticsService } from '@/services/logistics.service';
-import { Location, Shipment, RouteData } from '@/types/logistics';
+import { Shipment } from '@/types/logistics';
 import LogisticsMap from '@/components/features/logistics/LogisticsMap';
-import { Activity, Gauge, MapPin, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Activity, Gauge, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function LogisticsDashboard() {
   const [activeDriverLocations, setActiveDriverLocations] = useState<Record<string, [number, number]>>({});
-  const [simulationActive, setSimulationActive] = useState(true);
+  const [simulationActive, setSimulationActive] = useState(false);
 
   const { data: locations = [] } = useQuery({
     queryKey: ['logistics', 'locations'],
@@ -32,6 +32,15 @@ export default function LogisticsDashboard() {
     ] as Shipment[];
   }, [shipmentsData]);
 
+  const simulationTargets = useMemo(() => {
+    return shipmentsData.filter(shipment =>
+      shipment.id &&
+      shipment.driver_id &&
+      isUuid(shipment.driver_id) &&
+      ['IN_TRANSIT', 'IN_TRANSIT_TO_FARM', 'RETURNING_TO_WAREHOUSE', 'IN_TRANSIT_TO_STORE', 'RETURNING_TO_BASE'].includes(shipment.status)
+    );
+  }, [shipmentsData]);
+
   const { data: routes = [] } = useQuery({
     queryKey: ['logistics', 'routes'],
     queryFn: () => logisticsService.getRoutes(),
@@ -39,15 +48,15 @@ export default function LogisticsDashboard() {
 
   // Client-side simulation logic
   useEffect(() => {
-    if (!simulationActive || routes.length === 0) return;
+    if (!simulationActive || routes.length === 0 || simulationTargets.length === 0) return;
 
     const interval = setInterval(() => {
       setActiveDriverLocations(prev => {
         const next = { ...prev };
         
-        // Simulate a few drivers on routes
-        routes.forEach((route, idx) => {
-          const driverId = `driver-${idx + 1}`;
+        simulationTargets.forEach((shipment, idx) => {
+          const driverId = shipment.driver_id!;
+          const route = routes[idx % routes.length];
           const currentPos = prev[driverId];
           let nextPos: [number, number];
           
@@ -68,12 +77,9 @@ export default function LogisticsDashboard() {
 
           next[driverId] = nextPos;
 
-          // BRIDGE TO BACKEND: Update driver location in Valkey
-          // We only do this if simulation is active to avoid overwhelming backend when paused
-          const shipmentId = shipments.find(s => s.driver_id === driverId)?.id || '';
           logisticsService.updateDriverLocation({
             driver_id: driverId,
-            shipment_id: shipmentId,
+            shipment_id: shipment.id,
             latitude: nextPos[0],
             longitude: nextPos[1]
           }).catch(err => console.error(`Failed to update location for ${driverId}`, err));
@@ -84,7 +90,7 @@ export default function LogisticsDashboard() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [routes, simulationActive]);
+  }, [routes, simulationActive, simulationTargets]);
 
   return (
     <div className="h-full flex flex-col gap-6">
@@ -103,13 +109,16 @@ export default function LogisticsDashboard() {
         <div className="flex gap-4">
           <button 
             onClick={() => setSimulationActive(!simulationActive)}
+            disabled={simulationTargets.length === 0}
             className={`px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest border transition-all ${
               simulationActive 
                 ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(0,74,198,0.2)]' 
-                : 'bg-slate-100 border-slate-200 text-slate-400'
+                : simulationTargets.length === 0
+                  ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
+                  : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
-            {simulationActive ? '● SIMULATION ACTIVE' : '○ SIMULATION PAUSED'}
+            {simulationTargets.length === 0 ? '○ NO ACTIVE REAL SHIPMENT' : simulationActive ? '● SIMULATION ACTIVE' : '○ SIMULATION PAUSED'}
           </button>
         </div>
       </div>
@@ -233,4 +242,8 @@ export default function LogisticsDashboard() {
       </div>
     </div>
   );
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

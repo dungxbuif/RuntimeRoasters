@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/audit-service/internal/domain"
+	"RuntimeRoasters/apps/audit-service/internal/domain"
 	"github.com/gocql/gocql"
 )
 

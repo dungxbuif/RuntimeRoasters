@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/casbin/casbin/v3"
-	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	casbingrpc "RuntimeRoasters/pkg/base/casbin/transport/grpc"
+	"RuntimeRoasters/pkg/base/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"

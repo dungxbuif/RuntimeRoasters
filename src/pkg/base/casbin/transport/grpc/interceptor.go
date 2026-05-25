@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/base/identity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

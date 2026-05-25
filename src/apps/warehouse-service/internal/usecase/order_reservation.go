@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
 	"gorm.io/gorm"

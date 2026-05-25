@@ -3,16 +3,16 @@ package app
 import (
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/config"
-	demogrpc "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	authgrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
+	"RuntimeRoasters/apps/demo-service/config"
+	demogrpc "RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/demo-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	authgrpc "RuntimeRoasters/pkg/base/auth/transport/grpc"
+	"RuntimeRoasters/pkg/base/casbin"
+	casbingrpc "RuntimeRoasters/pkg/base/casbin/transport/grpc"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/valkey"
 	"google.golang.org/grpc"
 )
 

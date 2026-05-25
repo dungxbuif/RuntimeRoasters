@@ -10,7 +10,7 @@ Every task (Ticket) must reside within its own dedicated directory.
 
 ### A. For Single Tickets
 ```text
-docs/business/sprintX/RR-x/
+docs/stories/history/sprintX/RR-x/
 ├── ticket.md             # BA Documentation (What/Why)
 └── technical_design.md    # Technical Documentation (How)
 ```
@@ -18,7 +18,7 @@ docs/business/sprintX/RR-x/
 ### B. For Large Tickets (Epic/Complex Ticket)
 If a ticket is too large and needs to be subdivided, use a `subtickets` directory:
 ```text
-docs/business/sprintX/RR-x/
+docs/stories/history/sprintX/RR-x/
 ├── ticket.md             # BA Epic level
 ├── technical_design.md    # Tech Lead/Architect Strategy
 └── subtickets/

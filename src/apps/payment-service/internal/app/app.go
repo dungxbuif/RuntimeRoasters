@@ -5,16 +5,13 @@ import (
 	"io"
 	"net/http"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/payment-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/payment-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/payment-service/internal/provider"
-	"github.com/dungxbuif/RuntimeRoasters/apps/payment-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	svcconfig "RuntimeRoasters/apps/payment-service/config"
+	"RuntimeRoasters/apps/payment-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -30,39 +27,69 @@ type App struct {
 }
 
 func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, service *usecase.Service, orderConsumers []kafka.Consumer, compensationConsumers []kafka.Consumer, guards *security.HTTPGuards) *App {
-	return &App{Base: baseApp, Cfg: cfg, DB: db, Service: service, OrderConsumers: orderConsumers, CompensationConsumers: compensationConsumers, Guards: guards}
+	return &App{
+		Base:                  baseApp,
+		Cfg:                   cfg,
+		DB:                    db,
+		Service:               service,
+		OrderConsumers:        orderConsumers,
+		CompensationConsumers: compensationConsumers,
+		Guards:                guards,
+	}
 }
 
 func (a *App) Run() {
-	a.Base.RegisterHTTP(a.routes)
-	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
-	a.Base.FinalizeRoutes()
+	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
+	log.Info("payment-service starting")
 
 	for _, consumer := range a.OrderConsumers {
 		c := consumer
 		go func() {
 			if err := c.Listen(context.Background(), a.Service.HandleOrderCreated); err != nil {
-				logger.GetLogger().Error("payment consumer stopped", zap.Error(err))
+				log.Error("order consumer stopped", zap.String("topic", c.Topic()), zap.Error(err))
 			}
 		}()
 	}
+
 	for _, consumer := range a.CompensationConsumers {
 		c := consumer
 		go func() {
 			if err := c.Listen(context.Background(), a.Service.HandleCompensationEvent); err != nil {
-				logger.GetLogger().Error("payment compensation consumer stopped", zap.Error(err))
+				log.Error("compensation consumer stopped", zap.String("topic", c.Topic()), zap.Error(err))
 			}
 		}()
 	}
+
+	a.Base.RegisterHTTP(a.routes)
+	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
+	a.Base.FinalizeRoutes()
 	a.Base.Run(a.Cfg.AppPort, a.Cfg.GRPCPort)
 }
 
+func (a *App) Shutdown() error {
+	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
+	log.Info("shutting down")
+	var err error
+	for _, consumer := range a.OrderConsumers {
+		if closeErr := consumer.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}
+	for _, consumer := range a.CompensationConsumers {
+		if closeErr := consumer.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}
+	return err
+}
+
 func (a *App) routes(r *gin.Engine) {
-	v1 := r.Group("/v1")
+	v1 := r.Group("/v1/payments")
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
 	}
-	v1.GET("/payments", func(c *gin.Context) {
+
+	v1.GET("", func(c *gin.Context) {
 		payments, err := a.Service.ListPayments(c.Request.Context())
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -70,8 +97,9 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"payments": payments})
 	})
-	v1.GET("/payments/orders/:order_id", func(c *gin.Context) {
-		payment, err := a.Service.GetPaymentByOrder(c.Request.Context(), c.Param("order_id"))
+
+	v1.GET("/order/:id", func(c *gin.Context) {
+		payment, err := a.Service.GetPaymentByOrder(c.Request.Context(), c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
@@ -79,43 +107,19 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"payment": payment})
 	})
 
-	r.POST("/v1/webhooks/stripe", a.stripeWebhook())
-	r.POST("/v1/webhooks/vnpay", a.vnpayWebhook())
-}
-
-func (a *App) stripeWebhook() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		body, err := io.ReadAll(c.Request.Body)
+	v1.POST("/webhook/:provider", func(c *gin.Context) {
+		payload, _ := io.ReadAll(c.Request.Body)
+		err := a.Service.SimulateWebhook(
+			c.Request.Context(),
+			c.Param("provider"),
+			payload,
+			c.GetHeader("X-Timestamp"),
+			c.GetHeader("X-Signature"),
+		)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
-		timestamp, signature := provider.StripeSignatureTimestamp(c.GetHeader("Stripe-Signature"))
-		if err := a.Service.SimulateWebhook(c.Request.Context(), provider.ProviderStripe, body, timestamp, signature); err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "accepted", "simulated": true})
-	}
+		c.JSON(http.StatusOK, gin.H{"status": "processed"})
+	})
 }
-
-func (a *App) vnpayWebhook() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		body, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-		if err := a.Service.SimulateWebhook(c.Request.Context(), provider.ProviderVNPay, body, c.GetHeader("X-VNPAY-Timestamp"), c.GetHeader("X-VNPAY-Signature")); err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "accepted", "simulated": true})
-	}
-}
-
-func AutoMigrate(db *database.DB) error {
-	return db.AutoMigrate(&domain.Payment{}, &domain.InboxEvent{}, &domain.WebhookEvent{})
-}
-
-var _ = events.TopicPaymentCompleted

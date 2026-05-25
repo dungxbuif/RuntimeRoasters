@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/usecase"
-	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
+	"RuntimeRoasters/apps/auth-service/internal/domain"
+	"RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
+	"RuntimeRoasters/apps/auth-service/internal/usecase"
+	authv1 "RuntimeRoasters/runtime/auth/v1"
 )
 
 type Handler struct {

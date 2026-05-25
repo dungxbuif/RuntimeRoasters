@@ -3,7 +3,7 @@ package watcher
 import (
 	"github.com/casbin/casbin/v3"
 	"github.com/fsnotify/fsnotify"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 )
 

@@ -4,26 +4,22 @@ import (
 	"context"
 	"time"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/trace-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/search"
-	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	svcconfig "RuntimeRoasters/apps/trace-service/config"
+	"RuntimeRoasters/apps/trace-service/internal/search"
+	"RuntimeRoasters/apps/trace-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 )
 
 func InitializeApp() (*App, func(), error) {
 	cfg := defaults(svcconfig.Load())
-	logger.InitLogger(cfg.AppEnv, cfg.LogLevel)
 	db, err := database.NewPostgres(database.PostgresConfig{URL: cfg.DatabaseURL, LogLevel: cfg.DBLogLevel})
 	if err != nil {
-		return nil, nil, err
-	}
-	if err := AutoMigrate(db); err != nil {
 		return nil, nil, err
 	}
 	searchClient := initSearchClient(cfg)

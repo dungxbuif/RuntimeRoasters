@@ -1,0 +1,42 @@
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111101",
+    "name": "Hoan Kiem Store",
+    "city": "Hanoi",
+    "address": "2 Ly Thai To",
+    "manager_email": "mgr.hn.hoankiem@runtimeroasters.com",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111102",
+    "name": "Cau Giay Store",
+    "city": "Hanoi",
+    "address": "102 Tran Thai Tong",
+    "manager_email": "mgr.hn.caugiay@runtimeroasters.com",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111103",
+    "name": "District 1 Store",
+    "city": "Ho Chi Minh City",
+    "address": "45 Le Thanh Ton",
+    "manager_email": "mgr.hcm.q1@runtimeroasters.com",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111104",
+    "name": "District 7 Store",
+    "city": "Ho Chi Minh City",
+    "address": "Phu My Hung",
+    "manager_email": "mgr.hcm.q7@runtimeroasters.com",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111105",
+    "name": "Hai Chau Store",
+    "city": "Da Nang",
+    "address": "15 Bach Dang",
+    "manager_email": "mgr.dn.haichau@runtimeroasters.com",
+    "status": "ACTIVE"
+  }
+]

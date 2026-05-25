@@ -30,6 +30,13 @@ RR-URG-02 implementation note:
 - Canonical topic rename is immediate; runtime code should not consume legacy topics such as `farm.harvest.events`, `warehouse.stock.updated`, `logistics.shipment.assigned`, or `logistics.shipment.delivered`.
 - Legacy topic names may remain only in docs where they are explicitly marked as deprecated/forbidden. They must not appear in runtime code, config, tests, seed scripts, or demo evidence expectations.
 
+Seed-data implementation note:
+- Runtime demo/master data must have explicit source files, not hidden hardcoded slices in usecases.
+- Non-identity master data can be seeded on service startup only when it loads a checked-in seed file and persists idempotently.
+- Retail stores now belong in `src/apps/retail-service/internal/seed/stores.json`.
+- Logistics vehicles, drivers, and locations now belong in `src/apps/logistics-service/internal/seed/logistics.json`.
+- Identity/persona seed that creates accounts or role scopes must be exposed as an explicit idempotent `ADMIN` bootstrap flow, not silently executed by business service startup.
+
 ## 2. Investigation Summary
 
 ### 2.1 What Exists
@@ -92,9 +99,7 @@ Frontend:
   - `src/apps/client-app/src/services/logistics.service.ts`
 
 Docs:
-- `docs/technical/FLOW_SEQUENCES.md` describes a high-level Farm-to-Cup journey.
-- `docs/technical/LOGISTICS_SIMULATION.md` describes route generation and a driver simulator concept.
-- `docs/technical/KAFKA.md` already calls out Valkey/Redlock for inventory-style shared resource locking.
+- `docs/product/TECH.md` describes high-level Farm-to-Cup flow, route simulation concepts, and Kafka/Valkey coordination boundaries.
 - `deployments/docker-compose.dev.yaml` already includes Valkey and Cassandra infrastructure.
 - `deployments/docker-compose.dev.yaml` now defines SigNoz + ClickHouse + SigNoz OTel Collector for OpenTelemetry waterfall evidence.
 - SigNoz UI is exposed at `http://localhost:3301`; OTLP gRPC/HTTP remain `localhost:4317` and `localhost:4318`.
@@ -120,7 +125,7 @@ There are also additional implementation gaps:
 
 - Warehouse frontend calls `/v1/warehouse/batches`, `/v1/warehouse/inventory`, etc., but `warehouse-service` currently has no HTTP app/routes and KrakenD has no `/v1/warehouse/*` routes.
 - Frontend logistics service uses `/v1/logistics/shipments`, `/v1/logistics/locations`, `/v1/logistics/drivers/location`, but KrakenD currently exposes `/v1/shipments`, `/v1/drivers/location` without `/v1/logistics` prefix, and `logistics-service` does not expose `/v1/locations`.
-- `docs/technical/LOGISTICS_SIMULATION.md` references `src/scripts/simulate_drivers.go`, but the repo currently only has `generate_routes.go` and `simulate_harvests.go`.
+- The restored technical context references `src/scripts/simulate_drivers.go`, but the repo currently only has `generate_routes.go` and `simulate_harvests.go`.
 - Logistics shipment model is destination-centric and does not model route legs, origin location, pickup confirmation, return trip, cargo status, or paired confirmations.
 - Notification concepts exist in docs/UI copy, but there is no durable notification/event inbox API for dashboards.
 - Trace/Audit can project Kafka events, but missing physical logistics events means the journey timeline is incomplete.
@@ -976,30 +981,7 @@ Do not implement new isolated sprint features until this flow is accepted, becau
 
 The domain docs must become UI-aware and role-aware, not only backend-flow-aware.
 
-Completed planning updates should cover:
-
-- `docs/domain/01-FARM_OPERATIONS.md`
-  - Farm Manager harvest flow.
-  - Farm pickup notification.
-  - Farm-side loading status visibility; confirmation is optional strict mode.
-  - Assigned-farm-only UI behavior.
-
-- `docs/domain/02-PROCESSING_INVENTORY.md`
-  - Warehouse inbound notification.
-  - Dispatch, receipt, intake, processing, stock-in, outbound dispatch.
-  - Warehouse Manager ownership.
-
-- `docs/domain/03-ORDER_FULFILLMENT.md`
-  - Store Manager paid order flow.
-  - Payment/reservation/delivery receipt.
-  - Assigned-store-only UI behavior.
-
-- `docs/domain/04-LOGISTICS_TRACKING.md`
-  - Shipment types, driver/vehicle lifecycle, route simulation, confirmation gates, return-to-base.
-
-- `docs/domain/05-ROLE_UI_MATRIX.md`
-  - Canonical role boundaries and dashboard visibility.
-  - Explicit rule: `ADMIN` is setup/assignment/overview, not detailed operator.
+Completed planning updates are consolidated in **`docs/product/domain/README.md`**.
 
 Role correction:
 

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/app"
+	"RuntimeRoasters/apps/logistics-service/internal/app"
 )
 
 func main() {

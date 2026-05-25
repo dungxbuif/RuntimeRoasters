@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 )
 

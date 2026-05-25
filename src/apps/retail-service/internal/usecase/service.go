@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/apps/retail-service/internal/domain"
+	retailseed "RuntimeRoasters/apps/retail-service/internal/seed"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
@@ -37,13 +38,9 @@ func NewService(db *gorm.DB, producer kafka.Producer, orderCreatedTopic string) 
 	return &Service{db: db, producer: producer, orderCreatedTopic: orderCreatedTopic}
 }
 
-func (s *Service) SeedStores(ctx context.Context) error {
-	stores := []domain.Store{
-		{ID: "11111111-1111-1111-1111-111111111101", Name: "Hoan Kiem Store", City: "Hanoi", Address: "2 Ly Thai To", ManagerEmail: "mgr.hn.hoankiem@runtimeroasters.com", Status: domain.StoreStatusActive},
-		{ID: "11111111-1111-1111-1111-111111111102", Name: "Cau Giay Store", City: "Hanoi", Address: "102 Tran Thai Tong", ManagerEmail: "mgr.hn.caugiay@runtimeroasters.com", Status: domain.StoreStatusActive},
-		{ID: "11111111-1111-1111-1111-111111111103", Name: "District 1 Store", City: "Ho Chi Minh City", Address: "45 Le Thanh Ton", ManagerEmail: "mgr.hcm.q1@runtimeroasters.com", Status: domain.StoreStatusActive},
-		{ID: "11111111-1111-1111-1111-111111111104", Name: "District 7 Store", City: "Ho Chi Minh City", Address: "Phu My Hung", ManagerEmail: "mgr.hcm.q7@runtimeroasters.com", Status: domain.StoreStatusActive},
-		{ID: "11111111-1111-1111-1111-111111111105", Name: "Hai Chau Store", City: "Da Nang", Address: "15 Bach Dang", ManagerEmail: "mgr.dn.haichau@runtimeroasters.com", Status: domain.StoreStatusActive},
+func (s *Service) SeedStores(ctx context.Context, stores []domain.Store) error {
+	if len(stores) == 0 {
+		return errors.New("retail store seed is empty")
 	}
 	for _, store := range stores {
 		if err := s.db.WithContext(ctx).Where("id = ?", store.ID).FirstOrCreate(&store).Error; err != nil {
@@ -51,6 +48,50 @@ func (s *Service) SeedStores(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) GetSystemStatus(ctx context.Context) (*domain.SystemStatus, error) {
+	var storeCount int64
+	s.db.WithContext(ctx).Model(&domain.Store{}).Count(&storeCount)
+
+	seeded := storeCount > 0
+
+	return &domain.SystemStatus{
+		Seeded:      seeded,
+		ServiceName: "retail-service",
+		RecordCounts: map[string]int64{
+			"stores": storeCount,
+		},
+	}, nil
+}
+
+func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult, error) {
+	status, err := s.GetSystemStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if status.Seeded && !force {
+		return &domain.SeedResult{
+			Success: true,
+			Message: "System already seeded",
+		}, nil
+	}
+
+	stores, err := retailseed.LoadStores()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.SeedStores(ctx, stores); err != nil {
+		return nil, err
+	}
+
+	return &domain.SeedResult{
+		Success:        true,
+		Message:        "Successfully seeded retail data",
+		RecordsCreated: int64(len(stores)),
+	}, nil
 }
 
 func (s *Service) ListStores(ctx context.Context) ([]domain.Store, error) {

@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
+	"RuntimeRoasters/apps/demo-service/internal/usecase"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/pkg/logger"
+	demov1 "RuntimeRoasters/runtime/demo/v1"
 	"go.uber.org/zap"
 )
 

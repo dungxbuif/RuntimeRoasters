@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { retailService, CreateOrderRequest } from '@/services/retail.service';
-import { Store, ShoppingBag, Plus, Trash2, Send, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Store, ShoppingBag, Plus, Trash2, Send, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,7 +14,7 @@ export default function CreateOrderPage() {
     { sku: 'COFFEE-ARABICA-001', quantity: 10 }
   ]);
 
-  const { data: stores = [], isLoading: loadingStores } = useQuery({
+  const { data: stores = [] } = useQuery({
     queryKey: ['stores'],
     queryFn: () => retailService.listStores(),
   });
@@ -37,7 +37,12 @@ export default function CreateOrderPage() {
 
   const updateItem = (index: number, field: 'sku' | 'quantity', value: string | number) => {
     const newItems = [...items];
-    (newItems[index] as any)[field] = value;
+    const item = newItems[index];
+    if (field === 'sku' && typeof value === 'string') {
+      item.sku = value;
+    } else if (field === 'quantity' && typeof value === 'number') {
+      item.quantity = value;
+    }
     setItems(newItems);
   };
 
@@ -164,7 +169,7 @@ export default function CreateOrderPage() {
            {mutation.isError && (
              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-[10px] font-black uppercase tracking-widest italic animate-bounce">
                 <AlertCircle className="w-4 h-4" />
-                Saga Initialization Failed: {(mutation.error as any)?.response?.data?.message || 'Network Error'}
+                Saga Initialization Failed: {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Network Error'}
              </div>
            )}
         </div>

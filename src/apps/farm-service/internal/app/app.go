@@ -3,14 +3,14 @@ package app
 import (
 	"context"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/config"
-	farmgrpc "github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	rrcasbin "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
+	svcconfig "RuntimeRoasters/apps/farm-service/config"
+	farmgrpc "RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/farm-service/internal/infrastructure/event"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	rrcasbin "RuntimeRoasters/pkg/base/casbin"
+	"RuntimeRoasters/pkg/database"
+	farmv1 "RuntimeRoasters/runtime/farm/v1"
 	"github.com/redis/go-redis/v9"
 )
 

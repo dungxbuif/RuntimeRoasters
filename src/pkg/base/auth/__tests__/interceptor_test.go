@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/token"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/base/auth/token"
+	"RuntimeRoasters/pkg/base/auth/transport/grpc"
+	"RuntimeRoasters/pkg/base/identity"
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

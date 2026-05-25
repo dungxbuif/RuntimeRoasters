@@ -14,7 +14,9 @@ END $$;
 CREATE TABLE IF NOT EXISTS farms (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    location location_enum NOT NULL,
+    location location_enum,
+    latitude DECIMAL(10,8),
+    longitude DECIMAL(11,8),
     area DECIMAL(10,2) NOT NULL CHECK (area > 0),
     coffee_type coffee_type_enum NOT NULL,
     owner_id UUID NOT NULL,

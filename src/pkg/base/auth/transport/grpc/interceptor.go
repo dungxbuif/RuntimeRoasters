@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/token"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/base/auth/token"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

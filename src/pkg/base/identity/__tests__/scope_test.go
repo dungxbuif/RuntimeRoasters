@@ -3,7 +3,7 @@ package identity_tests
 import (
 	"testing"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/base/identity"
 )
 
 func TestClaimsCanAccessStore(t *testing.T) {

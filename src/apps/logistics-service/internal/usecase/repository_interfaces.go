@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/domain"
+	"RuntimeRoasters/apps/logistics-service/internal/domain"
 )
 
 type ShipmentRepository interface {

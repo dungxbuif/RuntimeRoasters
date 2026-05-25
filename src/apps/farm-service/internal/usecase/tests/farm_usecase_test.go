@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	"RuntimeRoasters/pkg/base/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

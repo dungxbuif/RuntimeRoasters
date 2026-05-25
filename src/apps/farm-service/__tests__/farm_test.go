@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
+	"RuntimeRoasters/apps/farm-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	farmv1 "RuntimeRoasters/runtime/farm/v1"
 )
 
 // mockFarmUsecase satisfies the usecase.FarmUsecase interface

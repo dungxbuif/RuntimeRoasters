@@ -30,9 +30,9 @@ This sprint must be executed in dependency order. Do not start UI-heavy demo wor
 Read this sprint in the following order if you are new to the project:
 
 1. `MISING_IMPLEMENTATION_SPEC.md` for the full business context and investigation findings.
-2. `docs/domain/README.md` for canonical flow and role principle.
-3. `docs/domain/05-ROLE_UI_MATRIX.md` for who can press which UI button.
-4. `docs/technical/DATABASE_MODELS.md` for Postgres/JSONB/Elasticsearch/Cassandra/Valkey boundaries.
+2. `docs/product/domain/README.md` for canonical flow and role principle.
+3. `docs/product/domain/README.md` for who can press which UI button.
+4. `docs/product/TECH.md` for Postgres/JSONB/Elasticsearch/Cassandra/Valkey boundaries.
 5. This sprint main file for execution order.
 6. RR-URG tickets in numeric order.
 

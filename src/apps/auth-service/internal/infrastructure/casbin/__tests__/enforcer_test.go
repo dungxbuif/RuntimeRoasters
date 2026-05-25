@@ -5,7 +5,7 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
-	casbininfra "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
+	casbininfra "RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
 )
 
 func TestSyncDefaultPolicies(t *testing.T) {

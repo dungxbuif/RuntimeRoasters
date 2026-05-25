@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/token"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/base/auth/token"
+	"RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

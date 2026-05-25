@@ -71,8 +71,15 @@ We employ a multi-layered testing strategy to ensure system reliability:
 - **Buf:** Modern Protobuf management and code generation.
 - **KrakenD:** Powerful API gateway for orchestration and security.
 
+### 🔄 3.3. Environment Reset & Seeding
+To maintain a clean development state or prepare for a fresh demo:
+1.  **Full Reset:** Run `task env:reset`. This stops all containers, wipes all volumes (DB/Kafka/Valkey), restarts infra, and runs schema migrations.
+2.  **Infrastructure Seed:** Automatically handled by `env:reset`, this creates the default `ADMIN` user and OAuth2 clients.
+3.  **Business Data Seeding:** Unlike infrastructure, business data (Farms, Stores, Drivers) is **not** auto-seeded. After logging in as `ADMIN`, a bootstrap modal will appear on the Dashboard to trigger manual seeding via protected microservice endpoints.
+
 ### Coding Standards
 - **DRY:** Use shared logic in `src/pkg/` (logger, database, telemetry).
+... Applied fuzzy match at line 118-132.
 - **Type-Safety:** All internal communication must use gRPC/Protobuf.
 - **Explicit over Implicit:** Manual dependency injection is preferred over magic containers.
 
@@ -80,11 +87,33 @@ We employ a multi-layered testing strategy to ensure system reliability:
 
 ## 🧭 4. Operational Reference
 
+For the current install/start/seed/playground runbook, use:
+
+- [Demo Setup Runbook](./DEMO_SETUP_RUNBOOK.md)
+- [Master Technical Specification](./TECH.md)
+
+### Business/BA Docs
+
+For BA review, product ownership, role responsibilities, and UI-facing business flows, use the **[Master Business Doc](./domain/README.md)**.
+
 ### Local Service URLs
 - **Client App:** `http://localhost:3000`
 - **KrakenD (Gateway):** `http://localhost:8081`
+- **Auth Service:** HTTP `http://localhost:8082`, gRPC `localhost:50052`
+- **Farm Service:** HTTP `http://localhost:8083`, gRPC `localhost:50053`
+- **Retail Service:** HTTP `http://localhost:8084`, gRPC `localhost:50054`
+- **Logistics Service:** HTTP `http://localhost:8085`, gRPC `localhost:50055`
+- **Payment Service:** HTTP `http://localhost:8086`, gRPC `localhost:50056`
+- **Trace Service:** HTTP `http://localhost:8087`, gRPC `localhost:50057`
+- **Audit Service:** HTTP `http://localhost:8088`, gRPC `localhost:50058`
+- **Warehouse Service:** HTTP `http://localhost:8089`, gRPC `localhost:50059`
 - **Kafka UI:** `http://localhost:8090`
 - **Kibana (ES):** `http://localhost:5601`
+- **Elasticsearch:** `http://localhost:9200`
+- **SigNoz UI:** `http://localhost:3301`
+- **OTLP:** gRPC `localhost:4317`, HTTP `localhost:4318`
+- **Postgres:** `localhost:54321`
+- **Cassandra:** `localhost:9042`
 - **Kratos Public:** `http://localhost:4433`
 - **Hydra Public:** `http://localhost:4444`
 
@@ -99,14 +128,12 @@ We employ a multi-layered testing strategy to ensure system reliability:
 ## 🗺️ 5. Detailed Guides & Decision Records
 
 For a deeper dive into specific system behaviors and the reasoning behind them:
-- 🏛️ **[Master System Architecture Specification](./architecture/SYSTEM_ARCHITECTURE.md)**: The "Big Picture" blueprint.
-- 🌊 **[System Architecture Flows](./architecture/FLOWS.md)**: Identity, Sagas, and CQRS patterns.
-- 🛠️ **[Technical Knowledge Base](./technical/README.md)**: Exhaustive details on Config, Data Models, and API Contracts.
-- 🎨 **[Frontend Development Guide](./technical/FRONTEND.md)**: Next.js patterns and UI/UX standards.
-- 📦 **[Domain & Business Logic](./domain/02-PROCESSING_INVENTORY.md)**: Rules for coffee batch lifecycles and IDs.
-- 📋 **[Product Requirements](./business/product-requirements.md)**: The business vision and feature specs.
-- 📅 **[Sprint Roadmap](./business/sprint-planning.md)**: Development phases and task breakdown.
-- 📜 **[Architecture Decisions (ADRs)](./architecture/adrs/)**: History of critical technical choices.
+- 🏛️ **[Master Technical Specification](./TECH.md)**: Architecture, service catalog, contracts, storage, and infrastructure.
+- 🎨 **[UI/UX Design Notes](./ui-ux/DESIGN.md)**: Next.js patterns and dashboard UI/UX standards.
+- 📜 **[Master Business Specification](./domain/README.md)**: The single source of truth for business flows, roles, and domain rules.
+- 📋 **[Product/System Specification](./SPEC.md)**: The broader technical feature specs and history.
+- 📅 **[Sprint Roadmap](../stories/ROADMAP.md)**: Development phases and task breakdown.
+- 📜 **[Architecture Decisions (ADRs)](../decisions/)**: History of critical technical choices.
 
 ---
 *This document is the "Living Constitution" of Runtime Roasters. Keep it updated as the architecture evolves.*

@@ -66,7 +66,7 @@ Follow these steps to get the system running locally:
 
 The system follows **Clean Architecture** principles to keep business logic isolated from infrastructure concerns.
 
-👉 **[Master System Architecture Specification](./docs/architecture/SYSTEM_ARCHITECTURE.md)**: The definitive technical guide to the platform's design.
+👉 **[Master System Architecture Specification](./docs/product/TECH.md)**: The definitive technical guide to the platform's design.
 
 ### 🗺️ Service Port Map
 
@@ -76,21 +76,37 @@ The system follows **Clean Architecture** principles to keep business logic isol
 | **Auth** | 8082 | 50052 | Identity, Session & Policy Management |
 | **Farm** | 8083 | 50053 | Plantation & Harvest Management |
 | **Retail** | 8084 | 50054 | Orders & Customer Transactions |
-| **Warehouse**| 8085 | 50055 | Inventory & Stock Reservation |
-| **Logistics**| 8087 | 50057 | Driver Tracking & Delivery |
-| **Payment**  | 8088 | 50058 | Simulated Payment Gateway (Stripe/VNPay) |
-| **Trace**    | 8089 | 50059 | Supply Chain Traceability (CQRS) |
-| **Audit**    | 8091 | 50061 | Immutable Event Logging |
+| **Logistics** | 8085 | 50055 | Driver Tracking & Delivery |
+| **Payment** | 8086 | 50056 | Simulated Payment Gateway (Stripe/VNPay) |
+| **Trace** | 8087 | 50057 | Supply Chain Traceability (CQRS) |
+| **Audit** | 8088 | 50058 | Immutable Event Logging |
+| **Warehouse** | 8089 | 50059 | Inventory, Pickup, Processing & Stock Reservation |
+
+Infrastructure UIs and endpoints:
+
+| Component | Port | Description |
+| :--- | :--- | :--- |
+| **Client App** | 3000 | Next.js control-plane UI |
+| **Kafka UI** | 8090 | Kafka topic/browser UI |
+| **SigNoz** | 3301 | Observability UI backed by ClickHouse |
+| **Kibana** | 5601 | Elasticsearch UI |
+| **Postgres** | 54321 | Shared local Postgres host port |
+| **Elasticsearch** | 9200 | Trace/search read model |
+| **Cassandra** | 9042 | Audit log storage |
+| **Valkey** | 6379 | Cache/GPS tracking |
+| **OTLP** | 4317 / 4318 | OpenTelemetry gRPC/HTTP |
+| **Kratos Public** | 4433 | Identity public/proxy endpoint |
+| **Hydra Public** | 4444 | OAuth2/OIDC public endpoint |
 
 ### 📖 Detailed Guides
-- 📘 **[Developer Guide](./docs/DEVELOPER_GUIDE.md)**: Deep dive into patterns, coding standards, and service interactions.
-- 🛠️ **[Technical Knowledge Base](./docs/technical/README.md)**: Exhaustive details on Config, Data Models, and API Contracts.
-- 🏢 **[Business Specification](./docs/domain/BUSINESS_SPECIFICATION.md)**: Master domain logic and handover-ready requirements.
-- 🌊 **[Architecture Flows](./docs/architecture/FLOWS.md)**: Visualizing identity and data consistency.
-- 🎨 **[Frontend Development Guide](./docs/technical/FRONTEND.md)**: Next.js patterns and UI/UX standards.
-- 📋 **[Product Requirements](./docs/business/product-requirements.md)**: Business vision and feature specifications.
-- 📅 **[Sprint Roadmap](./docs/business/sprint-planning.md)**: Development phases and execution history.
-- 📜 **[Architecture Decisions (ADRs)](./architecture/adrs/)**: History of critical technical choices.
+- 📘 **[Developer Guide](./docs/product/GUIDE.md)**: Deep dive into patterns, coding standards, and service interactions.
+- ▶️ **[Demo Setup Runbook](./docs/product/DEMO_SETUP_RUNBOOK.md)**: Install, start order, seed/reset data, ports, and playground entrypoints.
+- 🛠️ **[Technical Specification](./docs/product/TECH.md)**: Architecture, contracts, storage, messaging, and infrastructure.
+- 📜 **[Business Specification](./docs/product/domain/README.md)**: BA-facing flow, roles, UI actions, and business rules.
+- 🌊 **[Product/System Specification](./docs/product/SPEC.md)**: Product scope, business context, and reference requirements.
+- 🎨 **[UI/UX Design Notes](./docs/product/ui-ux/DESIGN.md)**: Next.js dashboard visual language and UX standards.
+- 📅 **[Sprint Roadmap](./docs/stories/ROADMAP.md)**: Development phases and execution history.
+- 📜 **[Architecture Decisions (ADRs)](./docs/decisions/)**: History of critical technical choices.
 
 ---
 *Developed by [Dung Bui](https://github.com/dungxbuif) for Engineering Showcase.*

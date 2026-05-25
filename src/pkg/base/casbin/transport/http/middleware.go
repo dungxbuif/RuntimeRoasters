@@ -3,9 +3,9 @@ package casbinhttp
 import (
 	"net/http"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/pkg/base/casbin"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/errs"
 	"github.com/gin-gonic/gin"
 )
 

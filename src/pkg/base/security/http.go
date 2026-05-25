@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	authhttp "github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/transport/http"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
-	casbinhttp "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/http"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	authhttp "RuntimeRoasters/pkg/base/auth/transport/http"
+	"RuntimeRoasters/pkg/base/casbin"
+	casbingrpc "RuntimeRoasters/pkg/base/casbin/transport/grpc"
+	casbinhttp "RuntimeRoasters/pkg/base/casbin/transport/http"
+	"RuntimeRoasters/pkg/kafka"
 	"github.com/gin-gonic/gin"
 )
 

@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -54,7 +54,7 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 
 		headers := kafkaHeadersCarrier(m.Headers)
 		msgCtx := otel.GetTextMapPropagator().Extract(ctx, &headers)
-		msgCtx, span := otel.Tracer("github.com/dungxbuif/RuntimeRoasters/pkg/kafka").Start(msgCtx, "kafka.consume "+m.Topic,
+		msgCtx, span := otel.Tracer("RuntimeRoasters/pkg/kafka").Start(msgCtx, "kafka.consume "+m.Topic,
 			trace.WithSpanKind(trace.SpanKindConsumer),
 			trace.WithAttributes(
 				attribute.String("messaging.system", "kafka"),

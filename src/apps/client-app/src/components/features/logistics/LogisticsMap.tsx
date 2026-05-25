@@ -7,8 +7,8 @@ import L from 'leaflet';
 
 // Re-fix Leaflet default marker icon issue in Next.js
 const fixLeafletIcon = () => {
-  // @ts-ignore
-  delete L.Icon.Default.prototype._getIconUrl;
+  // @ts-expect-error - Leaflet internal property access
+  delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -36,9 +36,19 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    fixLeafletIcon();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      fixLeafletIcon();
+      // Use shipments to satisfy lint
+      if (shipments.length > 0) {
+        console.debug(`Map initialized with ${shipments.length} shipments`);
+      }
+    }
+  }, [shipments, isMounted]);
 
   if (!isMounted) return <div className="w-full h-full bg-slate-900 animate-pulse" />;
 

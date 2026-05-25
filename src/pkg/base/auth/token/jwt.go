@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 )

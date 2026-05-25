@@ -3,10 +3,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { financeService } from '@/services/finance.service';
-import { CreditCard, DollarSign, CheckCircle2, Clock, AlertCircle, RefreshCcw, ExternalLink } from 'lucide-react';
+import { CreditCard, DollarSign, CheckCircle2, Clock, AlertCircle, RefreshCcw, ExternalLink, LucideIcon } from 'lucide-react';
 import { PaymentStatus } from '@/types/finance';
 
-const STATUS_CONFIG: Record<PaymentStatus, { icon: any, color: string, label: string }> = {
+const STATUS_CONFIG: Record<PaymentStatus, { icon: LucideIcon, color: string, label: string }> = {
   'CREATED': { icon: Clock, color: 'text-slate-400 bg-slate-100', label: 'Created' },
   'PENDING': { icon: Clock, color: 'text-amber-500 bg-amber-50', label: 'Pending' },
   'SUCCEEDED': { icon: CheckCircle2, color: 'text-green-500 bg-green-50', label: 'Succeeded' },
@@ -158,7 +158,7 @@ export default function FinancePage() {
   );
 }
 
-function Loader2(props: any) {
+function Loader2(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

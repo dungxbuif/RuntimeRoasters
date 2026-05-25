@@ -12,7 +12,7 @@ class FinanceService {
     try {
       const res = await api.get(API_ENDPOINTS.PAYMENT.BY_ORDER(orderId));
       return res.data.payment || null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }

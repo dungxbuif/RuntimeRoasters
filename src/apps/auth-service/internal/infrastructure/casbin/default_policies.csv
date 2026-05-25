@@ -53,6 +53,7 @@ p, DRIVER, /v1/logistics/shipments/:id/confirm-delivery, write
 p, DRIVER, /v1/logistics/shipments/:id/return, write
 p, DRIVER, /v1/logistics/drivers/location, write
 p, ADMIN, /v1/*, .*
+p, ADMIN, /runtime.system.v1.SystemService/*, .*
 g, ADMIN, FARM_ADMIN
 g, ADMIN, FARM_MANAGER
 g, ADMIN, STORE_MGR

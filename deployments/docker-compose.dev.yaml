@@ -472,6 +472,8 @@ services:
         condition: service_healthy
       hydra:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     volumes:
       - ./kratos:/etc/config/kratos
       - ./hydra:/etc/config/hydra
@@ -481,13 +483,13 @@ services:
         echo '⏳ Waiting for Kratos & Hydra Admin APIs...';
         while ! wget -qO- http://rr-kratos:4434/admin/identities > /dev/null 2>&1; do sleep 1; done;
         while ! wget -qO- http://rr-hydra:4445/health/ready > /dev/null 2>&1; do sleep 1; done;
-        
+
         echo '👤 Seeding Kratos Admin User...';
         wget -qO- --post-file=/etc/config/kratos/seed-admin.json --header='Content-Type: application/json' http://rr-kratos:4434/admin/identities || echo 'User might already exist';
-        
+
         echo '🔑 Seeding Hydra Client App...';
         hydra import oauth2-client --endpoint http://rr-hydra:4445/ /etc/config/hydra/client-app.json;
-        
+
         echo '✨ Seeding complete!';"
     networks:
       - rr-network
@@ -508,3 +510,4 @@ volumes:
   signoz_clickhouse_user_scripts:
   signoz_sqlite_data:
   signoz_zookeeper_data:
+

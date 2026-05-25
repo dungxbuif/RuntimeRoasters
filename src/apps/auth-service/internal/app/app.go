@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
+	svcconfig "RuntimeRoasters/apps/auth-service/config"
+	"RuntimeRoasters/apps/auth-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
+	"RuntimeRoasters/apps/auth-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/logger"
+	authv1 "RuntimeRoasters/runtime/auth/v1"
 	"go.uber.org/zap"
 )
 

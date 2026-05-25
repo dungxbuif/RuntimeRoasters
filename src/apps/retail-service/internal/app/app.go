@@ -5,54 +5,111 @@ import (
 	"net/http"
 	"time"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/retail-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	svcconfig "RuntimeRoasters/apps/retail-service/config"
+	retailgrpc "RuntimeRoasters/apps/retail-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/retail-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
+	systemv1 "RuntimeRoasters/runtime/system/v1"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 type App struct {
-	Base      *base.App
-	Cfg       *svcconfig.Config
-	DB        *database.DB
-	Service   *usecase.Service
-	Consumers []kafka.Consumer
-	Guards    *security.HTTPGuards
+	Base          *base.App
+	Cfg           *svcconfig.Config
+	DB            *database.DB
+	Service       *usecase.Service
+	SystemHandler *retailgrpc.SystemHandler
+	Consumers     []kafka.Consumer
+	Guards        *security.HTTPGuards
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, svc *usecase.Service, consumers []kafka.Consumer, guards *security.HTTPGuards) *App {
-	return &App{Base: baseApp, Cfg: cfg, DB: db, Service: svc, Consumers: consumers, Guards: guards}
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, service *usecase.Service, systemHandler *retailgrpc.SystemHandler, consumers []kafka.Consumer, guards *security.HTTPGuards) *App {
+	return &App{
+		Base:          baseApp,
+		Cfg:           cfg,
+		DB:            db,
+		Service:       service,
+		SystemHandler: systemHandler,
+		Consumers:     consumers,
+		Guards:        guards,
+	}
 }
 
 func (a *App) Run() {
-	a.Base.RegisterHTTP(a.routes)
-	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
-	a.Base.FinalizeRoutes()
+	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
+	log.Info("retail-service starting")
 
-	go a.startOutboxRelay(context.Background())
 	for _, consumer := range a.Consumers {
 		c := consumer
 		go func() {
 			if err := c.Listen(context.Background(), a.Service.HandleSagaEvent); err != nil {
-				logger.GetLogger().Error("retail saga consumer stopped", zap.Error(err))
+				log.Error("consumer stopped", zap.String("topic", c.Topic()), zap.Error(err))
 			}
 		}()
 	}
 
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		for range ticker.C {
+			if err := a.Service.ProcessOutbox(context.Background(), 10); err != nil {
+				log.Error("failed to process outbox", zap.Error(err))
+			}
+		}
+	}()
+
+	a.Base.RegisterHTTP(a.routes)
+	a.Base.RegisterGRPC(&systemv1.SystemService_ServiceDesc, a.SystemHandler)
+	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
+	a.Base.FinalizeRoutes()
 	a.Base.Run(a.Cfg.AppPort, a.Cfg.GRPCPort)
 }
 
+func (a *App) Shutdown() error {
+	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
+	log.Info("shutting down")
+	var err error
+	for _, consumer := range a.Consumers {
+		if closeErr := consumer.Close(); closeErr != nil {
+			err = closeErr
+		}
+	}
+	return err
+}
+
 func (a *App) routes(r *gin.Engine) {
-	v1 := r.Group("/v1")
+	v1 := r.Group("/v1/retail")
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
 	}
+
+	// Direct system routes in Gin to bypass gRPC Gateway for utility routes
+	sys := r.Group("/v1/system")
+	if a.Guards != nil {
+		sys.Use(a.Guards.Authn, a.Guards.Authz)
+	}
+	sys.GET("/status", func(c *gin.Context) {
+		res, err := a.SystemHandler.GetStatus(c.Request.Context(), &systemv1.GetStatusRequest{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	sys.POST("/seed", func(c *gin.Context) {
+		var req systemv1.SeedDataRequest
+		_ = c.ShouldBindJSON(&req)
+		res, err := a.SystemHandler.SeedData(c.Request.Context(), &req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, res)
+	})
 
 	v1.GET("/stores", func(c *gin.Context) {
 		stores, err := a.Service.ListStores(c.Request.Context())
@@ -69,12 +126,12 @@ func (a *App) routes(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
-		order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("Idempotency-Key"))
+		order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("X-Idempotency-Key"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"order": order})
+		c.JSON(http.StatusCreated, gin.H{"order": order})
 	})
 
 	v1.GET("/orders/:id", func(c *gin.Context) {
@@ -85,23 +142,4 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"order": order})
 	})
-}
-
-func (a *App) startOutboxRelay(ctx context.Context) {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	for {
-		if err := a.Service.ProcessOutbox(ctx, 20); err != nil {
-			logger.GetLogger().Warn("retail outbox relay failed", zap.Error(err))
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
-	}
-}
-
-func AutoMigrate(db *database.DB) error {
-	return db.AutoMigrate(&domain.Store{}, &domain.Order{}, &domain.OutboxEvent{}, &domain.InboxEvent{})
 }

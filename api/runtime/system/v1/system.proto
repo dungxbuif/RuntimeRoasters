@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package runtime.system.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "RuntimeRoasters/runtime/system/v1;systemv1";
+
+service SystemService {
+  // Returns the current status of the service (seeded or not)
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/system/status"
+    };
+  }
+
+  // Triggers data seeding for the service
+  rpc SeedData(SeedDataRequest) returns (SeedDataResponse) {
+    option (google.api.http) = {
+      post: "/v1/system/seed"
+      body: "*"
+    };
+  }
+}
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  bool seeded = 1;
+  string service_name = 2;
+  map<string, int64> record_counts = 3;
+  google.protobuf.Timestamp last_seeded_at = 4;
+}
+
+message SeedDataRequest {
+  bool force = 1;
+}
+
+message SeedDataResponse {
+  bool success = 1;
+  string message = 2;
+  int64 records_created = 3;
+}

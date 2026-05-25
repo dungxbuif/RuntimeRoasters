@@ -9,8 +9,8 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
-	rrkafka "github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	rrkafka "RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	kafkago "github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )

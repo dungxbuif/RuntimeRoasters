@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
+	"RuntimeRoasters/pkg/base/casbin"
 )
 
 // MockAuthClient implements AuthSnapshotClient for testing

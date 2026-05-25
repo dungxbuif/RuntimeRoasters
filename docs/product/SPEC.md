@@ -1,4 +1,8 @@
-# ☕ Runtime Roasters — Overall System Business Specification
+# Runtime Roasters - Product/System Specification
+
+> BA-readable business contract: [**`domain/README.md`**](./domain/README.md).
+>
+> This `SPEC.md` remains the broader product/system specification. It may contain historical technical context, but the canonical BA-facing flow, role matrix, and business rules now live in [**`domain/README.md`**](./domain/README.md).
 
 This document defines the core business specifications of the **Runtime Roasters** platform, focusing on operational processes, control rules, and supply value within the coffee value chain. This serves as a guiding document for strategic project management and handover.
 
@@ -500,7 +504,9 @@ The system uses a set of predefined locations in Vietnam to provide a realistic 
 - **Roasteries:** Processing centers in major industrial zones (Sóng Thần, Hòa Lạc, Hòa Khánh).
 - **Retailers:** Retail stores in central districts of HCM, Hanoi, and Da Nang.
 
-**Seed File:** `deployments/logistics-seed.sql`
+**Runtime Seed File:** `src/apps/logistics-service/internal/seed/logistics.json`
+
+`deployments/logistics-seed.sql` is legacy/reference only. Do not use it as the runtime source of truth unless the logistics seed strategy is explicitly reworked.
 
 ---
 
@@ -554,10 +560,12 @@ The Frontend leverages this data to create a modern, animated tracking experienc
 
 ## 5. Running the Simulation
 
-1. **Seed the database:**
+1. **Start logistics-service:**
    ```bash
-   cat deployments/logistics-seed.sql | docker exec -i rr-postgres psql -U postgres -d logistics_db
+   cd src/apps/logistics-service
+   air
    ```
+   On startup the service loads `src/apps/logistics-service/internal/seed/logistics.json` and idempotently inserts vehicles, drivers, and locations.
 2. **Generate routes (if POIs changed):**
    ```bash
    go run src/scripts/generate_routes.go
@@ -1023,20 +1031,23 @@ Deployed 100% via `Docker Compose`. The host environment is a self-managed `Prox
 
 ### 5.2 Service Inventory
 
-| #  | Service                | Protocol                    | Database              | Kafka Role        |
-| :- | :--------------------- | :-------------------------- | :-------------------- | :---------------- |
-| 1  | `API Gateway`          | HTTP `:8081`                | —                     | —                 |
-| 2  | `Identity Service`     | HTTP `:4433`                | Ory Kratos            | —                 |
-| 3  | `Webhook Service`      | HTTP `:8092` / gRPC `:50062`| PostgreSQL (Inbox)    | Producer only     |
-| 4  | `Farm Service`         | HTTP `:8083` / gRPC `:50053`| PostgreSQL            | Producer          |
-| 5  | `Process Service`      | HTTP `:8084` / gRPC `:50054`| PostgreSQL            | Producer/Consumer |
-| 6  | `Warehouse Service`    | HTTP `:8085` / gRPC `:50055`| PostgreSQL            | Producer/Consumer |
-| 7  | `Retail Service`       | HTTP `:8086` / gRPC `:50056`| PostgreSQL            | Producer/Consumer |
-| 8  | `Logistics Service`    | HTTP `:8087` / gRPC `:50057`| Valkey                 | Producer/Consumer |
-| 9  | `Payment Service`      | HTTP `:8088` / gRPC `:50058`| PostgreSQL            | Producer/Consumer |
-| 10 | `Trace Service`        | HTTP `:8089` / gRPC `:50059`| Elasticsearch         | Consumer          |
-| 11 | `Audit Service`        | HTTP `:8091` / gRPC `:50061`| Apache Cassandra      | Consumer          |
-| 12 | `Monitor Service`      | HTTP `:8090` (SSE/WS)       | —                     | Consumer          |
+| #  | Service                | Protocol                    | Database / Storage                    | Kafka Role        |
+| :- | :--------------------- | :-------------------------- | :------------------------------------ | :---------------- |
+| 1  | `Client App`           | HTTP `:3000`                | —                                     | —                 |
+| 2  | `API Gateway`          | HTTP `:8081`                | —                                     | —                 |
+| 3  | `Auth Service`         | HTTP `:8082` / gRPC `:50052`| PostgreSQL `auth_db`, Ory Kratos/Hydra | Producer/Consumer |
+| 4  | `Farm Service`         | HTTP `:8083` / gRPC `:50053`| PostgreSQL `farm_db`                  | Producer          |
+| 5  | `Retail Service`       | HTTP `:8084` / gRPC `:50054`| PostgreSQL `retail_db`                | Producer          |
+| 6  | `Logistics Service`    | HTTP `:8085` / gRPC `:50055`| PostgreSQL `logistics_db`, Valkey      | Producer/Consumer |
+| 7  | `Payment Service`      | HTTP `:8086` / gRPC `:50056`| PostgreSQL `payment_db`               | Producer/Consumer |
+| 8  | `Trace Service`        | HTTP `:8087` / gRPC `:50057`| PostgreSQL `trace_db`, Elasticsearch   | Consumer          |
+| 9  | `Audit Service`        | HTTP `:8088` / gRPC `:50058`| PostgreSQL `audit_db`, Cassandra       | Consumer          |
+| 10 | `Warehouse Service`    | HTTP `:8089` / gRPC `:50059`| PostgreSQL `warehouse_db`             | Producer/Consumer |
+| 11 | `Kratos Public`        | HTTP `:4433`                | Ory Kratos                            | —                 |
+| 12 | `Hydra Public`         | HTTP `:4444`                | Ory Hydra                             | —                 |
+| 13 | `Kafka UI`             | HTTP `:8090`                | Kafka                                 | —                 |
+| 14 | `SigNoz UI`            | HTTP `:3301`                | ClickHouse                            | —                 |
+| 15 | `Kibana`               | HTTP `:5601`                | Elasticsearch                         | —                 |
 
 #### `Webhook Service` (Ingress Gateway) — Details
 
@@ -1318,9 +1329,9 @@ The project is considered a **success** when:
 
 | Document                                                                  | Location                                        |
 | :------------------------------------------------------------------------ | :---------------------------------------------- |
-| System Architecture                                                       | `docs/architecture/system-architecture.md`       |
-| Database Schema Design                                                    | `docs/architecture/database-schema.md`           |
-| UI/UX Visual Ideas (Visualization Dashboard)                               | `docs/ui-ux/visual-ideas.md`                     |
-| REST API Specifications                                                   | `docs/api/rest-api.md`                           |
-| gRPC Contract Definitions                                                 | `docs/api/grpc-contracts.md`                     |
-| Deployment & Setup Guide                                                  | `docs/deployment/setup-guide.md`                 |
+| System Architecture                                                       | `docs/product/TECH.md`                           |
+| Data Models & Persistence                                                 | `docs/product/TECH.md`                           |
+| UI/UX Visual Ideas (Visualization Dashboard)                              | `docs/product/ui-ux/DESIGN.md`                   |
+| REST API Specifications                                                   | `docs/product/TECH.md`                           |
+| gRPC Contract Definitions                                                 | `docs/product/TECH.md`                           |
+| Demo Setup Runbook                                                        | `docs/product/DEMO_SETUP_RUNBOOK.md`             |

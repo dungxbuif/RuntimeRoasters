@@ -10,7 +10,7 @@ export default function TraceabilityPage() {
   const [searchId, setSearchId] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const { data: document, isLoading, isError, error } = useQuery({
+  const { data: document, isLoading, isError } = useQuery({
     queryKey: ['trace', activeId],
     queryFn: () => activeId ? traceService.getTraceDocument(activeId) : null,
     enabled: !!activeId,
@@ -77,7 +77,7 @@ export default function TraceabilityPage() {
             </div>
             <h2 className="text-xl font-black uppercase tracking-tighter text-red-600 mb-2">Trace Failed</h2>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-              ID <span className="text-slate-900">"{activeId}"</span> not found in the provenance ledger. Please check the ID and try again.
+              ID <span className="text-slate-900">&quot;{activeId}&quot;</span> not found in the provenance ledger. Please check the ID and try again.
             </p>
             <button 
               onClick={() => setActiveId(null)}

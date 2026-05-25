@@ -1,6 +1,6 @@
 package config
 
-import "github.com/dungxbuif/RuntimeRoasters/pkg/config"
+import "RuntimeRoasters/pkg/config"
 
 type Config struct {
 	config.BaseConfig      `mapstructure:",squash"`

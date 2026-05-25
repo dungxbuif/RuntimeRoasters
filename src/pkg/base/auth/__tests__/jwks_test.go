@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/base/auth/provider"
 )
 
 type jwk struct {

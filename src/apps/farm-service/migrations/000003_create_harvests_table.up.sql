@@ -27,3 +27,8 @@ CREATE TABLE IF NOT EXISTS harvests (
 CREATE INDEX IF NOT EXISTS idx_harvests_owner_id ON harvests(owner_id);
 
 CREATE INDEX IF NOT EXISTS idx_harvests_farm_id ON harvests(farm_id);
+-- Farm Service Seed Data
+INSERT INTO farms (name, location, latitude, longitude, area, coffee_type, owner_id) VALUES
+('Cầu Đất Premium', 'CAU_DAT', 11.895, 108.538, 50.5, 'ARABICA', '00000000-0000-0000-0000-000000000001'),
+('BMT Highlands', 'BUON_MA_THUOT', 12.666, 108.038, 120.0, 'ROBUSTA', '00000000-0000-0000-0000-000000000002')
+ON CONFLICT DO NOTHING;

@@ -3,8 +3,8 @@ package worker
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
+	"RuntimeRoasters/pkg/kafka"
 	kafka_go "github.com/segmentio/kafka-go"
 )
 

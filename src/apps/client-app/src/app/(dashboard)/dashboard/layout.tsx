@@ -1,6 +1,6 @@
 'use client';
-
 import Sidebar from "@/components/common/Sidebar";
+import SystemBootstrapModal from "@/components/common/SystemBootstrapModal";
 import { AuthGuard, useAuth } from "@/lib/auth";
 import { LogOut, User } from "lucide-react";
 
@@ -15,7 +15,9 @@ export default function ManagementLayout({
     <AuthGuard>
       <div className="flex min-h-screen bg-[#f7f9fb]">
         <Sidebar />
+        <SystemBootstrapModal />
         <div className="flex-1 flex flex-col md:ml-64">
+...
           <header className="h-16 flex justify-between items-center px-8 border-b border-outline-variant/10 bg-white/70 backdrop-blur-xl sticky top-0 z-30" data-e2e="dashboard-header">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Cluster Node</span>

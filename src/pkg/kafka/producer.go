@@ -32,7 +32,7 @@ func NewProducer(brokers []string) Producer {
 }
 
 func (p *producer) Publish(ctx context.Context, topic string, key string, payload interface{}) error {
-	ctx, span := otel.Tracer("github.com/dungxbuif/RuntimeRoasters/pkg/kafka").Start(ctx, "kafka.produce "+topic,
+	ctx, span := otel.Tracer("RuntimeRoasters/pkg/kafka").Start(ctx, "kafka.produce "+topic,
 		trace.WithSpanKind(trace.SpanKindProducer),
 		trace.WithAttributes(
 			attribute.String("messaging.system", "kafka"),

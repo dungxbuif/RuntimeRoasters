@@ -1,0 +1,151 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "runtime/system/v1/system.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "SystemService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/system/seed": {
+      "post": {
+        "summary": "Triggers data seeding for the service",
+        "operationId": "SystemService_SeedData",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SeedDataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SeedDataRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SystemService"
+        ]
+      }
+    },
+    "/v1/system/status": {
+      "get": {
+        "summary": "Returns the current status of the service (seeded or not)",
+        "operationId": "SystemService_GetStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "SystemService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1GetStatusResponse": {
+      "type": "object",
+      "properties": {
+        "seeded": {
+          "type": "boolean"
+        },
+        "serviceName": {
+          "type": "string"
+        },
+        "recordCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
+        "lastSeededAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1SeedDataRequest": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1SeedDataResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        },
+        "recordsCreated": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    }
+  }
+}

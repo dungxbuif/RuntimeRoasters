@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/apps/logistics-service/internal/domain"
+	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"

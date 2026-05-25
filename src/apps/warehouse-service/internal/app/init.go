@@ -3,43 +3,26 @@ package app
 import (
 	"context"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/worker"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/telemetry"
+	svcconfig "RuntimeRoasters/apps/warehouse-service/config"
+	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
+	"RuntimeRoasters/apps/warehouse-service/internal/worker"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 )
 
 func InitializeApp() (*App, func(), error) {
 	cfg := configDefaults(svcconfig.Load())
 
-	logger.InitLogger(cfg.AppEnv, cfg.LogLevel)
-	log := logger.GetLogger().With(zap.String("service", cfg.AppName))
-	otelShutdown, err := telemetry.InitTracer(cfg.AppName, cfg.OTLPEndpoint)
-	if err != nil {
-		log.Warn("failed to initialize tracer", zap.Error(err))
-	}
-
 	db, err := database.NewPostgres(database.PostgresConfig{
 		URL:      cfg.DatabaseURL,
 		LogLevel: cfg.DBLogLevel,
 	})
 	if err != nil {
-		return nil, nil, err
-	}
-
-	log.Info("running database migrations")
-	if err := db.AutoMigrate(&domain.PickupRequest{}, &domain.ProductionBatch{}, &domain.RoastRun{}, &domain.Inventory{}, &domain.InboxEvent{}); err != nil {
-		return nil, nil, err
-	}
-	if err := ensureIntakesTable(db); err != nil {
 		return nil, nil, err
 	}
 
@@ -61,7 +44,7 @@ func InitializeApp() (*App, func(), error) {
 	consumers := append([]kafka.Consumer{harvestConsumer, pickupArrivedConsumer}, orderConsumers...)
 	go func() {
 		if err := pickupArrivedConsumer.Listen(context.Background(), pickupUseCase.HandlePickupArrived); err != nil {
-			log.Error("pickup arrived consumer stopped", zap.Error(err))
+			logger.GetLogger().Error("pickup arrived consumer stopped", zap.Error(err))
 		}
 	}()
 
@@ -84,9 +67,6 @@ func InitializeApp() (*App, func(), error) {
 
 	cleanup := func() {
 		guards.Close()
-		if otelShutdown != nil {
-			otelShutdown()
-		}
 		_ = producer.Close()
 		_ = harvestConsumer.Close()
 		_ = pickupArrivedConsumer.Close()
@@ -96,29 +76,6 @@ func InitializeApp() (*App, func(), error) {
 	}
 
 	return app, cleanup, nil
-}
-
-func ensureIntakesTable(db *database.DB) error {
-	return db.Exec(`
-		CREATE TABLE IF NOT EXISTS intakes (
-			id varchar(64) PRIMARY KEY,
-			harvest_id varchar(64) NOT NULL,
-			coffee_type varchar(20) NOT NULL,
-			origin_code varchar(10) NOT NULL,
-			quantity decimal(10,2) NOT NULL,
-			warehouse_id varchar(80),
-			status varchar(20) NOT NULL DEFAULT 'UNASSIGNED',
-			batch_id varchar(80),
-			created_at timestamptz,
-			updated_at timestamptz
-		);
-		ALTER TABLE intakes ADD COLUMN IF NOT EXISTS pickup_id varchar(64);
-		ALTER TABLE intakes ADD COLUMN IF NOT EXISTS warehouse_id varchar(80);
-		CREATE INDEX IF NOT EXISTS idx_intakes_harvest_id ON intakes (harvest_id);
-		CREATE INDEX IF NOT EXISTS idx_intakes_batch_id ON intakes (batch_id);
-		CREATE INDEX IF NOT EXISTS idx_intakes_pickup_id ON intakes (pickup_id);
-		CREATE INDEX IF NOT EXISTS idx_intakes_warehouse_id ON intakes (warehouse_id);
-	`).Error
 }
 
 func configDefaults(cfg svcconfig.Config) svcconfig.Config {

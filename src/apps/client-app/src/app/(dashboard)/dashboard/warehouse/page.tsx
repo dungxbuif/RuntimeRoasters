@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { warehouseService, ProductionBatch, Inventory } from '@/services/warehouse.service';
+import { warehouseService } from '@/services/warehouse.service';
 import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle2, Factory, Database, ArrowRight } from 'lucide-react';
 
 export default function WarehouseStockLogicPage() {
@@ -10,7 +10,7 @@ export default function WarehouseStockLogicPage() {
   const [intakeWeight, setIntakeWeight] = useState<number>(0);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
 
-  const { data: batches = [], isLoading: loadingBatches } = useQuery({
+  const { data: batches = [] } = useQuery({
     queryKey: ['warehouse', 'batches'],
     queryFn: () => warehouseService.listBatches(),
     refetchInterval: 5000,
@@ -233,10 +233,10 @@ export default function WarehouseStockLogicPage() {
                             <span className="text-[8px] font-black tracking-widest uppercase text-slate-400 block mb-1">SKU: {item.sku}</span>
                             <span className="text-[11px] font-black text-slate-900 uppercase italic tracking-tighter">{item.coffee_type} ({item.origin_code})</span>
                           </div>
-                          <span className="text-2xl font-headline font-black tabular-nums text-slate-900">{item.available_quantity.toFixed(1)} <span className="text-xs font-body opacity-40">kg</span></span>
+                          <span className="text-2xl font-headline font-black tabular-nums text-slate-900">{(item.available_quantity || 0).toFixed(1)} <span className="text-xs font-body opacity-40">kg</span></span>
                        </div>
                        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden p-0.5">
-                          <div className={`bg-primary h-full rounded-full transition-all duration-1000 group-hover:scale-x-105`} style={{ width: `${Math.min((item.available_quantity/2000)*100, 100)}%` }}></div>
+                          <div className={`bg-primary h-full rounded-full transition-all duration-1000 group-hover:scale-x-105`} style={{ width: `${Math.min(((item.available_quantity || 0)/2000)*100, 100)}%` }}></div>
                        </div>
                     </div>
                    ))

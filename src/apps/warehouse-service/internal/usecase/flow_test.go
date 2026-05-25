@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"

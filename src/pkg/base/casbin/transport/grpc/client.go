@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
-	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
+	"RuntimeRoasters/pkg/base/casbin"
+	authv1 "RuntimeRoasters/runtime/auth/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

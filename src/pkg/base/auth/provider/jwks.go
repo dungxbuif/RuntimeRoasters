@@ -32,7 +32,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/logger"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )

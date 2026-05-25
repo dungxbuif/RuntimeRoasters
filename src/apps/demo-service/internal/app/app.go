@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 
-	svcconfig "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/config"
-	demogrpc "github.com/dungxbuif/RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/auth/provider"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	demov1 "github.com/dungxbuif/RuntimeRoasters/runtime/demo/v1"
+	svcconfig "RuntimeRoasters/apps/demo-service/config"
+	demogrpc "RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/database"
+	demov1 "RuntimeRoasters/runtime/demo/v1"
 	realcasbin "github.com/casbin/casbin/v3"
 	"github.com/redis/go-redis/v9"
 )

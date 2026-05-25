@@ -18,9 +18,12 @@ demo.log
 vendor/
 coverage.out
 gotestsum.json.out
+**/__debug_bin*
+**/tmp/
 
 # Node.js / Next.js
 **/node_modules
+**/bin/
 **/dist
 **/.next
 **/out

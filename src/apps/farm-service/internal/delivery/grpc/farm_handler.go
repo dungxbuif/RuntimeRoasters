@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	farmv1 "github.com/dungxbuif/RuntimeRoasters/runtime/farm/v1"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
+	"RuntimeRoasters/pkg/errs"
+	"RuntimeRoasters/pkg/logger"
+	farmv1 "RuntimeRoasters/runtime/farm/v1"
 	"go.uber.org/zap"
 )
 

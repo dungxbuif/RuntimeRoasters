@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/dungxbuif/RuntimeRoasters/apps/farm-service/internal/domain"
+	"RuntimeRoasters/apps/farm-service/internal/domain"
 )
 
 type FarmRepository interface {

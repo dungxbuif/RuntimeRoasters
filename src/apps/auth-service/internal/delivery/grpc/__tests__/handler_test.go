@@ -6,9 +6,9 @@ import (
 
 	"github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
-	"github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/delivery/grpc"
-	infra_casbin "github.com/dungxbuif/RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
-	authv1 "github.com/dungxbuif/RuntimeRoasters/runtime/auth/v1"
+	"RuntimeRoasters/apps/auth-service/internal/delivery/grpc"
+	infra_casbin "RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
+	authv1 "RuntimeRoasters/runtime/auth/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

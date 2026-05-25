@@ -1,19 +1,16 @@
 package app
 
 import (
-	"context"
-
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/config"
-	"github.com/dungxbuif/RuntimeRoasters/apps/logistics-service/internal/usecase"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/base/security"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
+	"RuntimeRoasters/apps/logistics-service/config"
+	logisticsgrpc "RuntimeRoasters/apps/logistics-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/logistics-service/internal/usecase"
+	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/security"
+	"RuntimeRoasters/pkg/database"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/valkey"
 	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
 func connectDB(cfg *config.Config) (*database.DB, error) {
@@ -37,10 +34,6 @@ func InitializeApp() (*App, func(), error) {
 
 	db, err := connectDB(&cfg)
 	if err != nil {
-		return nil, nil, err
-	}
-	logger.GetLogger().Info("running database migrations", zap.String("service", "logistics-service"))
-	if err := AutoMigrate(db); err != nil {
 		return nil, nil, err
 	}
 
@@ -71,12 +64,8 @@ func InitializeApp() (*App, func(), error) {
 	}
 	producer := kafka.NewProducer(cfg.KafkaBrokers)
 	service := usecase.NewService(db.DB, vdb, producer, cfg.ShipmentAssignedTopic, cfg.ShipmentDeliveredTopic, cfg.GPSUpdatedTopic, cfg.DefaultDestinationStoreID)
-	if err := service.SeedDrivers(context.Background()); err != nil {
-		return nil, nil, err
-	}
-	if err := service.SeedLocations(context.Background()); err != nil {
-		return nil, nil, err
-	}
+	systemHandler := logisticsgrpc.NewSystemHandler(service)
+
 	consumers := []kafka.Consumer{
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-reserved", cfg.StockReservedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-updated", cfg.StockUpdatedTopic),
@@ -102,7 +91,7 @@ func InitializeApp() (*App, func(), error) {
 		Config: cfg.BaseConfig,
 	})
 
-	app := NewApp(baseApp, &cfg, db, vdb, service, consumers, guards)
+	app := NewApp(baseApp, &cfg, db, vdb, service, systemHandler, consumers, guards)
 
 	cleanup := func() {
 		guards.Close()

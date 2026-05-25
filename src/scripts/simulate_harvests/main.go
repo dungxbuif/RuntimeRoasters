@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
-	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/events"
+	"RuntimeRoasters/pkg/kafka"
 	"github.com/google/uuid"
 )
 
