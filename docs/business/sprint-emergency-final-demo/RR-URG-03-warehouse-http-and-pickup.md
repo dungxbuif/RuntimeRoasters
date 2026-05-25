@@ -40,11 +40,11 @@ Pickup/dispatch endpoints:
 
 Checklist:
 
-- [ ] Warehouse Gin/HTTP app exists.
-- [ ] Routes registered.
-- [ ] KrakenD exposes `/v1/warehouse/*`.
-- [ ] Frontend service paths match gateway paths.
-- [ ] Auth middleware applied.
+- [x] Warehouse Gin/HTTP app exists.
+- [x] Routes registered.
+- [x] KrakenD exposes `/v1/warehouse/*`.
+- [x] Frontend service paths match gateway paths.
+- [x] Auth middleware applied.
 
 ### 2. Pickup Request Model
 
@@ -77,10 +77,10 @@ Statuses:
 
 Checklist:
 
-- [ ] Migration added.
-- [ ] Repository added.
-- [ ] Usecase added.
-- [ ] Events emitted on status changes.
+- [x] Migration added.
+- [x] Repository added through GORM-backed usecase queries.
+- [x] Usecase added.
+- [x] Events emitted on pickup request and intake creation.
 
 ### 3. Harvest Worker Change
 
@@ -98,9 +98,9 @@ Required behavior:
 
 Checklist:
 
-- [ ] Normal flow no longer creates intake immediately.
-- [ ] Tests updated to assert pickup request creation.
-- [ ] Test helper can create intake directly only for setup.
+- [x] Normal flow no longer creates intake immediately.
+- [x] Tests updated to assert pickup request creation.
+- [x] Test helper can create intake directly only for setup.
 
 ### 4. Receipt To Intake
 
@@ -114,10 +114,10 @@ On pickup return:
 
 Checklist:
 
-- [ ] Receipt endpoint validates warehouse scope.
-- [ ] Intake links back to harvest and pickup request.
-- [ ] Duplicate receipt is idempotent.
-- [ ] Existing processing flow works from the created intake.
+- [x] Receipt endpoint validates warehouse scope.
+- [x] Intake links back to harvest and pickup request.
+- [x] Duplicate receipt is idempotent.
+- [x] Existing processing flow works from the created intake.
 
 ## Acceptance Criteria
 
@@ -131,9 +131,13 @@ Checklist:
 
 ## Test Checklist
 
-- [ ] Unit: HarvestWorker creates pickup request.
-- [ ] Unit: duplicate harvest event is idempotent.
-- [ ] Unit: receipt creates intake once.
-- [ ] Service: list pickup requests scoped by warehouse.
-- [ ] Integration: harvest -> pickup request -> dispatch -> return -> intake.
-- [ ] Regression: existing processing tests migrated to new intake setup.
+- [x] Unit: HarvestWorker creates pickup request.
+- [x] Unit: duplicate harvest event is idempotent.
+- [x] Unit: receipt creates intake once.
+- [x] Service: list pickup requests scoped by warehouse.
+- [x] Integration: harvest -> pickup request -> dispatch -> return -> intake.
+- [x] Regression: existing processing tests migrated to new intake setup.
+
+## Manual Evidence
+
+Use [RR-URG-03-manual-test-guide.md](/Users/dungxbuif/workspace/RuntimeRoasters/docs/business/sprint-emergency-final-demo/RR-URG-03-manual-test-guide.md) for the live verification steps and expected database evidence.

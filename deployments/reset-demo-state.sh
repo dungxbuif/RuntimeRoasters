@@ -14,6 +14,19 @@ topics=(
   warehouse.stock.reserved
   warehouse.stock.reservation_failed
   warehouse.inventory.updated
+  warehouse.pickup.requested
+  warehouse.pickup.received
+  warehouse.intake.created
+  warehouse.dispatch.requested
+  notification.created
+  socket.broadcast.requested
+  logistics.pickup.assigned
+  logistics.pickup.departed
+  logistics.pickup.arrived_at_farm
+  logistics.pickup.loading_confirmed
+  logistics.pickup.return_started
+  logistics.pickup.arrived_at_warehouse
+  logistics.pickup.completed
   logistics.delivery.assigned
   logistics.delivery.completed
   logistics.gps.updated
@@ -34,6 +47,12 @@ truncate_table retail_db outbox_events
 truncate_table retail_db inbox_events
 truncate_table payment_db payments
 truncate_table payment_db inbox_events
+truncate_table warehouse_db pickup_requests
+truncate_table warehouse_db intakes
+truncate_table warehouse_db production_batches
+truncate_table warehouse_db roast_runs
+truncate_table warehouse_db inventories
+truncate_table warehouse_db inbox_events
 truncate_table logistics_db shipments
 truncate_table logistics_db inbox_events
 truncate_table trace_db trace_events

@@ -10,10 +10,10 @@ import (
 
 type HarvestWorker struct {
 	consumer kafka.Consumer
-	usecase  *usecase.IntakeUseCase
+	usecase  *usecase.PickupUseCase
 }
 
-func NewHarvestWorker(consumer kafka.Consumer, usecase *usecase.IntakeUseCase) *HarvestWorker {
+func NewHarvestWorker(consumer kafka.Consumer, usecase *usecase.PickupUseCase) *HarvestWorker {
 	return &HarvestWorker{
 		consumer: consumer,
 		usecase:  usecase,

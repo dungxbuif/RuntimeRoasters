@@ -49,6 +49,15 @@
             "type": "string"
           },
           "default": []
+        },
+        "warehouse_ids": {
+          "type": "array",
+          "title": "Managed Warehouse IDs",
+          "description": "Warehouses this identity can operate",
+          "items": {
+            "type": "string"
+          },
+          "default": []
         }
       },
       "required": ["email"],

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/google/uuid"
@@ -33,6 +34,9 @@ func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, internalID string
 		if err := tx.Preload("Intakes").Where("id = ?", internalID).First(&batch).Error; err != nil {
 			return err
 		}
+		if claims, _, allWarehouses := identity.WarehouseScopeFromContext(ctx); !allWarehouses && !claims.CanAccessWarehouse(batch.WarehouseID) {
+			return fmt.Errorf("warehouse access denied")
+		}
 
 		if batch.Status != domain.BatchStatusReady {
 			return fmt.Errorf("only READY batches can be finalized, current: %s", batch.Status)
@@ -46,6 +50,7 @@ func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, internalID string
 				inv = domain.Inventory{
 					CoffeeType:        batch.Intakes[0].CoffeeType,
 					OriginCode:        batch.Intakes[0].OriginCode,
+					WarehouseID:       batch.WarehouseID,
 					SKU:               sku,
 					AvailableQuantity: batch.TotalOutputWeight,
 				}

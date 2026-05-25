@@ -23,7 +23,20 @@ p, STORE_MGR, /v1/drivers/location, write
 p, STORE_MGR, /v1/trace/:id, read
 p, STORE_MGR, /v1/trace/:id/document, read
 p, STORE_MGR, /v1/audit/:partition, read
+p, WAREHOUSE_MGR, /v1/warehouse/intakes, read
+p, WAREHOUSE_MGR, /v1/warehouse/pickup-requests, read
+p, WAREHOUSE_MGR, /v1/warehouse/pickup-requests/:id/dispatch, write
+p, WAREHOUSE_MGR, /v1/warehouse/pickup-requests/:id/receive, write
+p, WAREHOUSE_MGR, /v1/warehouse/batches, read|write
+p, WAREHOUSE_MGR, /v1/warehouse/batches/:id, read
+p, WAREHOUSE_MGR, /v1/warehouse/batches/:id/intake, write
+p, WAREHOUSE_MGR, /v1/warehouse/batches/:id/process, write
+p, WAREHOUSE_MGR, /v1/warehouse/batches/:id/finalize, write
+p, WAREHOUSE_MGR, /v1/warehouse/inventory, read
+p, WAREHOUSE_MGR, /v1/warehouse/dispatch-requests, read
+p, WAREHOUSE_MGR, /v1/warehouse/dispatch-requests/:id/dispatch, write
 p, ADMIN, /v1/*, .*
 g, ADMIN, FARM_ADMIN
 g, ADMIN, FARM_MANAGER
 g, ADMIN, STORE_MGR
+g, ADMIN, WAREHOUSE_MGR

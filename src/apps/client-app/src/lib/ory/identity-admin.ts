@@ -21,6 +21,7 @@ export interface IdentityClaims {
   role: string;
   org_id: string;
   store_ids: string[];
+  warehouse_ids: string[];
 }
 
 export async function resolveIdentityClaims(subject?: string | null): Promise<IdentityClaims> {
@@ -29,6 +30,7 @@ export async function resolveIdentityClaims(subject?: string | null): Promise<Id
     role: 'GUEST',
     org_id: 'org-root-001',
     store_ids: [],
+    warehouse_ids: [],
   };
   if (!subject) {
     return fallback;
@@ -59,6 +61,7 @@ export async function resolveIdentityClaims(subject?: string | null): Promise<Id
         role?: string;
         org_id?: string;
         store_ids?: string[];
+        warehouse_ids?: string[];
       };
     };
     return {
@@ -66,6 +69,7 @@ export async function resolveIdentityClaims(subject?: string | null): Promise<Id
       role: identity.traits?.role || 'GUEST',
       org_id: identity.traits?.org_id || fallback.org_id,
       store_ids: Array.isArray(identity.traits?.store_ids) ? identity.traits.store_ids : [],
+      warehouse_ids: Array.isArray(identity.traits?.warehouse_ids) ? identity.traits.warehouse_ids : [],
     };
   } catch {
     return fallback;

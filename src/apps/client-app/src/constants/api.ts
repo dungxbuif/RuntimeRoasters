@@ -12,6 +12,9 @@ export const API_ENDPOINTS = {
     HARVESTS: '/v1/harvests',
   },
   WAREHOUSE: {
+    INTAKES: '/v1/warehouse/intakes',
+    PICKUP_REQUESTS: '/v1/warehouse/pickup-requests',
+    DISPATCH_REQUESTS: '/v1/warehouse/dispatch-requests',
     BATCHES: '/v1/warehouse/batches',
     ROAST_RUNS: '/v1/warehouse/runs',
     INVENTORY: '/v1/warehouse/inventory',

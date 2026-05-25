@@ -60,14 +60,19 @@ func (u *userUsecase) CreateUser(ctx context.Context, req domain.CreateUserReque
 	if storeIDs == nil {
 		storeIDs = []string{}
 	}
+	warehouseIDs := req.WarehouseIDs
+	if warehouseIDs == nil {
+		warehouseIDs = []string{}
+	}
 	identityBody := *client.NewCreateIdentityBody(
 		"default",
 		map[string]interface{}{
-			"email":     req.Email,
-			"name":      req.Name,
-			"role":      req.Role,
-			"org_id":    req.OrgID,
-			"store_ids": storeIDs,
+			"email":         req.Email,
+			"name":          req.Name,
+			"role":          req.Role,
+			"org_id":        req.OrgID,
+			"store_ids":     storeIDs,
+			"warehouse_ids": warehouseIDs,
 		},
 	)
 	identityBody.Credentials = &client.IdentityWithCredentials{
@@ -96,12 +101,13 @@ func (u *userUsecase) CreateUser(ctx context.Context, req domain.CreateUserReque
 	u.publishPolicyChanged(ctx, userId, "user_role_assigned")
 
 	user := &domain.User{
-		ID:       userId,
-		Email:    req.Email,
-		Name:     req.Name,
-		Role:     req.Role,
-		OrgID:    req.OrgID,
-		StoreIDs: storeIDs,
+		ID:           userId,
+		Email:        req.Email,
+		Name:         req.Name,
+		Role:         req.Role,
+		OrgID:        req.OrgID,
+		StoreIDs:     storeIDs,
+		WarehouseIDs: warehouseIDs,
 	}
 
 	event := map[string]interface{}{
@@ -140,6 +146,7 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 		name, _ := traits["name"].(string)
 		orgID, _ := traits["org_id"].(string)
 		storeIDs := traitStringSlice(traits["store_ids"])
+		warehouseIDs := traitStringSlice(traits["warehouse_ids"])
 
 		roles, _ := u.enforcer.GetRolesForUser(id.Id)
 		role := ""
@@ -156,12 +163,13 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 		}
 
 		users[i] = &domain.User{
-			ID:       id.Id,
-			Email:    email,
-			Name:     name,
-			Role:     role,
-			OrgID:    orgID,
-			StoreIDs: storeIDs,
+			ID:           id.Id,
+			Email:        email,
+			Name:         name,
+			Role:         role,
+			OrgID:        orgID,
+			StoreIDs:     storeIDs,
+			WarehouseIDs: warehouseIDs,
 		}
 	}
 
@@ -200,10 +208,11 @@ func (u *userUsecase) AcceptHydraLogin(ctx context.Context, req domain.AcceptLog
 	// 2. Accept Login with Session Claims
 	accept := *hydra.NewAcceptOAuth2LoginRequest(req.Subject)
 	accept.SetContext(map[string]interface{}{
-		"email":     stringTrait(traits, "email"),
-		"role":      role,
-		"org_id":    stringTrait(traits, "org_id"),
-		"store_ids": traitStringSlice(traits["store_ids"]),
+		"email":         stringTrait(traits, "email"),
+		"role":          role,
+		"org_id":        stringTrait(traits, "org_id"),
+		"store_ids":     traitStringSlice(traits["store_ids"]),
+		"warehouse_ids": traitStringSlice(traits["warehouse_ids"]),
 	})
 	/*
 	   TODO: Fix custom claims for Hydra v2 Go SDK.

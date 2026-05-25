@@ -27,16 +27,47 @@ func NewIntakeUseCase(db *gorm.DB) *IntakeUseCase {
 	return &IntakeUseCase{db: db}
 }
 
-func (uc *IntakeUseCase) ProcessHarvestEvent(ctx context.Context, msgID string, payload []byte) error {
-	cloudEvent, err := events.ParseCloudEvent(payload)
+func (uc *IntakeUseCase) CreateIntakeFromHarvest(ctx context.Context, pickup domain.PickupRequest) (*domain.Intake, error) {
+	var created domain.Intake
+	err := uc.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return createIntakeFromPickup(tx, pickup, &created)
+	})
 	if err != nil {
-		return fmt.Errorf("failed to parse harvest CloudEvent: %w", err)
+		return nil, err
 	}
-	event, err := events.DataAs[HarvestCreatedEvent](cloudEvent)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal harvest event data: %w", err)
-	}
+	return &created, nil
+}
 
+func createIntakeFromPickup(tx *gorm.DB, pickup domain.PickupRequest, created *domain.Intake) error {
+	var existing domain.Intake
+	if err := tx.Where("pickup_id = ?", pickup.ID).Take(&existing).Error; err == nil {
+		*created = existing
+		return nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	intake := domain.Intake{
+		ID:          uuid.New().String(),
+		HarvestID:   pickup.HarvestID,
+		PickupID:    pickup.ID,
+		WarehouseID: pickup.WarehouseID,
+		CoffeeType:  pickup.CoffeeType,
+		OriginCode:  pickup.OriginCode,
+		Quantity:    pickup.Quantity,
+		Status:      domain.IntakeStatusUnassigned,
+	}
+	if err := tx.Create(&intake).Error; err != nil {
+		return err
+	}
+	*created = intake
+	return nil
+}
+
+func (uc *IntakeUseCase) ProcessHarvestEvent(ctx context.Context, msgID string, payload []byte) error {
+	event, _, err := DecodeHarvestCreated(payload)
+	if err != nil {
+		return err
+	}
 	return uc.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Idempotency Check
 		var existing domain.InboxEvent
@@ -68,4 +99,31 @@ func (uc *IntakeUseCase) ProcessHarvestEvent(ctx context.Context, msgID string, 
 		}
 		return tx.Create(&inbox).Error
 	})
+}
+
+func DecodeHarvestCreated(payload []byte) (HarvestCreatedEvent, events.Metadata, error) {
+	cloudEvent, err := events.ParseCloudEvent(payload)
+	if err != nil {
+		return HarvestCreatedEvent{}, events.Metadata{}, fmt.Errorf("failed to parse harvest CloudEvent: %w", err)
+	}
+	event, err := events.DataAs[HarvestCreatedEvent](cloudEvent)
+	if err != nil {
+		return HarvestCreatedEvent{}, events.Metadata{}, fmt.Errorf("failed to unmarshal harvest event data: %w", err)
+	}
+	metadata := events.Metadata{
+		EventID:       cloudEvent.ID(),
+		CorrelationID: events.ExtensionString(cloudEvent, "correlationid"),
+		CausationID:   events.ExtensionString(cloudEvent, "causationid"),
+		TraceID:       events.ExtensionString(cloudEvent, "traceid"),
+		HarvestID:     events.ExtensionString(cloudEvent, "harvestid"),
+		FarmID:        events.ExtensionString(cloudEvent, "farmid"),
+		WarehouseID:   events.ExtensionString(cloudEvent, "warehouseid"),
+	}
+	if metadata.HarvestID == "" {
+		metadata.HarvestID = event.HarvestID
+	}
+	if metadata.CorrelationID == "" {
+		metadata.CorrelationID = event.HarvestID
+	}
+	return event, metadata, nil
 }

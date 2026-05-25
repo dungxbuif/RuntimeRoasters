@@ -37,12 +37,70 @@ export interface Inventory {
   id: string;
   coffee_type: string;
   origin_code: string;
+  warehouse_id?: string;
   sku: string;
   available_quantity: number;
   updated_at: string;
 }
 
+export interface Intake {
+  id: string;
+  harvest_id: string;
+  pickup_id?: string;
+  warehouse_id?: string;
+  coffee_type: string;
+  origin_code: string;
+  quantity: number;
+  status: string;
+  batch_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PickupRequest {
+  id: string;
+  harvest_id: string;
+  farm_id: string;
+  warehouse_id: string;
+  origin_location_id: string;
+  quantity: number;
+  coffee_type: string;
+  origin_code: string;
+  status: string;
+  notification_id?: string;
+  shipment_id?: string;
+  created_at: string;
+  updated_at: string;
+  dispatched_at?: string;
+  received_at?: string;
+}
+
+export interface DispatchRequest {
+  id: string;
+  status: string;
+}
+
 class WarehouseService {
+  async listIntakes(): Promise<Intake[]> {
+    const res = await api.get(API_ENDPOINTS.WAREHOUSE.INTAKES);
+    return res.data.intakes || [];
+  }
+
+  async listPickupRequests(): Promise<PickupRequest[]> {
+    const res = await api.get(API_ENDPOINTS.WAREHOUSE.PICKUP_REQUESTS);
+    return res.data.pickup_requests || [];
+  }
+
+  async dispatchPickupRequest(id: string): Promise<PickupRequest> {
+    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.PICKUP_REQUESTS}/${id}/dispatch`);
+    return res.data.pickup_request;
+  }
+
+  async receivePickupRequest(id: string): Promise<Intake> {
+    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.PICKUP_REQUESTS}/${id}/receive`);
+    return res.data.intake;
+  }
+
   async listBatches(): Promise<ProductionBatch[]> {
     const res = await api.get(API_ENDPOINTS.WAREHOUSE.BATCHES);
     return res.data.batches || [];
@@ -70,9 +128,23 @@ class WarehouseService {
     await api.post(`${API_ENDPOINTS.WAREHOUSE.BATCHES}/${id}/finalize`);
   }
 
+  async startProcessing(id: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.WAREHOUSE.BATCHES}/${id}/process`);
+  }
+
   async getInventory(): Promise<Inventory[]> {
     const res = await api.get(API_ENDPOINTS.WAREHOUSE.INVENTORY);
     return res.data.inventory || [];
+  }
+
+  async listDispatchRequests(): Promise<DispatchRequest[]> {
+    const res = await api.get(API_ENDPOINTS.WAREHOUSE.DISPATCH_REQUESTS);
+    return res.data.dispatch_requests || [];
+  }
+
+  async dispatchRequest(id: string): Promise<DispatchRequest> {
+    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.DISPATCH_REQUESTS}/${id}/dispatch`);
+    return res.data;
   }
 }
 

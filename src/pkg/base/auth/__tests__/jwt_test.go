@@ -35,14 +35,15 @@ func TestVerifyAndParseJWT(t *testing.T) {
 
 	t.Run("successful verification", func(t *testing.T) {
 		claims := jwt.MapClaims{
-			"sub":       "user-123",
-			"iss":       issuer,
-			"exp":       time.Now().Add(time.Hour).Unix(),
-			"email":     "user@example.com",
-			"role":      "admin",
-			"org_id":    "org-1",
-			"store_ids": []interface{}{"store-1", "store-2"},
-			"jti":       "jti-1",
+			"sub":           "user-123",
+			"iss":           issuer,
+			"exp":           time.Now().Add(time.Hour).Unix(),
+			"email":         "user@example.com",
+			"role":          "admin",
+			"org_id":        "org-1",
+			"store_ids":     []interface{}{"store-1", "store-2"},
+			"warehouse_ids": []interface{}{"warehouse-1"},
+			"jti":           "jti-1",
 		}
 		rawToken := createToken(claims, privateKey, kid)
 
@@ -52,12 +53,13 @@ func TestVerifyAndParseJWT(t *testing.T) {
 		}
 
 		want := &identity.Claims{
-			Subject:  "user-123",
-			Email:    "user@example.com",
-			Role:     "admin",
-			OrgID:    "org-1",
-			StoreIDs: []string{"store-1", "store-2"},
-			JTI:      "jti-1",
+			Subject:      "user-123",
+			Email:        "user@example.com",
+			Role:         "admin",
+			OrgID:        "org-1",
+			StoreIDs:     []string{"store-1", "store-2"},
+			WarehouseIDs: []string{"warehouse-1"},
+			JTI:          "jti-1",
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -71,10 +73,11 @@ func TestVerifyAndParseJWT(t *testing.T) {
 			"iss": issuer,
 			"exp": time.Now().Add(time.Hour).Unix(),
 			"ext": map[string]interface{}{
-				"email":     "store@example.com",
-				"role":      "STORE_MGR",
-				"org_id":    "retail",
-				"store_ids": []interface{}{"store-a"},
+				"email":         "store@example.com",
+				"role":          "STORE_MGR",
+				"org_id":        "retail",
+				"store_ids":     []interface{}{"store-a"},
+				"warehouse_ids": []interface{}{"warehouse-a"},
 			},
 		}
 		rawToken := createToken(claims, privateKey, kid)
@@ -83,7 +86,7 @@ func TestVerifyAndParseJWT(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if got.Email != "store@example.com" || got.Role != "STORE_MGR" || got.OrgID != "retail" || !reflect.DeepEqual(got.StoreIDs, []string{"store-a"}) {
+		if got.Email != "store@example.com" || got.Role != "STORE_MGR" || got.OrgID != "retail" || !reflect.DeepEqual(got.StoreIDs, []string{"store-a"}) || !reflect.DeepEqual(got.WarehouseIDs, []string{"warehouse-a"}) {
 			t.Fatalf("unexpected claims: %+v", got)
 		}
 	})

@@ -48,6 +48,7 @@ func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {
 	orgID := stringClaim(jwtClaims, ClaimOrgID)
 	jti, _ := jwtClaims[ClaimJTI].(string)
 	storeIDs := stringSliceClaim(jwtClaims, ClaimStoreIDs)
+	warehouseIDs := stringSliceClaim(jwtClaims, ClaimWarehouseIDs)
 
 	log := logger.GetLogger().With(zap.String("sub", sub))
 	log.Debug("Extracting claims from JWT")
@@ -87,12 +88,13 @@ func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {
 	}
 
 	return &identity.Claims{
-		Subject:  sub,
-		Email:    email,
-		Role:     role,
-		OrgID:    orgID,
-		StoreIDs: storeIDs,
-		JTI:      jti,
+		Subject:      sub,
+		Email:        email,
+		Role:         role,
+		OrgID:        orgID,
+		StoreIDs:     storeIDs,
+		WarehouseIDs: warehouseIDs,
+		JTI:          jti,
 	}
 }
 

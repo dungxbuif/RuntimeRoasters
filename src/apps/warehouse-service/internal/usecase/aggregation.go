@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"gorm.io/gorm"
 )
 
@@ -34,8 +35,15 @@ func (uc *AggregationUseCase) CreateProductionBatch(ctx context.Context, intakeI
 		// 2. Calculate totals
 		var totalWeight float64
 		origin := intakes[0].OriginCode
+		warehouseID := intakes[0].WarehouseID
 		for _, it := range intakes {
+			if it.WarehouseID != warehouseID {
+				return fmt.Errorf("all intakes must belong to the same warehouse")
+			}
 			totalWeight += it.Quantity
+		}
+		if claims, _, allWarehouses := identity.WarehouseScopeFromContext(ctx); !allWarehouses && !claims.CanAccessWarehouse(warehouseID) {
+			return fmt.Errorf("warehouse access denied")
 		}
 
 		// 3. Create Production Batch
@@ -43,6 +51,7 @@ func (uc *AggregationUseCase) CreateProductionBatch(ctx context.Context, intakeI
 		batch := domain.ProductionBatch{
 			ID:               fmt.Sprintf("%d", time.Now().UnixNano()), // Simplified UUID for demo
 			BatchID:          batchID,
+			WarehouseID:      warehouseID,
 			Status:           domain.BatchStatusDraft,
 			TotalInputWeight: totalWeight,
 		}
@@ -67,6 +76,14 @@ func (uc *AggregationUseCase) CreateProductionBatch(ctx context.Context, intakeI
 
 func (uc *AggregationUseCase) GetUnassignedIntakes(ctx context.Context) ([]domain.Intake, error) {
 	var intakes []domain.Intake
-	err := uc.db.Where("status = ?", domain.IntakeStatusUnassigned).Find(&intakes).Error
+	query := uc.db.WithContext(ctx).Where("status = ?", domain.IntakeStatusUnassigned)
+	_, warehouseIDs, allWarehouses := identity.WarehouseScopeFromContext(ctx)
+	if !allWarehouses {
+		if len(warehouseIDs) == 0 {
+			return []domain.Intake{}, nil
+		}
+		query = query.Where("warehouse_id IN ?", warehouseIDs)
+	}
+	err := query.Find(&intakes).Error
 	return intakes, err
 }
