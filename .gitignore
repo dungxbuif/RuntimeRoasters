@@ -64,3 +64,9 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# Harness durable layer
+harness.db
+harness.db-wal
+harness.db-shm
+scripts/bin/harness-cli
