@@ -246,24 +246,13 @@ A task is done only when:
 
 ## Future Validation Ladder
 
-No validation scripts exist yet. When implementation begins, the expected ladder
-is:
+The project uses an **Enterprise Test Pyramid** for all feature validation:
 
-```text
-validate:quick
-  format, lint, typecheck, unit tests, architecture check
+1.  **validate:quick** (`src/*_test.go`): Unit tests for business logic and calculations.
+2.  **test:integration** (`src/pkg/testing/integration/`): Go-based audits for DB and Kafka consistency.
+3.  **test:e2e** (`src/apps/client-app/e2e/`): Playwright flows verifying user-visible business cycles.
 
-test:integration
-  backend, database, provider, or service checks as the stack requires
-
-test:e2e
-  user-visible end-to-end flows
-
-test:platform
-  shell, mobile, desktop, or deployment smoke checks as the stack requires
-
-test:release
-  full suite, log checks, and performance smoke
-```
+### Verification Workflow
+Every story or task must follow the [Testing & Verification Guidelines](./product/standards/TESTING_GUIDELINES.md) and produce a [Validation Report (V2)](./templates/validation-report-v2.md) linking to IDs in the [Master Test Tracking Matrix](./product/standards/TEST_TRACKING.md).
 
 Agents must not claim these commands pass until they exist and have been run.

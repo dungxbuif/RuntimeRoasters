@@ -9,6 +9,8 @@ import { USER_ROLE_LABELS } from '@/constants/domain';
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
+  const [filterRole, setFilterRole] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,6 +20,13 @@ export default function AdminUsersPage() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: () => adminService.listUsers(),
+  });
+
+  const filteredUsers = users.filter(user => {
+    const roleMatch = filterRole === 'ALL' || user.role.toUpperCase() === filterRole;
+    const searchMatch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                       user.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return roleMatch && searchMatch;
   });
 
   const createUserMutation = useMutation({
@@ -61,6 +70,36 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
+      <div className="flex flex-wrap gap-4 items-center bg-white/40 p-4 rounded-2xl border border-outline-variant/10">
+        <div className="flex-1 min-w-[200px] relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-sm">search</span>
+          <input 
+            type="text" 
+            placeholder="Search by name or email..."
+            className="w-full bg-white border border-outline-variant/20 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-tertiary transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter Role:</span>
+          <select 
+            className="bg-white border border-outline-variant/20 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-tertiary cursor-pointer"
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+          >
+            <option value="ALL">All Roles</option>
+            {Object.entries(USER_ROLE_LABELS).map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="h-8 w-px bg-outline-variant/10 hidden md:block"></div>
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Showing {filteredUsers.length} of {users.length} Identities
+        </div>
+      </div>
+
       <div className="bg-surface-container-lowest rounded-3xl border border-outline-variant/10 overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-12 text-center text-on-surface-variant animate-pulse font-bold uppercase tracking-widest text-xs">Loading Identities...</div>
@@ -70,18 +109,19 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">User</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Role</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Status</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">ID</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
-              {users.map((user: User) => (
+              {filteredUsers.map((user: User) => (
                 <tr key={user.id} className="hover:bg-surface-container-low/30 transition-colors" {...testId(`user-row-${user.email}`)}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black">{user.email[0].toUpperCase()}</div>
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black uppercase text-[10px]">{user.email[0]}</div>
                       <div>
-                        <p className="font-bold text-on-surface uppercase tracking-tight text-xs">{user.email.split('@')[0]}</p>
+                        <p className="font-bold text-on-surface uppercase tracking-tight text-xs">{user.name || user.email.split('@')[0]}</p>
                         <p className="text-[9px] text-on-surface-variant/60 font-mono">{user.email}</p>
                       </div>
                     </div>
@@ -92,11 +132,17 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Active</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <code className="text-[9px] text-on-surface-variant/40 font-mono">{user.id}</code>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="text-on-surface-variant hover:text-primary transition-colors">
-                      <span className="material-symbols-outlined !text-sm">edit</span>
+                      <span className="material-symbols-outlined !text-sm">manage_accounts</span>
                     </button>
                   </td>
                 </tr>

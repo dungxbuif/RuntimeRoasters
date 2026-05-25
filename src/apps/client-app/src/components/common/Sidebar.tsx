@@ -16,22 +16,12 @@ export default function Sidebar() {
   ];
 
   const operationalLinks = [
-    { href: APP_ROUTES.DASHBOARD.HARVESTS, label: "Harvest Declaration", icon: "eco" },
-    { href: APP_ROUTES.DASHBOARD.FARM_TELEMETRY, label: "Farm Telemetry", icon: "agriculture" },
-    { href: APP_ROUTES.DASHBOARD.LOGISTICS, label: "Transit Monitor", icon: "local_shipping" },
-    { href: APP_ROUTES.DASHBOARD.WAREHOUSE, label: "Stock Analytics", icon: "warehouse" },
-    { href: APP_ROUTES.DASHBOARD.RETAIL, label: "Saga Monitor", icon: "analytics" },
-    { href: APP_ROUTES.DASHBOARD.RETAIL_ORDERS, label: "Market Orders", icon: "shopping_cart" },
+    { href: "/dashboard", label: "Intelligence Hub", icon: "analytics" },
     { href: APP_ROUTES.DASHBOARD.TRACEABILITY, label: "Provenance Trace", icon: "qr_code" },
   ];
 
   const diagnosticLinks = [
-    { href: APP_ROUTES.DASHBOARD.TOPOLOGY, label: "Cluster Mesh", icon: "schema" },
-    { href: APP_ROUTES.DASHBOARD.BATCHES, label: "Stream Flow", icon: "dataset" },
-    { href: APP_ROUTES.DASHBOARD.FINANCE, label: "Finance Ledger", icon: "payments" },
-    { href: APP_ROUTES.DASHBOARD.AUDIT, label: "Immutable Audit", icon: "shield_check" },
-    { href: APP_ROUTES.DASHBOARD.EXPLORER, label: "Nodes & Pods", icon: "dns" },
-    { href: APP_ROUTES.DASHBOARD.RESILIENCY, label: "Fault Logs", icon: "monitoring" },
+    { href: APP_ROUTES.DASHBOARD.EXPLORER, label: "System Explorer", icon: "dns" },
   ];
 
   return (
@@ -48,16 +38,18 @@ export default function Sidebar() {
       
       <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
         {/* Priority Management Section - PROTECTED */}
-        <RoleGuard roles={['ADMIN', 'FARM_ADMIN', 'FARM_MANAGER']}>
-          <div className="px-1 mb-8">
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Identity & Access</p>
-            <div className="space-y-1">
-              {managementLinks.map((link) => (
-                <SidebarLink key={link.href} {...link} active={pathname === link.href} />
-              ))}
-            </div>
+        <div className="px-1 mb-8">
+          <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Identity & Access</p>
+          <div className="space-y-1">
+            <RoleGuard roles={['ADMIN']}>
+              <SidebarLink {...managementLinks[0]} active={pathname === managementLinks[0].href} />
+            </RoleGuard>
+            <RoleGuard roles={['ADMIN', 'FARM_ADMIN', 'FARM_MANAGER']}>
+              <SidebarLink {...managementLinks[1]} active={pathname === managementLinks[1].href} />
+            </RoleGuard>
+            <SidebarLink {...managementLinks[2]} active={pathname === managementLinks[2].href} />
           </div>
-        </RoleGuard>
+        </div>
 
         {/* Operational Section - PROTECTED */}
         <div className="px-1 mb-8 pt-4 border-t border-outline-variant/10">
@@ -73,9 +65,9 @@ export default function Sidebar() {
         <div className="px-1 pt-4 border-t border-outline-variant/10">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">System Intelligence</p>
           <div className="space-y-1">
-            {diagnosticLinks.map((link) => (
-              <SidebarLink key={link.href} {...link} active={pathname === link.href} small />
-            ))}
+            <RoleGuard roles={['ADMIN']}>
+              <SidebarLink {...diagnosticLinks[0]} active={pathname === diagnosticLinks[0].href} small />
+            </RoleGuard>
           </div>
         </div>
 

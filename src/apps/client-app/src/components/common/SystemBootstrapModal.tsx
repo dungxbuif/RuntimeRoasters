@@ -29,10 +29,19 @@ export default function SystemBootstrapModal() {
 
   useEffect(() => {
     console.debug('[SystemBootstrapModal] User changed:', user?.email, 'Role:', user?.role);
+    
+    // Allow force trigger via URL for testing
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('bootstrap') === 'true' && user?.role === 'ADMIN') {
+      setShow(true);
+      return;
+    }
+
     if (user?.role === 'ADMIN') {
       console.debug('[SystemBootstrapModal] User is ADMIN, checking system status...');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       checkStatus();
+    } else {
+      setShow(false);
     }
   }, [user]);
 

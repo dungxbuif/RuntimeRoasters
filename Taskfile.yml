@@ -57,7 +57,6 @@ tasks:
 
   be:
     desc: Start all backend services with hot-reload (Air)
-    deps: [infra]
     cmds:
       - |
         trap 'kill 0' EXIT;
