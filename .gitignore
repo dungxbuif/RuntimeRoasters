@@ -25,6 +25,7 @@ gotestsum.json.out
 **/.next
 **/out
 **/build
+**/*.tsbuildinfo
 .npm
 .eslintcache
 
@@ -43,6 +44,7 @@ gotestsum.json.out
 /deployments/signoz_data/
 
 # IDE & Editors
+.claude/
 .idea/
 .vscode/
 *.swp

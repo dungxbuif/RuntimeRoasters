@@ -54,7 +54,7 @@ func TestPaymentSagaAndRefundContract(t *testing.T) {
 		"USD",
 		true,
 		events.TopicPaymentIntentCreated,
-		events.TopicPaymentCompleted,
+		events.TopicPaymentSimulatedCompleted,
 		events.TopicPaymentFailed,
 		events.TopicPaymentRefunded,
 	)
@@ -70,7 +70,7 @@ func TestPaymentSagaAndRefundContract(t *testing.T) {
 	}
 	require.NoError(t, paymentService.HandleOrderCreated(ctx, kafkaMessage(t, events.TopicRetailOrderCreated, order.OrderID, 0, order)))
 	requireTopic(t, paymentProducer.events, events.TopicPaymentIntentCreated)
-	requireTopic(t, paymentProducer.events, events.TopicPaymentCompleted)
+	requireTopic(t, paymentProducer.events, events.TopicPaymentSimulatedCompleted)
 
 	failed := events.WarehouseStockReservationFailed{
 		EventID:    "event-stock-failed-1",
@@ -164,9 +164,23 @@ func hmacHex(t *testing.T, secret string, payload []byte) string {
 
 func kafkaMessage(t *testing.T, topic string, key string, offset int64, payload interface{}) kafkago.Message {
 	t.Helper()
-	body, err := json.Marshal(payload)
+	cloudEvent, err := events.NewCloudEvent(context.Background(), topic, "/tests/payment-saga", fmt.Sprintf("orders/%s", key), payload, testMetadata(payload, key))
+	require.NoError(t, err)
+	body, err := json.Marshal(cloudEvent)
 	require.NoError(t, err)
 	return kafkago.Message{Topic: topic, Partition: 0, Offset: offset, Key: []byte(key), Value: body}
+}
+
+func testMetadata(payload interface{}, key string) events.Metadata {
+	now := time.Now()
+	switch event := payload.(type) {
+	case events.RetailOrderCreated:
+		return events.Metadata{EventID: event.EventID, CorrelationID: event.OrderID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID}
+	case events.WarehouseStockReservationFailed:
+		return events.Metadata{EventID: event.EventID, CorrelationID: event.OrderID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID}
+	default:
+		return events.Metadata{EventID: "evt-" + key, CorrelationID: key, OccurredAt: now}
+	}
 }
 
 func requireTopic(t *testing.T, published []publishedEvent, topic string) publishedEvent {

@@ -30,7 +30,7 @@ func (p *kafkaPublisher) Publish(ctx context.Context, event *domain.OutboxEvent)
 		zap.String("event_type", event.EventType),
 		zap.String("event_id", event.ID),
 	)
-	return p.producer.Publish(ctx, p.topic, key, event.Payload)
+	return p.producer.Publish(ctx, p.topic, key, json.RawMessage(event.Payload))
 }
 
 type mockPublisher struct{}

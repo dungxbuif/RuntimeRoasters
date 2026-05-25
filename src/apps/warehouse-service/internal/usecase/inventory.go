@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -61,14 +63,24 @@ func (uc *InventoryUseCase) FinalizeBatch(ctx context.Context, internalID string
 		}
 
 		// 4. Notify (Simulated Outbox - in real use, we write to outbox table)
-		event := map[string]interface{}{
-			"batch_id":  batch.BatchID,
-			"sku":       sku,
-			"quantity":  batch.TotalOutputWeight,
-			"timestamp": time.Now(),
+		occurredAt := time.Now()
+		event := events.WarehouseStockUpdated{
+			BatchID:   batch.BatchID,
+			SKU:       sku,
+			Quantity:  batch.TotalOutputWeight,
+			Timestamp: occurredAt,
+		}
+		cloudEvent, err := events.NewCloudEvent(ctx, uc.stockTopic, events.SourceWarehouseService, fmt.Sprintf("batches/%s", batch.BatchID), event, events.Metadata{
+			EventID:       uuid.NewString(),
+			CorrelationID: batch.BatchID,
+			OccurredAt:    occurredAt,
+			BatchID:       batch.BatchID,
+		})
+		if err != nil {
+			return err
 		}
 
 		// For demo, we publish directly but note the intent
-		return uc.producer.Publish(ctx, uc.stockTopic, batch.BatchID, event)
+		return uc.producer.Publish(ctx, uc.stockTopic, batch.BatchID, cloudEvent)
 	})
 }

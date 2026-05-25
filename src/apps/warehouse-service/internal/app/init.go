@@ -43,11 +43,15 @@ func InitializeApp() (*App, func(), error) {
 	intakeUseCase := usecase.NewIntakeUseCase(db.DB)
 	orderReservationUC := usecase.NewOrderReservationUseCase(db.DB, producer, cfg.KafkaStockReservedTopic, cfg.KafkaStockFailedTopic)
 	harvestConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-harvest", cfg.KafkaHarvestTopic)
-	orderConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-orders", cfg.KafkaOrderTopic)
+	orderConsumers := make([]kafka.Consumer, 0, 2)
+	for _, topic := range uniqueTopics(cfg.KafkaOrderTopic, events.TopicPaymentCompleted) {
+		orderConsumers = append(orderConsumers, kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-orders-"+topic, topic))
+	}
 	harvestWorker := worker.NewHarvestWorker(harvestConsumer, intakeUseCase)
-	orderWorker := worker.NewOrderWorker(orderConsumer, orderReservationUC)
+	orderWorker := worker.NewOrderWorker(orderConsumers, orderReservationUC)
 
-	app := NewApp(&cfg, db, []kafka.Consumer{harvestConsumer, orderConsumer}, harvestWorker, orderWorker)
+	consumers := append([]kafka.Consumer{harvestConsumer}, orderConsumers...)
+	app := NewApp(&cfg, db, consumers, harvestWorker, orderWorker)
 
 	cleanup := func() {
 		if otelShutdown != nil {
@@ -55,7 +59,9 @@ func InitializeApp() (*App, func(), error) {
 		}
 		_ = producer.Close()
 		_ = harvestConsumer.Close()
-		_ = orderConsumer.Close()
+		for _, consumer := range orderConsumers {
+			_ = consumer.Close()
+		}
 	}
 
 	return app, cleanup, nil
@@ -96,13 +102,13 @@ func configDefaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.KafkaGroupID = "warehouse-service-group"
 	}
 	if cfg.KafkaHarvestTopic == "" {
-		cfg.KafkaHarvestTopic = "farm.harvest.events"
+		cfg.KafkaHarvestTopic = events.TopicFarmHarvestCreated
 	}
 	if cfg.KafkaStockTopic == "" {
-		cfg.KafkaStockTopic = events.TopicWarehouseStockUpdated
+		cfg.KafkaStockTopic = events.TopicWarehouseInventoryUpdated
 	}
 	if cfg.KafkaOrderTopic == "" {
-		cfg.KafkaOrderTopic = events.TopicPaymentCompleted
+		cfg.KafkaOrderTopic = events.TopicPaymentSimulatedCompleted
 	}
 	if cfg.KafkaStockReservedTopic == "" {
 		cfg.KafkaStockReservedTopic = events.TopicWarehouseStockReserved
@@ -111,4 +117,20 @@ func configDefaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.KafkaStockFailedTopic = events.TopicWarehouseStockReservationFailed
 	}
 	return cfg
+}
+
+func uniqueTopics(topics ...string) []string {
+	seen := map[string]struct{}{}
+	unique := make([]string, 0, len(topics))
+	for _, topic := range topics {
+		if topic == "" {
+			continue
+		}
+		if _, ok := seen[topic]; ok {
+			continue
+		}
+		seen[topic] = struct{}{}
+		unique = append(unique, topic)
+	}
+	return unique
 }

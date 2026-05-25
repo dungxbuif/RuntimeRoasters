@@ -19,6 +19,26 @@ Earlier sprint slices use incompatible event names and payloads. The final demo 
   - Cassandra for audit and trace-service live history.
   - Valkey for GEO/liveness/locks.
 
+## Current Status
+
+RR-URG-02 is implemented as the event-contract and storage-boundary foundation for the final demo:
+
+- CloudEvents envelope and canonical topic constants are defined for the final demo event surface.
+- Payload structs exist for paid order, warehouse, pickup, delivery, return, GPS, notification, and socket broadcast events.
+- Trace-service and audit-service subscribe to the full canonical topic list.
+- Runtime SAGA path works for Retail paid order -> Payment simulated completion -> Warehouse stock reservation -> Logistics delivery assignment.
+- Client trace timeline topic names are updated for current SAGA events.
+
+Out-of-scope for RR-URG-02 and implemented by later tickets:
+
+- Full API/state-machine implementation for farm pickup driver lifecycle.
+- Full API/state-machine implementation for retail delivery driver lifecycle.
+- Notification/realtime/socket service fanout implementation.
+- Cassandra-backed trace-service live history beyond audit append-only use.
+- Legacy topic cleanup in historical sprint/reference docs. Runtime code/config/tests must stay canonical.
+
+Manual verification guide: `RR-URG-02-manual-test-guide.md`.
+
 ## Implementation Details
 
 ### 1. Event Contract Package
@@ -47,12 +67,12 @@ Required common fields:
 
 Checklist:
 
-- [ ] Common event envelope defined.
-- [ ] Payload structs defined for farm pickup events.
-- [ ] Payload structs defined for paid order events.
-- [ ] Payload structs defined for logistics status/GPS events.
-- [ ] Payload structs defined for warehouse intake/inventory events.
-- [ ] Payload structs defined for notification/realtime events.
+- [x] Common CloudEvents envelope defined in `pkg/events.NewCloudEvent`.
+- [x] Farm pickup driver lifecycle payload structs defined.
+- [x] Payload structs defined for paid order events.
+- [x] Payload structs defined for logistics assignment/delivery/GPS events.
+- [x] Payload structs defined for warehouse intake/inventory/reservation events.
+- [x] Notification/realtime payload structs defined.
 
 ### 2. Canonical Event Names
 
@@ -98,10 +118,11 @@ Common:
 
 Checklist:
 
-- [ ] Existing producers migrated to canonical names.
-- [ ] Existing consumers accept canonical names.
-- [ ] Old names removed or mapped explicitly.
-- [ ] Trace/audit topic lists updated.
+- [x] Existing runtime producers migrated to canonical names.
+- [x] Existing runtime consumers accept canonical names.
+- [x] Current runtime old-name aliases removed. Legacy names may appear only in deprecated/reference docs.
+- [x] Trace/audit topic lists updated for current canonical topics.
+- [x] Future pickup/driver-return/socket topics have canonical contracts; runtime workflows are later tickets.
 
 ### 3. Storage Boundary Enforcement
 
@@ -127,10 +148,10 @@ JSONB allowed for:
 
 Checklist:
 
-- [ ] No auth scope depends only on JSONB keys.
-- [ ] No workflow transition depends only on JSONB keys.
-- [ ] Elasticsearch model is projection only.
-- [ ] Cassandra model is append-only.
+- [x] Current retail/payment/logistics/trace/audit store scoping uses typed IDs where implemented.
+- [x] Current workflow transition IDs use typed payload/extensions, not undocumented JSONB-only keys.
+- [x] Elasticsearch is documented and used as traceability projection only.
+- [x] Cassandra append-only audit exists; trace-service live-history remains outside RR-URG-02.
 
 ## Acceptance Criteria
 
@@ -142,8 +163,24 @@ Checklist:
 
 ## Test Checklist
 
-- [ ] Unit: event envelope validation.
-- [ ] Unit: event payload serialization/deserialization.
-- [ ] Contract test: producer payload matches consumer expectation.
-- [ ] Contract test: trace-service handles every canonical event.
-- [ ] Regression: old SAGA events either migrated or mapped.
+- [x] Unit: event envelope validation.
+- [x] Unit: event payload serialization/deserialization.
+- [x] Contract: paid-order producer payload matches payment/warehouse/logistics consumer expectations.
+- [x] Contract: trace-service handles current canonical events.
+- [x] Regression: current old SAGA runtime topics migrated; no runtime legacy consumers remain for the current flow.
+- [x] Manual contract guide covers current paid-order flow plus future pickup/socket topic projection through trace/audit.
+
+## Manual Test Data
+
+Use `RR-URG-02-manual-test-guide.md` as the single manual test script for this ticket.
+
+The guide includes:
+
+- exact accounts for optional UI observation;
+- terminal-first setup commands;
+- fixed business IDs;
+- dynamic current timestamp handling for payment-service backfill protection;
+- paid-order SAGA verification commands;
+- future pickup/socket topic projection commands;
+- expected output for every DB query;
+- final pass checklist.

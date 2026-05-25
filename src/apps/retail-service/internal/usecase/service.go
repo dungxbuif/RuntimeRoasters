@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/retail-service/internal/domain"
@@ -102,7 +103,17 @@ func (s *Service) CreateOrder(ctx context.Context, req CreateOrderRequest, idemp
 		PaymentMethod: req.PaymentMethod,
 		OccurredAt:    time.Now(),
 	}
-	payload, err := json.Marshal(event)
+	cloudEvent, err := events.NewCloudEvent(ctx, s.orderCreatedTopic, events.SourceRetailService, fmt.Sprintf("orders/%s", orderID), event, events.Metadata{
+		EventID:       event.EventID,
+		CorrelationID: orderID,
+		OccurredAt:    event.OccurredAt,
+		OrderID:       orderID,
+		StoreID:       req.StoreID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	payload, err := json.Marshal(cloudEvent)
 	if err != nil {
 		return nil, err
 	}
@@ -212,50 +223,82 @@ func (s *Service) HandleSagaEvent(ctx context.Context, msg kafkago.Message) erro
 func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, error) {
 	switch topic {
 	case events.TopicWarehouseStockReserved:
-		var event events.WarehouseStockReserved
-		if err := json.Unmarshal(payload, &event); err != nil {
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.WarehouseStockReserved](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusPreparing, event.OrderID, nil
 	case events.TopicPaymentIntentCreated:
-		var event events.PaymentIntentCreated
-		if err := json.Unmarshal(payload, &event); err != nil {
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.PaymentIntentCreated](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusPending, event.OrderID, nil
-	case events.TopicPaymentCompleted:
-		var event events.PaymentCompleted
-		if err := json.Unmarshal(payload, &event); err != nil {
+	case events.TopicPaymentCompleted, events.TopicPaymentSimulatedCompleted:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.PaymentCompleted](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusPending, event.OrderID, nil
 	case events.TopicPaymentFailed:
-		var event events.PaymentFailed
-		if err := json.Unmarshal(payload, &event); err != nil {
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.PaymentFailed](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusRejected, event.OrderID, nil
 	case events.TopicPaymentRefunded:
-		var event events.PaymentRefunded
-		if err := json.Unmarshal(payload, &event); err != nil {
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.PaymentRefunded](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusRejected, event.OrderID, nil
 	case events.TopicWarehouseStockReservationFailed:
-		var event events.WarehouseStockReservationFailed
-		if err := json.Unmarshal(payload, &event); err != nil {
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.WarehouseStockReservationFailed](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusRejected, event.OrderID, nil
-	case events.TopicLogisticsShipmentAssigned:
-		var event events.LogisticsShipmentAssigned
-		if err := json.Unmarshal(payload, &event); err != nil {
+	case events.TopicLogisticsDeliveryAssigned:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.LogisticsShipmentAssigned](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusShipping, event.OrderID, nil
-	case events.TopicLogisticsShipmentDelivered:
-		var event events.LogisticsShipmentDelivered
-		if err := json.Unmarshal(payload, &event); err != nil {
+	case events.TopicLogisticsDeliveryCompleted:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.LogisticsShipmentDelivered](cloudEvent)
+		if err != nil {
 			return "", "", err
 		}
 		return domain.OrderStatusCompleted, event.OrderID, nil

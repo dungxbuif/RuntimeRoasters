@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/apps/trace-service/internal/search"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	rrevents "github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
@@ -53,29 +55,38 @@ func NewService(db *gorm.DB, searchClient *search.ElasticsearchClient) *Service 
 
 func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
-	ids := extractIDs(msg.Value)
-	traceID := ""
+	cloudEvent, err := rrevents.ParseCloudEvent(msg.Value)
+	if err != nil {
+		return err
+	}
+	ids := extractIDs(cloudEvent)
+	traceID := ids["trace_id"]
 	if spanContext := trace.SpanContextFromContext(ctx); spanContext.HasTraceID() {
-		traceID = spanContext.TraceID().String()
+		traceID = firstNonEmpty(traceID, spanContext.TraceID().String())
 	}
 	event := domain.TraceEvent{
-		ID:         uuid.NewString(),
-		MessageID:  messageID,
-		Topic:      msg.Topic,
-		BatchID:    ids["batch_id"],
-		OrderID:    ids["order_id"],
-		ShipmentID: ids["shipment_id"],
-		StoreID:    ids["store_id"],
-		TraceID:    traceID,
-		Payload:    string(msg.Value),
-		OccurredAt: time.Now(),
+		ID:          uuid.NewString(),
+		MessageID:   messageID,
+		Topic:       cloudEvent.Type(),
+		BatchID:     ids["batch_id"],
+		OrderID:     ids["order_id"],
+		ShipmentID:  ids["shipment_id"],
+		StoreID:     ids["store_id"],
+		HarvestID:   ids["harvest_id"],
+		FarmID:      ids["farm_id"],
+		WarehouseID: ids["warehouse_id"],
+		DriverID:    ids["driver_id"],
+		VehicleID:   ids["vehicle_id"],
+		TraceID:     traceID,
+		Payload:     string(msg.Value),
+		OccurredAt:  cloudEvent.Time(),
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&event).Error; err != nil {
 			return err
 		}
-		for _, key := range []string{"batch_id", "order_id", "shipment_id"} {
+		for _, key := range []string{"batch_id", "order_id", "shipment_id", "harvest_id"} {
 			if ids[key] == "" {
 				continue
 			}
@@ -90,7 +101,7 @@ func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 func (s *Service) GetTrace(ctx context.Context, entityID string) ([]domain.TraceEvent, error) {
 	var events []domain.TraceEvent
 	err := s.db.WithContext(ctx).
-		Where("batch_id = ? OR order_id = ? OR shipment_id = ?", entityID, entityID, entityID).
+		Where("batch_id = ? OR order_id = ? OR shipment_id = ? OR harvest_id = ?", entityID, entityID, entityID, entityID).
 		Order("occurred_at ASC, created_at ASC").
 		Find(&events).Error
 	if err != nil {
@@ -202,11 +213,11 @@ func buildReadModel(entityID string, entityType string, events []domain.TraceEve
 		model.Timeline = append(model.Timeline, entry)
 		model.Status = entry.Status
 		switch event.Topic {
-		case "retail.order.created":
+		case rrevents.TopicRetailOrderCreated:
 			model.Order = payload
-		case "payment.intent.created", "payment.completed", "payment.failed", "payment.refunded":
+		case rrevents.TopicPaymentIntentCreated, rrevents.TopicPaymentCompleted, rrevents.TopicPaymentSimulatedCompleted, rrevents.TopicPaymentFailed, rrevents.TopicPaymentRefunded:
 			model.Payment = merge(model.Payment, payload)
-		case "logistics.shipment.assigned", "logistics.shipment.delivered":
+		case rrevents.TopicLogisticsDeliveryAssigned, rrevents.TopicLogisticsDeliveryCompleted:
 			model.Shipment = merge(model.Shipment, payload)
 		}
 	}
@@ -243,26 +254,66 @@ func timelineEntry(event domain.TraceEvent, payload map[string]interface{}) Time
 
 func eventStatus(topic string) (string, string) {
 	switch topic {
-	case "retail.order.created":
+	case rrevents.TopicRetailOrderCreated:
 		return "ORDER_CREATED", "Order created"
-	case "payment.intent.created":
+	case rrevents.TopicPaymentIntentCreated:
 		return "PAYMENT_PENDING", "Payment intent created"
-	case "payment.completed":
+	case rrevents.TopicPaymentCompleted, rrevents.TopicPaymentSimulatedCompleted:
 		return "PAYMENT_COMPLETED", "Payment completed"
-	case "payment.failed":
+	case rrevents.TopicPaymentFailed:
 		return "REJECTED", "Payment failed"
-	case "payment.refunded":
+	case rrevents.TopicPaymentRefunded:
 		return "REFUNDED", "Payment refunded"
-	case "warehouse.stock.reserved":
+	case rrevents.TopicWarehouseStockReserved:
 		return "STOCK_RESERVED", "Stock reserved"
-	case "warehouse.stock.reservation_failed":
+	case rrevents.TopicWarehouseStockReservationFailed:
 		return "REJECTED", "Stock reservation failed"
-	case "logistics.shipment.assigned":
+	case rrevents.TopicWarehousePickupRequested:
+		return "PICKUP_REQUESTED", "Warehouse pickup requested"
+	case rrevents.TopicWarehousePickupReceived:
+		return "PICKUP_RECEIVED", "Warehouse pickup received"
+	case rrevents.TopicWarehouseDispatchRequested:
+		return "DISPATCH_REQUESTED", "Warehouse dispatch requested"
+	case rrevents.TopicWarehouseIntakeCreated:
+		return "INTAKE_CREATED", "Warehouse intake created"
+	case rrevents.TopicLogisticsDeliveryAssigned:
 		return "SHIPPING", "Shipment assigned"
-	case "logistics.shipment.delivered":
+	case rrevents.TopicLogisticsDeliveryDeparted:
+		return "DELIVERY_DEPARTED", "Delivery departed"
+	case rrevents.TopicLogisticsDeliveryArrivedAtStore:
+		return "ARRIVED_AT_STORE", "Delivery arrived at store"
+	case rrevents.TopicLogisticsDeliveryDriverConfirmed:
+		return "DELIVERY_CONFIRMED", "Driver confirmed delivery"
+	case rrevents.TopicLogisticsDeliveryCompleted:
 		return "COMPLETED", "Shipment delivered"
-	case "logistics.gps.updated":
+	case rrevents.TopicLogisticsPickupAssigned:
+		return "PICKUP_ASSIGNED", "Pickup assigned"
+	case rrevents.TopicLogisticsPickupDeparted:
+		return "PICKUP_DEPARTED", "Pickup departed"
+	case rrevents.TopicLogisticsPickupArrivedAtFarm:
+		return "ARRIVED_AT_FARM", "Pickup arrived at farm"
+	case rrevents.TopicLogisticsPickupLoadingConfirmed:
+		return "LOADING_CONFIRMED", "Pickup loading confirmed"
+	case rrevents.TopicLogisticsPickupReturnStarted:
+		return "PICKUP_RETURN_STARTED", "Pickup return started"
+	case rrevents.TopicLogisticsPickupArrivedAtWarehouse:
+		return "ARRIVED_AT_WAREHOUSE", "Pickup arrived at warehouse"
+	case rrevents.TopicLogisticsPickupCompleted:
+		return "PICKUP_COMPLETED", "Pickup completed"
+	case rrevents.TopicLogisticsDriverReturnStarted:
+		return "DRIVER_RETURN_STARTED", "Driver return started"
+	case rrevents.TopicLogisticsDriverReturnCompleted, rrevents.TopicLogisticsDriverReturnedToBase:
+		return "DRIVER_RETURNED", "Driver returned to base"
+	case rrevents.TopicLogisticsGPSUpdated:
 		return "IN_TRANSIT", "Driver location updated"
+	case rrevents.TopicLogisticsShipmentStatusChanged:
+		return "SHIPMENT_STATUS_CHANGED", "Shipment status changed"
+	case rrevents.TopicNotificationCreated:
+		return "NOTIFICATION_CREATED", "Notification created"
+	case rrevents.TopicNotificationAcknowledged:
+		return "NOTIFICATION_ACKNOWLEDGED", "Notification acknowledged"
+	case rrevents.TopicSocketBroadcastRequested:
+		return "SOCKET_BROADCAST_REQUESTED", "Socket broadcast requested"
 	default:
 		return "UPDATED", topic
 	}
@@ -270,29 +321,51 @@ func eventStatus(topic string) (string, string) {
 
 func eventDescription(topic string, payload map[string]interface{}) string {
 	switch topic {
-	case "payment.intent.created":
+	case rrevents.TopicPaymentIntentCreated:
 		return fmt.Sprintf("%s simulated checkout created for %.2f %s", stringValue(payload, "provider"), floatValue(payload, "amount"), stringValue(payload, "currency"))
-	case "payment.completed":
+	case rrevents.TopicPaymentCompleted, rrevents.TopicPaymentSimulatedCompleted:
 		return fmt.Sprintf("%s payment completed for %.2f %s", stringValue(payload, "provider"), floatValue(payload, "amount"), stringValue(payload, "currency"))
-	case "payment.refunded":
+	case rrevents.TopicPaymentRefunded:
 		return fmt.Sprintf("%s refund issued because %s", stringValue(payload, "provider"), stringValue(payload, "reason"))
-	case "warehouse.stock.reserved":
+	case rrevents.TopicWarehouseStockReserved:
 		return fmt.Sprintf("Reserved %.0f units of %s", floatValue(payload, "quantity"), stringValue(payload, "sku"))
-	case "warehouse.stock.reservation_failed":
+	case rrevents.TopicWarehouseStockReservationFailed:
 		return fmt.Sprintf("Stock reservation failed: %s", stringValue(payload, "reason"))
-	case "logistics.shipment.assigned":
+	case rrevents.TopicWarehousePickupRequested:
+		return fmt.Sprintf("Pickup requested for harvest %s", stringValue(payload, "harvest_id"))
+	case rrevents.TopicWarehousePickupReceived:
+		return fmt.Sprintf("Pickup %s received at warehouse %s", stringValue(payload, "pickup_id"), stringValue(payload, "warehouse_id"))
+	case rrevents.TopicWarehouseDispatchRequested:
+		return fmt.Sprintf("Dispatch %s requested from warehouse %s", stringValue(payload, "dispatch_id"), stringValue(payload, "warehouse_id"))
+	case rrevents.TopicWarehouseIntakeCreated:
+		return fmt.Sprintf("Intake %s created for harvest %s", stringValue(payload, "intake_id"), stringValue(payload, "harvest_id"))
+	case rrevents.TopicLogisticsDeliveryAssigned:
 		return fmt.Sprintf("Shipment %s assigned to driver %s", stringValue(payload, "shipment_id"), stringValue(payload, "driver_id"))
-	case "logistics.shipment.delivered":
+	case rrevents.TopicLogisticsDeliveryCompleted:
 		return fmt.Sprintf("Shipment %s delivered", stringValue(payload, "shipment_id"))
+	case rrevents.TopicLogisticsPickupAssigned, rrevents.TopicLogisticsPickupDeparted, rrevents.TopicLogisticsPickupArrivedAtFarm, rrevents.TopicLogisticsPickupLoadingConfirmed, rrevents.TopicLogisticsPickupReturnStarted, rrevents.TopicLogisticsPickupArrivedAtWarehouse, rrevents.TopicLogisticsPickupCompleted:
+		return fmt.Sprintf("Pickup shipment %s status %s", stringValue(payload, "shipment_id"), stringValue(payload, "status"))
+	case rrevents.TopicLogisticsDeliveryDeparted, rrevents.TopicLogisticsDeliveryArrivedAtStore, rrevents.TopicLogisticsDeliveryDriverConfirmed, rrevents.TopicLogisticsDriverReturnStarted, rrevents.TopicLogisticsDriverReturnCompleted, rrevents.TopicLogisticsDriverReturnedToBase:
+		return fmt.Sprintf("Delivery shipment %s status %s", stringValue(payload, "shipment_id"), stringValue(payload, "status"))
+	case rrevents.TopicLogisticsShipmentStatusChanged:
+		return fmt.Sprintf("Shipment %s status %s", stringValue(payload, "shipment_id"), stringValue(payload, "status"))
+	case rrevents.TopicNotificationCreated:
+		return fmt.Sprintf("Notification created: %s", stringValue(payload, "title"))
+	case rrevents.TopicNotificationAcknowledged:
+		return fmt.Sprintf("Notification %s acknowledged", stringValue(payload, "notification_id"))
+	case rrevents.TopicSocketBroadcastRequested:
+		return fmt.Sprintf("Socket broadcast requested for %s", stringValue(payload, "channel"))
 	default:
 		return topic
 	}
 }
 
 func parsePayload(payload string) map[string]interface{} {
-	var raw map[string]interface{}
-	_ = json.Unmarshal([]byte(payload), &raw)
-	return raw
+	cloudEvent, err := rrevents.ParseCloudEvent([]byte(payload))
+	if err != nil {
+		return map[string]interface{}{}
+	}
+	return rrevents.DataMap(cloudEvent)
 }
 
 func merge(base map[string]interface{}, next map[string]interface{}) map[string]interface{} {
@@ -321,18 +394,33 @@ func floatValue(payload map[string]interface{}, key string) float64 {
 	}
 }
 
-func extractIDs(payload []byte) map[string]string {
-	var raw map[string]interface{}
-	_ = json.Unmarshal(payload, &raw)
-	ids := map[string]string{}
-	for _, key := range []string{"batch_id", "order_id", "shipment_id", "harvest_id", "store_id"} {
-		if value, ok := raw[key].(string); ok {
-			if key == "harvest_id" {
-				ids["batch_id"] = value
-				continue
-			}
-			ids[key] = value
+func extractIDs(event cloudevents.Event) map[string]string {
+	ids := map[string]string{
+		"trace_id":     rrevents.ExtensionString(event, "traceid"),
+		"batch_id":     rrevents.ExtensionString(event, "batchid"),
+		"order_id":     rrevents.ExtensionString(event, "orderid"),
+		"shipment_id":  rrevents.ExtensionString(event, "shipmentid"),
+		"harvest_id":   rrevents.ExtensionString(event, "harvestid"),
+		"store_id":     rrevents.ExtensionString(event, "storeid"),
+		"farm_id":      rrevents.ExtensionString(event, "farmid"),
+		"warehouse_id": rrevents.ExtensionString(event, "warehouseid"),
+		"driver_id":    rrevents.ExtensionString(event, "driverid"),
+		"vehicle_id":   rrevents.ExtensionString(event, "vehicleid"),
+	}
+	data := rrevents.DataMap(event)
+	for _, key := range []string{"batch_id", "order_id", "shipment_id", "harvest_id", "store_id", "farm_id", "warehouse_id", "driver_id", "vehicle_id"} {
+		if ids[key] == "" {
+			ids[key] = stringValue(data, key)
 		}
 	}
 	return ids
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

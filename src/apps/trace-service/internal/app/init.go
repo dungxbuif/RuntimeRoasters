@@ -88,19 +88,7 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.ElasticsearchIndex = "coffee_traceability"
 	}
 	if len(cfg.TraceTopics) == 0 {
-		cfg.TraceTopics = []string{
-			events.TopicRetailOrderCreated,
-			events.TopicPaymentIntentCreated,
-			events.TopicPaymentCompleted,
-			events.TopicPaymentFailed,
-			events.TopicPaymentRefunded,
-			events.TopicWarehouseStockReserved,
-			events.TopicWarehouseStockReservationFailed,
-			events.TopicWarehouseStockUpdated,
-			events.TopicLogisticsShipmentAssigned,
-			events.TopicLogisticsShipmentDelivered,
-			events.TopicLogisticsGPSUpdated,
-		}
+		cfg.TraceTopics = events.TraceableTopics
 	}
 	return cfg
 }

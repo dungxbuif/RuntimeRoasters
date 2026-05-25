@@ -112,8 +112,8 @@ test.describe('Manual live evidence', () => {
           traceIDs.includes(expectedTraceID) &&
           topics.includes('retail.order.created') &&
           topics.includes('payment.intent.created') &&
-          topics.includes('payment.completed') &&
-          topics.some((topic: string) => topic.startsWith('warehouse.stock.'))
+          topics.includes('payment.simulated_completed') &&
+          topics.includes('warehouse.stock.reserved')
         ) {
           return doc;
         }
@@ -150,7 +150,7 @@ test.describe('Manual live evidence', () => {
     expect(traceIDs).toEqual([expectedTraceID]);
     expect(topics).toContain('retail.order.created');
     expect(topics).toContain('payment.intent.created');
-    expect(topics).toContain('payment.completed');
-    expect(topics.some((topic: string) => topic.startsWith('warehouse.stock.'))).toBeTruthy();
+    expect(topics).toContain('payment.simulated_completed');
+    expect(topics).toContain('warehouse.stock.reserved');
   });
 });

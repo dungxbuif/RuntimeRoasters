@@ -315,15 +315,16 @@ The `Webhook Service` is a specialized gateway, **completely separate** from the
 | `retail.order.created`             | Retail           | Payment, Trace, Audit               |
 | `payment.intent.created`           | Payment          | Retail, Trace, Audit                |
 | `payment.completed`                | Payment          | Warehouse, Retail, Trace, Audit     |
+| `payment.simulated_completed`      | Payment          | Warehouse, Retail, Trace, Audit     |
 | `payment.failed`                   | Payment          | Retail, Trace, Audit                |
 | `payment.refunded`                 | Payment          | Retail, Trace, Audit                |
 | `warehouse.stock.reserved`         | Warehouse        | Logistics, Payment, Trace, Audit    |
-| `warehouse.stock.reserve-failed`   | Warehouse        | Payment, Retail, Trace, Audit       |
+| `warehouse.stock.reservation_failed` | Warehouse      | Payment, Retail, Trace, Audit       |
 | `warehouse.stock.released`         | Warehouse        | Retail, Trace, Audit                |
-| `logistics.shipment.assigned`      | Logistics        | Warehouse, Retail, Trace, Audit     |
+| `logistics.delivery.assigned`      | Logistics        | Warehouse, Retail, Trace, Audit     |
 | `logistics.shipment.failed`        | Logistics        | Warehouse, Payment, Retail, Trace, Audit |
-| `logistics.shipment.delivered`     | Logistics        | Warehouse, Retail, Trace, Audit     |
-| `logistics.gps.updated`            | Logistics        | Monitor, Trace                      |
+| `logistics.delivery.completed`     | Logistics        | Warehouse, Retail, Trace, Audit     |
+| `logistics.gps.updated`            | Logistics        | Trace                               |
 | `retail.order.completed`           | Retail           | Trace, Audit                        |
 
 ### 5.4 HA-Ready Design Principles

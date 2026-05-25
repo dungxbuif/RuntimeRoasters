@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"time"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cassandrastore "github.com/dungxbuif/RuntimeRoasters/apps/audit-service/internal/cassandra"
 	"github.com/dungxbuif/RuntimeRoasters/apps/audit-service/internal/domain"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
@@ -31,7 +32,11 @@ func NewService(db *gorm.DB, cassandra *cassandrastore.Store) *Service {
 
 func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
-	partitionKey := partitionKey(msg.Value)
+	cloudEvent, err := events.ParseCloudEvent(msg.Value)
+	if err != nil {
+		return err
+	}
+	partitionKey := partitionKey(cloudEvent)
 	var existing domain.AuditLog
 	if err := s.db.WithContext(ctx).Where("message_id = ?", messageID).Take(&existing).Error; err == nil {
 		return nil
@@ -48,8 +53,8 @@ func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 		ID:           uuid.NewString(),
 		PartitionKey: partitionKey,
 		MessageID:    messageID,
-		Topic:        msg.Topic,
-		StoreID:      storeID(msg.Value),
+		Topic:        cloudEvent.Type(),
+		StoreID:      events.ExtensionString(cloudEvent, "storeid"),
 		Payload:      string(msg.Value),
 		PreviousHash: previousHash,
 		CurrentHash:  currentHash,
@@ -79,24 +84,19 @@ func (s *Service) ListByPartition(ctx context.Context, partition string) ([]doma
 	return filterLogs(ctx, logs), err
 }
 
-func partitionKey(payload []byte) string {
-	var raw map[string]interface{}
-	_ = json.Unmarshal(payload, &raw)
-	for _, key := range []string{"batch_id", "order_id", "shipment_id", "harvest_id", "event_id"} {
-		if value, ok := raw[key].(string); ok && value != "" {
+func partitionKey(event cloudevents.Event) string {
+	for _, key := range []string{"orderid", "shipmentid", "harvestid", "batchid", "storeid", "farmid", "warehouseid", "driverid", "vehicleid"} {
+		if value := events.ExtensionString(event, key); value != "" {
 			return value
 		}
 	}
-	return "system"
-}
-
-func storeID(payload []byte) string {
-	var raw map[string]interface{}
-	_ = json.Unmarshal(payload, &raw)
-	if value, ok := raw["store_id"].(string); ok {
-		return value
+	data := events.DataMap(event)
+	for _, key := range []string{"order_id", "shipment_id", "harvest_id", "batch_id", "store_id", "farm_id", "warehouse_id", "driver_id", "vehicle_id"} {
+		if value, ok := data[key].(string); ok && value != "" {
+			return value
+		}
 	}
-	return ""
+	return event.ID()
 }
 
 func filterLogs(ctx context.Context, logs []domain.AuditLog) []domain.AuditLog {

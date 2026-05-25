@@ -249,7 +249,7 @@ export default function WarehouseStockLogicPage() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Kafka Node: Active</span>
                  </div>
                  <p className="text-[9px] font-bold text-slate-400 leading-relaxed italic uppercase tracking-tighter">
-                    Topic: <code className="text-primary font-mono lowercase tracking-normal">warehouse.stock.updated</code>
+                    Topic: <code className="text-primary font-mono lowercase tracking-normal">warehouse.inventory.updated</code>
                  </p>
               </div>
            </div>
@@ -258,4 +258,3 @@ export default function WarehouseStockLogicPage() {
     </div>
   );
 }
-

@@ -8,14 +8,26 @@ import (
 )
 
 type OrderWorker struct {
-	consumer kafka.Consumer
-	usecase  *usecase.OrderReservationUseCase
+	consumers []kafka.Consumer
+	usecase   *usecase.OrderReservationUseCase
 }
 
-func NewOrderWorker(consumer kafka.Consumer, usecase *usecase.OrderReservationUseCase) *OrderWorker {
-	return &OrderWorker{consumer: consumer, usecase: usecase}
+func NewOrderWorker(consumers []kafka.Consumer, usecase *usecase.OrderReservationUseCase) *OrderWorker {
+	return &OrderWorker{consumers: consumers, usecase: usecase}
 }
 
 func (w *OrderWorker) Start(ctx context.Context) error {
-	return w.consumer.Listen(ctx, w.usecase.ProcessOrderCreated)
+	errCh := make(chan error, len(w.consumers))
+	for _, consumer := range w.consumers {
+		c := consumer
+		go func() {
+			errCh <- c.Listen(ctx, w.usecase.ProcessOrderCreated)
+		}()
+	}
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }

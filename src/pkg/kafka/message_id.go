@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	kafkago "github.com/segmentio/kafka-go"
 )
 
 func MessageID(msg kafkago.Message) string {
+	if event, err := events.ParseCloudEvent(msg.Value); err == nil && event.ID() != "" {
+		return fmt.Sprintf("%s:%s", msg.Topic, event.ID())
+	}
 	var payload struct {
 		EventID string `json:"event_id"`
 	}

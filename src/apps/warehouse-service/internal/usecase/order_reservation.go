@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
@@ -27,7 +27,7 @@ func NewOrderReservationUseCase(db *gorm.DB, producer kafka.Producer, reservedTo
 
 func (uc *OrderReservationUseCase) ProcessOrderCreated(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
-	event, err := decodeOrderReservationEvent(msg.Topic, msg.Value)
+	request, err := decodeOrderReservationEvent(msg.Topic, msg.Value)
 	if err != nil {
 		return err
 	}
@@ -39,20 +39,20 @@ func (uc *OrderReservationUseCase) ProcessOrderCreated(ctx context.Context, msg 
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		if err := tx.Where("event_type = ? AND message_id = ?", "order_reserved", event.OrderID).Take(&existing).Error; err == nil {
+		if err := tx.Where("event_type = ? AND message_id = ?", "order_reserved", request.Order.OrderID).Take(&existing).Error; err == nil {
 			return markInbox(tx, messageID, msg.Topic)
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 
-		reserved, failed := uc.reserve(tx, event)
+		reserved, failed := uc.reserve(tx, request.Order)
 		if reserved != nil {
-			if err := uc.producer.Publish(ctx, uc.reservedTopic, event.OrderID, reserved); err != nil {
+			if err := uc.publishReservationEvent(ctx, uc.reservedTopic, reserved.OrderID, reserved, request.CorrelationID, request.CausationID, request.TraceID); err != nil {
 				return err
 			}
 		}
 		if failed != nil {
-			if err := uc.producer.Publish(ctx, uc.failedTopic, event.OrderID, failed); err != nil {
+			if err := uc.publishReservationEvent(ctx, uc.failedTopic, failed.OrderID, failed, request.CorrelationID, request.CausationID, request.TraceID); err != nil {
 				return err
 			}
 		}
@@ -60,18 +60,34 @@ func (uc *OrderReservationUseCase) ProcessOrderCreated(ctx context.Context, msg 
 		if err := markInbox(tx, messageID, msg.Topic); err != nil {
 			return err
 		}
-		return markInbox(tx, event.OrderID, "order_reserved")
+		return markInbox(tx, request.Order.OrderID, "order_reserved")
 	})
 }
 
-func decodeOrderReservationEvent(topic string, payload []byte) (events.RetailOrderCreated, error) {
+type orderReservationRequest struct {
+	Order         events.RetailOrderCreated
+	CorrelationID string
+	CausationID   string
+	TraceID       string
+}
+
+func decodeOrderReservationEvent(topic string, payload []byte) (orderReservationRequest, error) {
+	cloudEvent, err := events.ParseCloudEvent(payload)
+	if err != nil {
+		return orderReservationRequest{}, err
+	}
+	correlationID := events.ExtensionString(cloudEvent, "correlationid")
+	if correlationID == "" {
+		correlationID = events.ExtensionString(cloudEvent, "orderid")
+	}
+	traceID := events.ExtensionString(cloudEvent, "traceid")
 	switch topic {
-	case events.TopicPaymentCompleted:
-		var event events.PaymentCompleted
-		if err := json.Unmarshal(payload, &event); err != nil {
-			return events.RetailOrderCreated{}, err
+	case events.TopicPaymentCompleted, events.TopicPaymentSimulatedCompleted:
+		event, err := events.DataAs[events.PaymentCompleted](cloudEvent)
+		if err != nil {
+			return orderReservationRequest{}, err
 		}
-		return events.RetailOrderCreated{
+		return orderReservationRequest{Order: events.RetailOrderCreated{
 			EventID:       event.EventID,
 			OrderID:       event.OrderID,
 			StoreID:       event.StoreID,
@@ -79,13 +95,16 @@ func decodeOrderReservationEvent(topic string, payload []byte) (events.RetailOrd
 			TotalAmount:   event.Amount,
 			PaymentMethod: event.Provider,
 			OccurredAt:    event.OccurredAt,
-		}, nil
+		}, CorrelationID: correlationID, CausationID: cloudEvent.ID(), TraceID: traceID}, nil
 	default:
-		var event events.RetailOrderCreated
-		if err := json.Unmarshal(payload, &event); err != nil {
-			return events.RetailOrderCreated{}, err
+		event, err := events.DataAs[events.RetailOrderCreated](cloudEvent)
+		if err != nil {
+			return orderReservationRequest{}, err
 		}
-		return event, nil
+		if correlationID == "" {
+			correlationID = event.OrderID
+		}
+		return orderReservationRequest{Order: event, CorrelationID: correlationID, CausationID: cloudEvent.ID(), TraceID: traceID}, nil
 	}
 }
 
@@ -139,4 +158,30 @@ func (uc *OrderReservationUseCase) reserve(tx *gorm.DB, event events.RetailOrder
 		Quantity:   item.Quantity,
 		OccurredAt: time.Now(),
 	}, nil
+}
+
+func (uc *OrderReservationUseCase) publishReservationEvent(ctx context.Context, topic string, key string, payload interface{}, correlationID string, causationID string, traceID string) error {
+	metadata := warehouseReservationMetadata(payload)
+	if correlationID == "" {
+		correlationID = metadata.OrderID
+	}
+	metadata.CorrelationID = correlationID
+	metadata.CausationID = causationID
+	metadata.TraceID = traceID
+	cloudEvent, err := events.NewCloudEvent(ctx, topic, events.SourceWarehouseService, fmt.Sprintf("orders/%s", metadata.OrderID), payload, metadata)
+	if err != nil {
+		return err
+	}
+	return uc.producer.Publish(ctx, topic, key, cloudEvent)
+}
+
+func warehouseReservationMetadata(payload interface{}) events.Metadata {
+	switch event := payload.(type) {
+	case *events.WarehouseStockReserved:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID}
+	case *events.WarehouseStockReservationFailed:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID}
+	default:
+		return events.Metadata{}
+	}
 }

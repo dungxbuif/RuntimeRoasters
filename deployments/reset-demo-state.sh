@@ -8,13 +8,14 @@ topics=(
   retail.order.created
   payment.intent.created
   payment.completed
+  payment.simulated_completed
   payment.failed
   payment.refunded
   warehouse.stock.reserved
   warehouse.stock.reservation_failed
-  warehouse.stock.updated
-  logistics.shipment.assigned
-  logistics.shipment.delivered
+  warehouse.inventory.updated
+  logistics.delivery.assigned
+  logistics.delivery.completed
   logistics.gps.updated
 )
 

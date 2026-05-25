@@ -147,7 +147,7 @@ cd src/apps/client-app
 npx playwright test e2e/manual-live-evidence.spec.ts --project=chromium
 ```
 
-Expected result: one browser-driven gateway flow produces one trace ID across `retail.order.created`, `payment.intent.created`, `payment.completed`, `warehouse.stock.reserved`, and `logistics.shipment.assigned`.
+Expected result: one browser-driven gateway flow produces one trace ID across `retail.order.created`, `payment.intent.created`, `payment.simulated_completed`, `warehouse.stock.reserved`, and `logistics.delivery.assigned`.
 
 ## Documentation Pointers
 

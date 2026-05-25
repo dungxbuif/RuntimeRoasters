@@ -124,7 +124,7 @@ Kafka acts as the system's backbone, facilitating decoupled communication.
 
 ```mermaid
 graph TD
-    FARM[Farm Service] -->|farm.harvest.events| KAFKA{Kafka Event Mesh}
+    FARM[Farm Service] -->|farm.harvest.created| KAFKA{Kafka Event Mesh}
     RETAIL[Retail Service] -->|order.saga.events| KAFKA
     WH[Warehouse Service] -->|inventory.events| KAFKA
     KAFKA -->|broadcast| TRACE[Trace Service - ES]

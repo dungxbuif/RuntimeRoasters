@@ -53,7 +53,7 @@ These flows demonstrate how the system handles high-volume transactions and data
     - Commit Transaction.
 2.  **Relay Worker:**
     - Scans the Outbox table for `PENDING` events.
-    - Publishes to Kafka topic `farm.harvest.events`.
+    - Publishes to Kafka topic `farm.harvest.created`.
     - Marks Outbox as `COMPLETED`.
 3.  **Read Side (Trace Service):**
     - Consumes from Kafka.

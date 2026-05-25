@@ -16,6 +16,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin"
 	casbingrpc "github.com/dungxbuif/RuntimeRoasters/pkg/base/casbin/transport/grpc"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/valkey"
 	"github.com/redis/go-redis/v9"
@@ -41,7 +42,7 @@ func InitializeApp() (*App, func(), error) {
 		cfg.DBLogLevel = "warn"
 	}
 	if cfg.KafkaHarvestTopic == "" {
-		cfg.KafkaHarvestTopic = "farm.harvest.events"
+		cfg.KafkaHarvestTopic = events.TopicFarmHarvestCreated
 	}
 	if cfg.KafkaPolicyTopic == "" {
 		cfg.KafkaPolicyTopic = "auth.policy.changed"

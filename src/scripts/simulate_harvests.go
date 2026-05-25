@@ -7,8 +7,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/kafka"
+	"github.com/google/uuid"
 )
 
 type HarvestCreatedEvent struct {
@@ -20,12 +21,12 @@ type HarvestCreatedEvent struct {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	brokers := []string{"localhost:9094"}
 	producer := kafka.NewProducer(brokers)
 	defer producer.Close()
 
-	topic := "farm.harvest.events"
+	topic := events.TopicFarmHarvestCreated
 	coffeeTypes := []string{"ARABICA", "ROBUSTA"}
 	origins := []string{"CD", "BMT", "GL"}
 
@@ -43,10 +44,20 @@ func main() {
 			OriginCode: origin,
 			Quantity:   quantity,
 		}
+		cloudEvent, err := events.NewCloudEvent(context.Background(), topic, events.SourceFarmService, fmt.Sprintf("harvests/%s", harvestID), event, events.Metadata{
+			EventID:       uuid.NewString(),
+			CorrelationID: harvestID,
+			HarvestID:     harvestID,
+			OccurredAt:    time.Now(),
+		})
+		if err != nil {
+			log.Printf("Failed to build CloudEvent: %v", err)
+			continue
+		}
 
 		fmt.Printf("[%d] Sending Harvest: %s | %s | %.2fkg\n", i, coffee, origin, quantity)
 
-		err := producer.Publish(context.Background(), topic, harvestID, event)
+		err = producer.Publish(context.Background(), topic, harvestID, cloudEvent)
 		if err != nil {
 			log.Printf("Failed to publish: %v", err)
 		}

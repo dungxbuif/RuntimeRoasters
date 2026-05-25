@@ -50,10 +50,19 @@ func NewService(db *gorm.DB, producer kafka.Producer, providers *provider.Factor
 
 func (s *Service) HandleOrderCreated(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
-	var event events.RetailOrderCreated
-	if err := json.Unmarshal(msg.Value, &event); err != nil {
+	cloudEvent, err := events.ParseCloudEvent(msg.Value)
+	if err != nil {
 		return err
 	}
+	event, err := events.DataAs[events.RetailOrderCreated](cloudEvent)
+	if err != nil {
+		return err
+	}
+	correlationID := events.ExtensionString(cloudEvent, "correlationid")
+	if correlationID == "" {
+		correlationID = event.OrderID
+	}
+	traceID := events.ExtensionString(cloudEvent, "traceid")
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if processed, err := alreadyProcessed(tx, messageID); processed || err != nil {
@@ -68,17 +77,17 @@ func (s *Service) HandleOrderCreated(ctx context.Context, msg kafkago.Message) e
 		}
 		_ = payment
 		if createdEvent != nil {
-			if err := s.producer.Publish(ctx, s.intentCreatedTopic, event.OrderID, createdEvent); err != nil {
+			if err := s.publishPaymentEvent(ctx, s.intentCreatedTopic, event.OrderID, createdEvent, correlationID, cloudEvent.ID(), traceID); err != nil {
 				return err
 			}
 		}
 		if completedEvent != nil {
-			if err := s.producer.Publish(ctx, s.paymentCompletedTopic, event.OrderID, completedEvent); err != nil {
+			if err := s.publishPaymentEvent(ctx, s.paymentCompletedTopic, event.OrderID, completedEvent, correlationID, cloudEvent.ID(), traceID); err != nil {
 				return err
 			}
 		}
 		if failedEvent != nil {
-			if err := s.producer.Publish(ctx, s.paymentFailedTopic, event.OrderID, failedEvent); err != nil {
+			if err := s.publishPaymentEvent(ctx, s.paymentFailedTopic, event.OrderID, failedEvent, correlationID, cloudEvent.ID(), traceID); err != nil {
 				return err
 			}
 		}
@@ -88,10 +97,19 @@ func (s *Service) HandleOrderCreated(ctx context.Context, msg kafkago.Message) e
 
 func (s *Service) HandleCompensationEvent(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
-	var failed events.WarehouseStockReservationFailed
-	if err := json.Unmarshal(msg.Value, &failed); err != nil {
+	cloudEvent, err := events.ParseCloudEvent(msg.Value)
+	if err != nil {
 		return err
 	}
+	failed, err := events.DataAs[events.WarehouseStockReservationFailed](cloudEvent)
+	if err != nil {
+		return err
+	}
+	correlationID := events.ExtensionString(cloudEvent, "correlationid")
+	if correlationID == "" {
+		correlationID = failed.OrderID
+	}
+	traceID := events.ExtensionString(cloudEvent, "traceid")
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if processed, err := alreadyProcessed(tx, messageID); processed || err != nil {
@@ -102,7 +120,7 @@ func (s *Service) HandleCompensationEvent(ctx context.Context, msg kafkago.Messa
 			return err
 		}
 		if refunded != nil {
-			if err := s.producer.Publish(ctx, s.paymentRefundedTopic, failed.OrderID, refunded); err != nil {
+			if err := s.publishPaymentEvent(ctx, s.paymentRefundedTopic, failed.OrderID, refunded, correlationID, cloudEvent.ID(), traceID); err != nil {
 				return err
 			}
 		}
@@ -195,16 +213,49 @@ func (s *Service) SimulateWebhook(ctx context.Context, providerName string, payl
 			if err != nil {
 				return err
 			}
-			return s.producer.Publish(ctx, s.paymentCompletedTopic, payment.OrderID, event)
+			return s.publishPaymentEvent(ctx, events.TopicPaymentCompleted, payment.OrderID, event, payment.OrderID, req.EventID, "")
 		case domain.PaymentStatusFailed:
 			if err := tx.Model(&payment).Update("status", domain.PaymentStatusFailed).Error; err != nil {
 				return err
 			}
-			return s.producer.Publish(ctx, s.paymentFailedTopic, payment.OrderID, failedEvent(payment, req.Reason))
+			return s.publishPaymentEvent(ctx, s.paymentFailedTopic, payment.OrderID, failedEvent(payment, req.Reason), payment.OrderID, req.EventID, "")
 		default:
 			return fmt.Errorf("unsupported simulated webhook status %s", req.Status)
 		}
 	})
+}
+
+func (s *Service) publishPaymentEvent(ctx context.Context, topic string, key string, payload interface{}, correlationID string, causationID string, traceID string) error {
+	metadata := paymentMetadata(payload)
+	if metadata.EventID == "" {
+		return errors.New("payment event id is required")
+	}
+	if correlationID == "" {
+		correlationID = metadata.OrderID
+	}
+	metadata.CorrelationID = correlationID
+	metadata.CausationID = causationID
+	metadata.TraceID = traceID
+	cloudEvent, err := events.NewCloudEvent(ctx, topic, events.SourcePaymentService, fmt.Sprintf("orders/%s", metadata.OrderID), payload, metadata)
+	if err != nil {
+		return err
+	}
+	return s.producer.Publish(ctx, topic, key, cloudEvent)
+}
+
+func paymentMetadata(payload interface{}) events.Metadata {
+	switch event := payload.(type) {
+	case *events.PaymentIntentCreated:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, PaymentID: event.PaymentID, StoreID: event.StoreID}
+	case *events.PaymentCompleted:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, PaymentID: event.PaymentID, StoreID: event.StoreID}
+	case *events.PaymentFailed:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, PaymentID: event.PaymentID, StoreID: event.StoreID}
+	case *events.PaymentRefunded:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, PaymentID: event.PaymentID, StoreID: event.StoreID}
+	default:
+		return events.Metadata{}
+	}
 }
 
 func (s *Service) createPayment(ctx context.Context, tx *gorm.DB, event events.RetailOrderCreated) (*domain.Payment, *events.PaymentIntentCreated, *events.PaymentCompleted, *events.PaymentFailed, error) {

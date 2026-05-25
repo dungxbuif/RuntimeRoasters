@@ -2,11 +2,14 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"
@@ -39,8 +42,8 @@ func TestFullWarehouseFlow(t *testing.T) {
 
 	// 1. Simulate Harvest Event (Intake)
 	intakeUC := NewIntakeUseCase(db)
-	payload := `{"harvest_id": "HV-001", "coffee_type": "ARABICA", "origin_code": "SL", "quantity": 100.0}`
-	err := intakeUC.ProcessHarvestEvent(ctx, "msg-1", []byte(payload))
+	payload := mustCloudEvent(t, events.TopicFarmHarvestCreated, "harvests/HV-001", HarvestCreatedEvent{HarvestID: "HV-001", CoffeeType: "ARABICA", OriginCode: "SL", Quantity: 100.0}, events.Metadata{EventID: uuid.NewString(), CorrelationID: "HV-001", HarvestID: "HV-001", OccurredAt: time.Now()})
+	err := intakeUC.ProcessHarvestEvent(ctx, "msg-1", payload)
 	assert.NoError(t, err)
 
 	// Verify Intake Created
@@ -81,9 +84,9 @@ func TestFullWarehouseFlow(t *testing.T) {
 
 	// 4. Finalize to Stock
 	mockProducer := new(MockProducer)
-	mockProducer.On("Publish", mock.Anything, "warehouse.stock.updated", mock.Anything, mock.Anything).Return(nil)
+	mockProducer.On("Publish", mock.Anything, events.TopicWarehouseInventoryUpdated, mock.Anything, mock.Anything).Return(nil)
 
-	invUC := NewInventoryUseCase(db, mockProducer, "warehouse.stock.updated")
+	invUC := NewInventoryUseCase(db, mockProducer, events.TopicWarehouseInventoryUpdated)
 	err = invUC.FinalizeBatch(ctx, batch.ID)
 	assert.NoError(t, err)
 
@@ -97,4 +100,13 @@ func TestFullWarehouseFlow(t *testing.T) {
 	assert.Equal(t, batch.TotalOutputWeight, inventory.AvailableQuantity)
 
 	t.Logf("Full flow verified! Final Stock: %.2f kg of %s", inventory.AvailableQuantity, inventory.SKU)
+}
+
+func mustCloudEvent(t *testing.T, topic string, subject string, payload interface{}, metadata events.Metadata) []byte {
+	t.Helper()
+	cloudEvent, err := events.NewCloudEvent(context.Background(), topic, "/tests/warehouse-flow", subject, payload, metadata)
+	assert.NoError(t, err)
+	body, err := json.Marshal(cloudEvent)
+	assert.NoError(t, err)
+	return body
 }

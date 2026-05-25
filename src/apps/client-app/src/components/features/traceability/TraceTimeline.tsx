@@ -7,8 +7,10 @@ export interface TraceTimelineProps {
   document: TraceDocument;
 }
 
+type TimelinePayload = Record<string, string | number | boolean | null | TimelinePayload | TimelinePayload[]>;
+
 const TOPIC_CONFIG: Record<string, { icon: string, color: string, label: string }> = {
-  'farm.harvest.events': { 
+  'farm.harvest.created': { 
     icon: 'agriculture', 
     color: 'primary', 
     label: 'Harvest Origin' 
@@ -28,12 +30,27 @@ const TOPIC_CONFIG: Record<string, { icon: string, color: string, label: string 
     color: 'secondary', 
     label: 'Order Placed' 
   },
-  'logistics.shipment.assigned': { 
+  'payment.intent.created': {
+    icon: 'credit_card',
+    color: 'secondary',
+    label: 'Payment Intent'
+  },
+  'payment.simulated_completed': {
+    icon: 'verified',
+    color: 'success',
+    label: 'Payment Completed'
+  },
+  'payment.completed': {
+    icon: 'verified',
+    color: 'success',
+    label: 'Payment Completed'
+  },
+  'logistics.delivery.assigned': { 
     icon: 'local_shipping', 
     color: 'amber-500', 
-    label: 'Shipment Assigned' 
+    label: 'Delivery Assigned' 
   },
-  'logistics.shipment.delivered': { 
+  'logistics.delivery.completed': { 
     icon: 'check_circle', 
     color: 'success', 
     label: 'Delivered' 
@@ -57,9 +74,10 @@ export default function TraceTimeline({ document }: TraceTimelineProps) {
             label: 'System Event' 
           };
           const isEven = index % 2 === 0;
-          let payload: any = {};
+          let payload: TimelinePayload = {};
           try {
-            payload = JSON.parse(event.payload);
+            const parsed = JSON.parse(event.payload) as { data?: TimelinePayload } & TimelinePayload;
+            payload = parsed.data ?? parsed;
           } catch (e) {
             console.error("Failed to parse event payload", e);
           }

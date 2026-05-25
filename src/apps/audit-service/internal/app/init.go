@@ -93,19 +93,7 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.CassandraKeyspace = "runtime_roasters_audit"
 	}
 	if len(cfg.AuditTopics) == 0 {
-		cfg.AuditTopics = []string{
-			events.TopicRetailOrderCreated,
-			events.TopicPaymentIntentCreated,
-			events.TopicPaymentCompleted,
-			events.TopicPaymentFailed,
-			events.TopicPaymentRefunded,
-			events.TopicWarehouseStockReserved,
-			events.TopicWarehouseStockReservationFailed,
-			events.TopicWarehouseStockUpdated,
-			events.TopicLogisticsShipmentAssigned,
-			events.TopicLogisticsShipmentDelivered,
-			events.TopicLogisticsGPSUpdated,
-		}
+		cfg.AuditTopics = events.TraceableTopics
 	}
 	return cfg
 }

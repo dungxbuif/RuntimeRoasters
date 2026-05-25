@@ -21,13 +21,22 @@ However, the full operational flow is not yet continuous. The missing part is th
 
 Production note: this project production environment is still demo-oriented. Several logistics, processing, payment, and operational flows are expected to run as controlled simulations in production. The implementation should optimize for a complete, reviewable demo flow over preserving incomplete legacy shortcuts.
 
+RR-URG-02 implementation note:
+- Kafka domain messages are now required to use CloudEvents JSON format.
+- Business IDs stay separate from OpenTelemetry `trace_id`.
+- `trace_id` is propagated for observability/correlation only; durable business lookup uses IDs such as `order_id`, `shipment_id`, `harvest_id`, `batch_id`, `store_id`, `farm_id`, `warehouse_id`, `driver_id`, and `vehicle_id`.
+- Derived CloudEvents must preserve the incoming `traceid` extension, especially for production-demo simulator flows that may not carry W3C `traceparent` transport headers.
+- Demo paid orders use `payment.simulated_completed`; real provider/webhook success may still emit `payment.completed`.
+- Canonical topic rename is immediate; runtime code should not consume legacy topics such as `farm.harvest.events`, `warehouse.stock.updated`, `logistics.shipment.assigned`, or `logistics.shipment.delivered`.
+- Legacy topic names may remain only in docs where they are explicitly marked as deprecated/forbidden. They must not appear in runtime code, config, tests, seed scripts, or demo evidence expectations.
+
 ## 2. Investigation Summary
 
 ### 2.1 What Exists
 
 Farm:
 - `farm-service` creates harvest records and writes outbox events.
-- Harvest event payload currently contains `harvest_id`, `coffee_type`, `origin_code`, `quantity`.
+- Harvest event is published as `farm.harvest.created` CloudEvent. Its `data` contains `harvest_id`, `coffee_type`, `origin_code`, `quantity`; its extensions carry durable IDs such as `correlationid`, `traceid`, `harvestid`, and `farmid`.
 - Relevant files:
   - `src/apps/farm-service/internal/usecase/harvest_usecase.go`
   - `src/apps/farm-service/internal/infrastructure/event/outbox_relay.go`
@@ -63,10 +72,10 @@ Payment:
 Logistics:
 - `logistics-service` can create shipments from:
   - `warehouse.stock.reserved`
-  - `warehouse.stock.updated`
+  - `warehouse.inventory.updated`
 - It assigns a nearest driver, stores driver GEO coordinates in Valkey, and publishes:
-  - `logistics.shipment.assigned`
-  - `logistics.shipment.delivered`
+  - `logistics.delivery.assigned`
+  - `logistics.delivery.completed`
   - `logistics.gps.updated`
 - Relevant files:
   - `src/apps/logistics-service/internal/usecase/service.go`
@@ -196,7 +205,7 @@ Farm/Warehouse inbound:
 
 Warehouse/Retail outbound:
 - `retail.order.created`
-- `payment.completed` or simulated payment success event
+- `payment.completed` or `payment.simulated_completed`
 - `warehouse.stock.reserved`
 - `warehouse.dispatch.requested`
 - `logistics.delivery.assigned`
@@ -770,6 +779,7 @@ Telemetry/control-plane requirements:
 - Business traceability and OTel tracing must remain distinct but linked.
 - Events should carry `correlation_id` and relevant business IDs.
 - Kafka messages should preserve `traceparent` headers.
+- Derived CloudEvents should also preserve the incoming `traceid` extension so trace-service, audit evidence, and UI flow visualizers can present one coherent chain.
 - Trace service may store short-lived trace history in Cassandra for public/demo visualization.
 - Root Client App `ArchitectureTopology` can remain public/no-auth with sanitized data.
 - Socket/realtime service should broadcast role-scoped dashboard updates, with optional public sanitized stream for root topology.

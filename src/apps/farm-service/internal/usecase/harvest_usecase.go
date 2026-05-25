@@ -11,6 +11,7 @@ import (
 	"github.com/dungxbuif/RuntimeRoasters/pkg/base/identity"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/database"
 	"github.com/dungxbuif/RuntimeRoasters/pkg/errs"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -82,12 +83,24 @@ func (u *harvestUsecase) CreateHarvest(ctx context.Context, harvest *domain.Harv
 		traceID := trace.SpanFromContext(ctx).SpanContext().TraceID().String()
 		eventID := uuid.NewString()
 
-		payload, _ := json.Marshal(harvestCreatedEvent{
+		occurredAt := time.Now()
+		payloadData := harvestCreatedEvent{
 			HarvestID:  strconv.FormatUint(harvest.ID, 10),
 			CoffeeType: string(harvest.CoffeeType),
 			OriginCode: string(farm.Location),
 			Quantity:   harvest.Quantity,
+		}
+		cloudEvent, err := events.NewCloudEvent(ctx, events.TopicFarmHarvestCreated, events.SourceFarmService, fmt.Sprintf("harvests/%d", harvest.ID), payloadData, events.Metadata{
+			EventID:       eventID,
+			CorrelationID: strconv.FormatUint(harvest.ID, 10),
+			OccurredAt:    occurredAt,
+			HarvestID:     strconv.FormatUint(harvest.ID, 10),
+			FarmID:        strconv.FormatUint(harvest.FarmID, 10),
 		})
+		if err != nil {
+			return err
+		}
+		payload, _ := json.Marshal(cloudEvent)
 
 		traceHeaders := propagation.MapCarrier{}
 		otel.GetTextMapPropagator().Inject(ctx, traceHeaders)

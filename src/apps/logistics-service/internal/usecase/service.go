@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -90,7 +89,18 @@ func (s *Service) UpdateDriverLocation(ctx context.Context, driverID string, shi
 		return err
 	}
 	event := events.LogisticsGPSUpdated{EventID: uuid.NewString(), DriverID: driverID, ShipmentID: shipmentID, StoreID: storeID, Latitude: lat, Longitude: long, OccurredAt: time.Now()}
-	return s.producer.Publish(ctx, s.gpsUpdatedTopic, driverID, event)
+	cloudEvent, err := events.NewCloudEvent(ctx, s.gpsUpdatedTopic, events.SourceLogisticsService, fmt.Sprintf("drivers/%s", driverID), event, events.Metadata{
+		EventID:       event.EventID,
+		CorrelationID: firstNonEmpty(shipmentID, driverID),
+		OccurredAt:    event.OccurredAt,
+		DriverID:      driverID,
+		ShipmentID:    shipmentID,
+		StoreID:       storeID,
+	})
+	if err != nil {
+		return err
+	}
+	return s.producer.Publish(ctx, s.gpsUpdatedTopic, driverID, cloudEvent)
 }
 
 func (s *Service) storeDriverLocation(ctx context.Context, driverID string, lat float64, long float64) error {
@@ -116,7 +126,7 @@ func (s *Service) DeliverShipment(ctx context.Context, shipmentID string) error 
 		_ = s.db.WithContext(ctx).Model(&domain.Driver{}).Where("id = ?", shipment.DriverID).Updates(map[string]interface{}{"status": domain.DriverStatusIdle, "is_available": true}).Error
 	}
 	event := events.LogisticsShipmentDelivered{EventID: uuid.NewString(), ShipmentID: shipment.ID, OrderID: shipment.OrderID, StoreID: shipment.DestinationStoreID, OccurredAt: now}
-	return s.producer.Publish(ctx, s.shipmentDeliveredTopic, shipment.OrderID, event)
+	return s.publishLogisticsEvent(ctx, s.shipmentDeliveredTopic, shipment.OrderID, event, firstNonEmpty(shipment.OrderID, shipment.ID), "", "")
 }
 
 func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message) error {
@@ -140,7 +150,13 @@ func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message)
 			}
 			if assigned != nil {
 				event := events.LogisticsShipmentAssigned{EventID: uuid.NewString(), ShipmentID: assigned.ID, OrderID: assigned.OrderID, StoreID: assigned.DestinationStoreID, DriverID: assigned.DriverID, OccurredAt: time.Now()}
-				if err := s.producer.Publish(ctx, s.shipmentAssignedTopic, assigned.OrderID, event); err != nil {
+				correlationID := assigned.OrderID
+				traceID := ""
+				if cloudEvent, err := events.ParseCloudEvent(msg.Value); err == nil {
+					correlationID = firstNonEmpty(events.ExtensionString(cloudEvent, "correlationid"), assigned.OrderID, assigned.ID)
+					traceID = events.ExtensionString(cloudEvent, "traceid")
+				}
+				if err := s.publishLogisticsEvent(ctx, s.shipmentAssignedTopic, assigned.OrderID, event, correlationID, messageID, traceID); err != nil {
 					return err
 				}
 			}
@@ -151,17 +167,21 @@ func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message)
 }
 
 func (s *Service) createShipmentFromEvent(ctx context.Context, tx *gorm.DB, topic string, payload []byte) (*domain.Shipment, error) {
+	cloudEvent, err := events.ParseCloudEvent(payload)
+	if err != nil {
+		return nil, err
+	}
 	switch topic {
 	case events.TopicWarehouseStockReserved:
-		var event events.WarehouseStockReserved
-		if err := json.Unmarshal(payload, &event); err != nil {
+		event, err := events.DataAs[events.WarehouseStockReserved](cloudEvent)
+		if err != nil {
 			return nil, err
 		}
 		shipment := &domain.Shipment{ID: uuid.NewString(), OrderID: event.OrderID, OriginWarehouseID: "WAREHOUSE-001", DestinationStoreID: event.StoreID, DestinationAddress: event.StoreID, Status: domain.ShipmentStatusPending}
 		return shipment, tx.Create(shipment).Error
-	case events.TopicWarehouseStockUpdated:
-		var event events.WarehouseStockUpdated
-		if err := json.Unmarshal(payload, &event); err != nil {
+	case events.TopicWarehouseInventoryUpdated:
+		event, err := events.DataAs[events.WarehouseStockUpdated](cloudEvent)
+		if err != nil {
 			return nil, err
 		}
 		shipment := &domain.Shipment{ID: uuid.NewString(), BatchID: event.BatchID, OriginWarehouseID: "WAREHOUSE-001", DestinationStoreID: s.defaultDestinationStoreID, DestinationAddress: s.defaultDestinationStoreID, Status: domain.ShipmentStatusPending}
@@ -218,4 +238,39 @@ func (s *Service) assignNearestDriver(ctx context.Context, tx *gorm.DB, shipment
 	shipment.DriverID = driverID
 	shipment.Status = domain.ShipmentStatusAssigned
 	return shipment, nil
+}
+
+func (s *Service) publishLogisticsEvent(ctx context.Context, topic string, key string, payload interface{}, correlationID string, causationID string, traceID string) error {
+	metadata := logisticsMetadata(payload)
+	if correlationID == "" {
+		correlationID = firstNonEmpty(metadata.OrderID, metadata.ShipmentID, metadata.DriverID)
+	}
+	metadata.CorrelationID = correlationID
+	metadata.CausationID = causationID
+	metadata.TraceID = traceID
+	cloudEvent, err := events.NewCloudEvent(ctx, topic, events.SourceLogisticsService, fmt.Sprintf("shipments/%s", metadata.ShipmentID), payload, metadata)
+	if err != nil {
+		return err
+	}
+	return s.producer.Publish(ctx, topic, key, cloudEvent)
+}
+
+func logisticsMetadata(payload interface{}) events.Metadata {
+	switch event := payload.(type) {
+	case events.LogisticsShipmentAssigned:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID, ShipmentID: event.ShipmentID, DriverID: event.DriverID}
+	case events.LogisticsShipmentDelivered:
+		return events.Metadata{EventID: event.EventID, OccurredAt: event.OccurredAt, OrderID: event.OrderID, StoreID: event.StoreID, ShipmentID: event.ShipmentID}
+	default:
+		return events.Metadata{}
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

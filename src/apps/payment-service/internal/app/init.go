@@ -111,7 +111,7 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.IntentCreatedTopic = events.TopicPaymentIntentCreated
 	}
 	if cfg.PaymentCompletedTopic == "" {
-		cfg.PaymentCompletedTopic = events.TopicPaymentCompleted
+		cfg.PaymentCompletedTopic = events.TopicPaymentSimulatedCompleted
 	}
 	if cfg.PaymentFailedTopic == "" {
 		cfg.PaymentFailedTopic = events.TopicPaymentFailed

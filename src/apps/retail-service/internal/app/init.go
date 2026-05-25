@@ -33,13 +33,15 @@ func InitializeApp() (*App, func(), error) {
 
 	consumers := []kafka.Consumer{
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-intent", cfg.PaymentIntentTopic),
-		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-completed", cfg.PaymentCompletedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-failed", cfg.PaymentFailedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-refunded", cfg.PaymentRefundedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-reserved", cfg.StockReservedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-failed", cfg.StockFailedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-shipment-assigned", cfg.ShipmentAssignedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-shipment-delivered", cfg.ShipmentDeliveredTopic),
+	}
+	for _, topic := range uniqueTopics(cfg.PaymentCompletedTopic, events.TopicPaymentCompleted) {
+		consumers = append(consumers, kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-completed-"+topic, topic))
 	}
 
 	guards, err := security.NewHTTPGuards(security.HTTPOptions{
@@ -103,7 +105,7 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.PaymentIntentTopic = events.TopicPaymentIntentCreated
 	}
 	if cfg.PaymentCompletedTopic == "" {
-		cfg.PaymentCompletedTopic = events.TopicPaymentCompleted
+		cfg.PaymentCompletedTopic = events.TopicPaymentSimulatedCompleted
 	}
 	if cfg.PaymentFailedTopic == "" {
 		cfg.PaymentFailedTopic = events.TopicPaymentFailed
@@ -118,10 +120,26 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 		cfg.StockFailedTopic = events.TopicWarehouseStockReservationFailed
 	}
 	if cfg.ShipmentAssignedTopic == "" {
-		cfg.ShipmentAssignedTopic = events.TopicLogisticsShipmentAssigned
+		cfg.ShipmentAssignedTopic = events.TopicLogisticsDeliveryAssigned
 	}
 	if cfg.ShipmentDeliveredTopic == "" {
-		cfg.ShipmentDeliveredTopic = events.TopicLogisticsShipmentDelivered
+		cfg.ShipmentDeliveredTopic = events.TopicLogisticsDeliveryCompleted
 	}
 	return cfg
+}
+
+func uniqueTopics(topics ...string) []string {
+	seen := map[string]struct{}{}
+	unique := make([]string, 0, len(topics))
+	for _, topic := range topics {
+		if topic == "" {
+			continue
+		}
+		if _, ok := seen[topic]; ok {
+			continue
+		}
+		seen[topic] = struct{}{}
+		unique = append(unique, topic)
+	}
+	return unique
 }

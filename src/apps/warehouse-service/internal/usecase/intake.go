@@ -2,12 +2,12 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dungxbuif/RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"github.com/dungxbuif/RuntimeRoasters/pkg/events"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -28,9 +28,13 @@ func NewIntakeUseCase(db *gorm.DB) *IntakeUseCase {
 }
 
 func (uc *IntakeUseCase) ProcessHarvestEvent(ctx context.Context, msgID string, payload []byte) error {
-	var event HarvestCreatedEvent
-	if err := json.Unmarshal(payload, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal harvest event: %w", err)
+	cloudEvent, err := events.ParseCloudEvent(payload)
+	if err != nil {
+		return fmt.Errorf("failed to parse harvest CloudEvent: %w", err)
+	}
+	event, err := events.DataAs[HarvestCreatedEvent](cloudEvent)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal harvest event data: %w", err)
 	}
 
 	return uc.db.Transaction(func(tx *gorm.DB) error {

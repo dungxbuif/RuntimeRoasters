@@ -52,13 +52,13 @@ func InitializeApp() (*App, func(), error) {
 		cfg.StockReservedTopic = events.TopicWarehouseStockReserved
 	}
 	if cfg.StockUpdatedTopic == "" {
-		cfg.StockUpdatedTopic = events.TopicWarehouseStockUpdated
+		cfg.StockUpdatedTopic = events.TopicWarehouseInventoryUpdated
 	}
 	if cfg.ShipmentAssignedTopic == "" {
-		cfg.ShipmentAssignedTopic = events.TopicLogisticsShipmentAssigned
+		cfg.ShipmentAssignedTopic = events.TopicLogisticsDeliveryAssigned
 	}
 	if cfg.ShipmentDeliveredTopic == "" {
-		cfg.ShipmentDeliveredTopic = events.TopicLogisticsShipmentDelivered
+		cfg.ShipmentDeliveredTopic = events.TopicLogisticsDeliveryCompleted
 	}
 	if cfg.GPSUpdatedTopic == "" {
 		cfg.GPSUpdatedTopic = events.TopicLogisticsGPSUpdated

@@ -44,11 +44,20 @@ Kafka is the "central nervous system" of the platform, used for Sagas and CQRS.
 | :--- | :--- | :--- |
 | `order.saga.events` | `OrderCreated` | Triggers stock reservation in Warehouse. |
 | `auth.policy.changed`| `PolicyUpdated` | Notifies services to reload Casbin rules. |
-| `farm.harvest.events`| `HarvestCreated`| Propagates data to Trace Service (ES). |
-| `logistics.gps.live` | `DriverLocation` | High-frequency GPS updates for tracking. |
+| `farm.harvest.created`| `HarvestCreated`| Propagates data to Warehouse, Trace, and Audit. |
+| `logistics.gps.updated` | `DriverLocation` | High-frequency GPS updates for tracking. |
 
 ### Event Schema Standard
 Every event follows the **CloudEvents** specification to ensure metadata consistency across the ecosystem.
+
+The detailed event contract is maintained in [`CLOUDEVENTS_CONTRACT.md`](./CLOUDEVENTS_CONTRACT.md).
+
+CloudEvents are emitted in JSON format. Required metadata:
+- `id`, `type`, `source`, `subject`, `time`, `datacontenttype=application/json`.
+- Extensions: `correlationid`, optional `causationid`, `traceid` when an OTel span exists, and relevant business IDs such as `orderid`, `storeid`, `shipmentid`, `harvestid`, `batchid`, `farmid`, `warehouseid`, `driverid`, `vehicleid`.
+- `data` contains the typed business payload only.
+
+OpenTelemetry `trace_id` is not a business identifier. It is used for SigNoz/ClickHouse observability and request/event correlation only.
 
 ---
 
