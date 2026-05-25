@@ -18,8 +18,10 @@ p, STORE_MGR, /v1/orders/:id, read
 p, STORE_MGR, /v1/payments, read
 p, STORE_MGR, /v1/payments/orders/:order_id, read
 p, STORE_MGR, /v1/shipments, read
+p, STORE_MGR, /v1/logistics/shipments, read
+p, STORE_MGR, /v1/logistics/shipments/:id, read
 p, STORE_MGR, /v1/shipments/:id/deliver, write
-p, STORE_MGR, /v1/drivers/location, write
+p, STORE_MGR, /v1/logistics/shipments/:id/confirm-delivery, write
 p, STORE_MGR, /v1/trace/:id, read
 p, STORE_MGR, /v1/trace/:id/document, read
 p, STORE_MGR, /v1/audit/:partition, read
@@ -35,8 +37,24 @@ p, WAREHOUSE_MGR, /v1/warehouse/batches/:id/finalize, write
 p, WAREHOUSE_MGR, /v1/warehouse/inventory, read
 p, WAREHOUSE_MGR, /v1/warehouse/dispatch-requests, read
 p, WAREHOUSE_MGR, /v1/warehouse/dispatch-requests/:id/dispatch, write
+p, WAREHOUSE_MGR, /v1/logistics/locations, read
+p, WAREHOUSE_MGR, /v1/logistics/shipments, read
+p, WAREHOUSE_MGR, /v1/logistics/shipments/:id, read
+p, WAREHOUSE_MGR, /v1/logistics/shipments/:id/assign, write
+p, WAREHOUSE_MGR, /v1/logistics/drivers, read
+p, WAREHOUSE_MGR, /v1/logistics/vehicles, read
+p, WAREHOUSE_MGR, /v1/logistics/vehicles/available, read
+p, DRIVER, /v1/logistics/shipments, read
+p, DRIVER, /v1/logistics/shipments/:id, read
+p, DRIVER, /v1/logistics/shipments/:id/depart, write
+p, DRIVER, /v1/logistics/shipments/:id/arrive, write
+p, DRIVER, /v1/logistics/shipments/:id/confirm-load, write
+p, DRIVER, /v1/logistics/shipments/:id/confirm-delivery, write
+p, DRIVER, /v1/logistics/shipments/:id/return, write
+p, DRIVER, /v1/logistics/drivers/location, write
 p, ADMIN, /v1/*, .*
 g, ADMIN, FARM_ADMIN
 g, ADMIN, FARM_MANAGER
 g, ADMIN, STORE_MGR
 g, ADMIN, WAREHOUSE_MGR
+g, ADMIN, DRIVER

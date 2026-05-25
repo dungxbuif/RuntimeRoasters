@@ -28,7 +28,14 @@ topics=(
   logistics.pickup.arrived_at_warehouse
   logistics.pickup.completed
   logistics.delivery.assigned
+  logistics.delivery.departed
+  logistics.delivery.arrived_at_store
+  logistics.delivery.driver_confirmed
   logistics.delivery.completed
+  logistics.driver.return_started
+  logistics.driver.return_completed
+  logistics.driver.returned_to_base
+  logistics.shipment.status_changed
   logistics.gps.updated
 )
 
@@ -54,7 +61,11 @@ truncate_table warehouse_db roast_runs
 truncate_table warehouse_db inventories
 truncate_table warehouse_db inbox_events
 truncate_table logistics_db shipments
+truncate_table logistics_db drivers
+truncate_table logistics_db vehicles
+truncate_table logistics_db locations
 truncate_table logistics_db inbox_events
+truncate_table logistics_db processed_kafka_messages
 truncate_table trace_db trace_events
 truncate_table trace_db trace_documents
 truncate_table audit_db audit_logs

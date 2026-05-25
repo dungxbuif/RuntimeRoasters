@@ -54,6 +54,9 @@ func InitializeApp() (*App, func(), error) {
 	if cfg.StockUpdatedTopic == "" {
 		cfg.StockUpdatedTopic = events.TopicWarehouseInventoryUpdated
 	}
+	if cfg.PickupRequestedTopic == "" {
+		cfg.PickupRequestedTopic = events.TopicWarehousePickupRequested
+	}
 	if cfg.ShipmentAssignedTopic == "" {
 		cfg.ShipmentAssignedTopic = events.TopicLogisticsDeliveryAssigned
 	}
@@ -71,9 +74,13 @@ func InitializeApp() (*App, func(), error) {
 	if err := service.SeedDrivers(context.Background()); err != nil {
 		return nil, nil, err
 	}
+	if err := service.SeedLocations(context.Background()); err != nil {
+		return nil, nil, err
+	}
 	consumers := []kafka.Consumer{
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-reserved", cfg.StockReservedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-updated", cfg.StockUpdatedTopic),
+		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-pickup-requested", cfg.PickupRequestedTopic),
 	}
 
 	guards, err := security.NewHTTPGuards(security.HTTPOptions{

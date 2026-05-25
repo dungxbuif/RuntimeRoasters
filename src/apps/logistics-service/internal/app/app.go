@@ -75,6 +75,19 @@ func (a *App) routes(r *gin.Engine) {
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
 	}
+	registerLogisticsRoutes(v1, a)
+	registerLogisticsRoutes(v1.Group("/logistics"), a)
+}
+
+func registerLogisticsRoutes(v1 *gin.RouterGroup, a *App) {
+	v1.GET("/locations", func(c *gin.Context) {
+		locations, err := a.Service.ListLocations(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"locations": locations})
+	})
 	v1.GET("/shipments", func(c *gin.Context) {
 		shipments, err := a.Service.ListShipments(c.Request.Context())
 		if err != nil {
@@ -82,6 +95,14 @@ func (a *App) routes(r *gin.Engine) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"shipments": shipments})
+	})
+	v1.GET("/shipments/:id", func(c *gin.Context) {
+		shipment, err := a.Service.GetShipment(c.Request.Context(), c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"shipment": shipment})
 	})
 
 	v1.POST("/shipments/:id/deliver", func(c *gin.Context) {
@@ -91,6 +112,40 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "delivered"})
 	})
+	v1.POST("/shipments/:id/assign", func(c *gin.Context) {
+		var req struct {
+			DriverID  string `json:"driver_id"`
+			VehicleID string `json:"vehicle_id"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		shipment, err := a.Service.AssignShipment(c.Request.Context(), c.Param("id"), req.DriverID, req.VehicleID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"shipment": shipment})
+	})
+	v1.POST("/shipments/:id/depart", shipmentAction(a, func(ctx context.Context, id string) (*domain.Shipment, error) {
+		return a.Service.DepartShipment(ctx, id)
+	}))
+	v1.POST("/shipments/:id/arrive", shipmentAction(a, func(ctx context.Context, id string) (*domain.Shipment, error) {
+		return a.Service.ArriveShipment(ctx, id)
+	}))
+	v1.POST("/shipments/:id/confirm-load", shipmentAction(a, func(ctx context.Context, id string) (*domain.Shipment, error) {
+		return a.Service.ConfirmLoad(ctx, id)
+	}))
+	v1.POST("/shipments/:id/confirm-delivery", shipmentAction(a, func(ctx context.Context, id string) (*domain.Shipment, error) {
+		if err := a.Service.ConfirmDelivery(ctx, id); err != nil {
+			return nil, err
+		}
+		return a.Service.GetShipment(ctx, id)
+	}))
+	v1.POST("/shipments/:id/return", shipmentAction(a, func(ctx context.Context, id string) (*domain.Shipment, error) {
+		return a.Service.ReturnShipment(ctx, id)
+	}))
 
 	v1.POST("/drivers/location", func(c *gin.Context) {
 		var req struct {
@@ -98,21 +153,67 @@ func (a *App) routes(r *gin.Engine) {
 			ShipmentID string  `json:"shipment_id"`
 			Latitude   float64 `json:"latitude"`
 			Longitude  float64 `json:"longitude"`
+			Lat        float64 `json:"lat"`
+			Lng        float64 `json:"lng"`
+			Heading    float64 `json:"heading"`
+			Speed      float64 `json:"speed"`
+			RouteIndex int     `json:"route_index"`
+			Status     string  `json:"status"`
+			OccurredAt string  `json:"occurred_at"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
-		if req.DriverID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "driver_id is required"})
-			return
+		lat := req.Latitude
+		lng := req.Longitude
+		if lat == 0 {
+			lat = req.Lat
 		}
-		if err := a.Service.UpdateDriverLocation(c.Request.Context(), req.DriverID, req.ShipmentID, req.Latitude, req.Longitude); err != nil {
+		if lng == 0 {
+			lng = req.Lng
+		}
+		if err := a.Service.UpdateDriverLocation(c.Request.Context(), req.DriverID, req.ShipmentID, lat, lng); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "updated"})
 	})
+	v1.GET("/drivers", func(c *gin.Context) {
+		drivers, err := a.Service.ListDrivers(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"drivers": drivers})
+	})
+	v1.GET("/vehicles", func(c *gin.Context) {
+		vehicles, err := a.Service.ListVehicles(c.Request.Context(), false)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"vehicles": vehicles})
+	})
+	v1.GET("/vehicles/available", func(c *gin.Context) {
+		vehicles, err := a.Service.ListVehicles(c.Request.Context(), true)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"vehicles": vehicles})
+	})
+}
+
+func shipmentAction(a *App, fn func(context.Context, string) (*domain.Shipment, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		shipment, err := fn(c.Request.Context(), c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"shipment": shipment})
+	}
 }
 
 func AutoMigrate(db *database.DB) error {

@@ -9,6 +9,7 @@ type Config struct {
 	KafkaGroupID              string   `mapstructure:"KAFKA_GROUP_ID"`
 	StockReservedTopic        string   `mapstructure:"KAFKA_STOCK_RESERVED_TOPIC"`
 	StockUpdatedTopic         string   `mapstructure:"KAFKA_STOCK_TOPIC"`
+	PickupRequestedTopic      string   `mapstructure:"KAFKA_PICKUP_REQUESTED_TOPIC"`
 	ShipmentAssignedTopic     string   `mapstructure:"KAFKA_SHIPMENT_ASSIGNED_TOPIC"`
 	ShipmentDeliveredTopic    string   `mapstructure:"KAFKA_SHIPMENT_DELIVERED_TOPIC"`
 	GPSUpdatedTopic           string   `mapstructure:"KAFKA_GPS_UPDATED_TOPIC"`

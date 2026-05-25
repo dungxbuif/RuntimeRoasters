@@ -175,6 +175,7 @@ type WarehousePickupRequested struct {
 	FarmID      string    `json:"farm_id"`
 	WarehouseID string    `json:"warehouse_id"`
 	Quantity    float64   `json:"quantity"`
+	Status      string    `json:"status,omitempty"`
 	OccurredAt  time.Time `json:"occurred_at"`
 }
 

@@ -212,6 +212,7 @@ func (uc *PickupUseCase) publishPickupRequested(ctx context.Context, pickup doma
 		FarmID:      pickup.FarmID,
 		WarehouseID: pickup.WarehouseID,
 		Quantity:    pickup.Quantity,
+		Status:      string(pickup.Status),
 		OccurredAt:  time.Now(),
 	}
 	cloudEvent, err := events.NewCloudEvent(ctx, uc.pickupTopic, events.SourceWarehouseService, fmt.Sprintf("pickups/%s", pickup.ID), payload, events.Metadata{

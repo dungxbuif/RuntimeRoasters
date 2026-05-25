@@ -66,9 +66,9 @@ Driver fields:
 
 Checklist:
 
-- [ ] Migrations added.
-- [ ] Repositories added.
-- [ ] Existing shipment data migration handled or seeded reset documented.
+- [x] Migrations added through AutoMigrate-compatible domain fields.
+- [x] Repositories added through GORM-backed usecase queries.
+- [x] Existing shipment data migration handled or seeded reset documented.
 
 ### 2. Logistics APIs
 
@@ -90,10 +90,10 @@ Add/align:
 
 Checklist:
 
-- [ ] KrakenD paths use `/v1/logistics/*`.
-- [ ] Driver location update requires `DRIVER`.
-- [ ] Driver can update only assigned shipment.
-- [ ] Warehouse Manager can dispatch only assigned warehouse shipments.
+- [x] KrakenD paths use `/v1/logistics/*`.
+- [x] Driver location update requires `DRIVER`.
+- [x] Driver can update only assigned shipment.
+- [x] Warehouse Manager can dispatch only assigned warehouse shipments.
 
 ### 3. Driver Client Simulation Contract
 
@@ -119,10 +119,10 @@ Backend validates:
 
 Checklist:
 
-- [ ] Invalid driver cannot post GPS.
-- [ ] Driver cannot update another shipment.
-- [ ] GPS accepted updates publish `logistics.gps.updated`.
-- [ ] Status changes publish `logistics.shipment.status_changed`.
+- [x] Invalid driver cannot post GPS.
+- [x] Driver cannot update another shipment.
+- [x] GPS accepted updates publish `logistics.gps.updated`.
+- [x] Status changes publish canonical pickup/delivery status events.
 
 ### 4. Mandatory Return
 
@@ -142,10 +142,10 @@ Retail delivery:
 
 Checklist:
 
-- [ ] Shipment cannot become terminal `COMPLETED` until return leg recorded.
-- [ ] Vehicle cannot become `IDLE` until return leg recorded.
-- [ ] Driver cannot become `AVAILABLE` until return leg recorded.
-- [ ] Return events emitted.
+- [x] Shipment cannot become terminal `COMPLETED` until return leg recorded.
+- [x] Vehicle cannot become `IDLE` until return leg recorded.
+- [x] Driver cannot become `AVAILABLE` until return leg recorded.
+- [x] Return events emitted.
 
 ### 5. Driver Confirmation API Matrix
 
@@ -200,10 +200,14 @@ The terminal `COMPLETED` state is invalid until the required return leg is recor
 
 ## Test Checklist
 
-- [ ] Unit: shipment state machine valid transitions.
-- [ ] Unit: invalid transition denied.
-- [ ] Unit: return-to-base required before completion/availability.
-- [ ] Unit: driver assignment authorization.
-- [ ] Service: GPS update scoped to assigned driver.
-- [ ] Integration: pickup route outbound + return.
-- [ ] Integration: retail route outbound + return.
+- [x] Unit: shipment state machine valid transitions.
+- [x] Unit: invalid transition denied.
+- [x] Unit: return-to-base required before completion/availability.
+- [x] Unit: driver assignment authorization.
+- [x] Service: GPS update scoped to assigned driver.
+- [x] Integration: pickup route outbound + return covered at service boundary.
+- [x] Integration: retail route outbound + return covered at service boundary.
+
+## Manual Evidence
+
+Use [RR-URG-04-manual-test-guide.md](/Users/dungxbuif/workspace/RuntimeRoasters/docs/business/sprint-emergency-final-demo/RR-URG-04-manual-test-guide.md) for live verification commands and expected database evidence.

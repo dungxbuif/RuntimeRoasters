@@ -27,6 +27,9 @@ export const API_ENDPOINTS = {
     SHIPMENTS: '/v1/logistics/shipments',
     LOCATIONS: '/v1/logistics/locations',
     UPDATE_LOCATION: '/v1/logistics/drivers/location',
+    DRIVERS: '/v1/logistics/drivers',
+    VEHICLES: '/v1/logistics/vehicles',
+    AVAILABLE_VEHICLES: '/v1/logistics/vehicles/available',
   },
   PAYMENT: {
     PAYMENTS: '/v1/payments',
