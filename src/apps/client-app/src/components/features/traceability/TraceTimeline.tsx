@@ -7,7 +7,7 @@ export interface TraceTimelineProps {
   document: TraceDocument;
 }
 
-type TimelinePayload = Record<string, string | number | boolean | null | TimelinePayload | TimelinePayload[]>;
+type TimelinePayload = Record<string, unknown>;
 
 const TOPIC_CONFIG: Record<string, { icon: string, color: string, label: string }> = {
   'farm.harvest.created': { 

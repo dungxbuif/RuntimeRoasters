@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SIGNOZ_URL: process.env.NEXT_PUBLIC_SIGNOZ_URL ?? 'http://localhost:3301',
     NEXT_PUBLIC_JAEGER_URL: process.env.NEXT_PUBLIC_JAEGER_URL ?? 'http://localhost:3301',
     NEXT_PUBLIC_SWAGGER_JSON_URL: process.env.NEXT_PUBLIC_SWAGGER_JSON_URL ?? 'http://localhost:8081/swagger/demo.swagger.json',
+    NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:8091',
   },
   images: {
     remotePatterns: [

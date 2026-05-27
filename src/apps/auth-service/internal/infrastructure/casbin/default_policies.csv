@@ -17,6 +17,12 @@ p, STORE_MGR, /v1/orders, read|write
 p, STORE_MGR, /v1/orders/:id, read
 p, STORE_MGR, /v1/payments, read
 p, STORE_MGR, /v1/payments/orders/:order_id, read
+p, STORE_MGR, /v1/payments/demo/stripe-webhook-key, read
+p, STORE_MGR, /v1/webhooks/stripe, write
+p, STORE_MGR, /v1/traces/topology/config, read
+p, STORE_MGR, /v1/traces/topology/history, read
+p, STORE_MGR, /v1/realtime/tickets, write
+p, STORE_MGR, /v1/realtime/stream, read
 p, STORE_MGR, /v1/shipments, read
 p, STORE_MGR, /v1/logistics/shipments, read
 p, STORE_MGR, /v1/logistics/shipments/:id, read
@@ -44,6 +50,14 @@ p, WAREHOUSE_MGR, /v1/logistics/shipments/:id/assign, write
 p, WAREHOUSE_MGR, /v1/logistics/drivers, read
 p, WAREHOUSE_MGR, /v1/logistics/vehicles, read
 p, WAREHOUSE_MGR, /v1/logistics/vehicles/available, read
+p, WAREHOUSE_MGR, /v1/payments, read
+p, WAREHOUSE_MGR, /v1/payments/orders/:order_id, read
+p, WAREHOUSE_MGR, /v1/payments/demo/stripe-webhook-key, read
+p, WAREHOUSE_MGR, /v1/webhooks/stripe, write
+p, WAREHOUSE_MGR, /v1/traces/topology/config, read
+p, WAREHOUSE_MGR, /v1/traces/topology/history, read
+p, WAREHOUSE_MGR, /v1/realtime/tickets, write
+p, WAREHOUSE_MGR, /v1/realtime/stream, read
 p, DRIVER, /v1/logistics/shipments, read
 p, DRIVER, /v1/logistics/shipments/:id, read
 p, DRIVER, /v1/logistics/shipments/:id/depart, write
@@ -52,6 +66,30 @@ p, DRIVER, /v1/logistics/shipments/:id/confirm-load, write
 p, DRIVER, /v1/logistics/shipments/:id/confirm-delivery, write
 p, DRIVER, /v1/logistics/shipments/:id/return, write
 p, DRIVER, /v1/logistics/drivers/location, write
+p, DRIVER, /v1/payments, read
+p, DRIVER, /v1/payments/orders/:order_id, read
+p, DRIVER, /v1/payments/demo/stripe-webhook-key, read
+p, DRIVER, /v1/webhooks/stripe, write
+p, DRIVER, /v1/traces/topology/config, read
+p, DRIVER, /v1/traces/topology/history, read
+p, DRIVER, /v1/realtime/tickets, write
+p, DRIVER, /v1/realtime/stream, read
+p, FARM_MANAGER, /v1/payments, read
+p, FARM_MANAGER, /v1/payments/orders/:order_id, read
+p, FARM_MANAGER, /v1/payments/demo/stripe-webhook-key, read
+p, FARM_MANAGER, /v1/webhooks/stripe, write
+p, FARM_MANAGER, /v1/traces/topology/config, read
+p, FARM_MANAGER, /v1/traces/topology/history, read
+p, FARM_MANAGER, /v1/realtime/tickets, write
+p, FARM_MANAGER, /v1/realtime/stream, read
+p, FARM_ADMIN, /v1/payments, read
+p, FARM_ADMIN, /v1/payments/orders/:order_id, read
+p, FARM_ADMIN, /v1/payments/demo/stripe-webhook-key, read
+p, FARM_ADMIN, /v1/webhooks/stripe, write
+p, FARM_ADMIN, /v1/traces/topology/config, read
+p, FARM_ADMIN, /v1/traces/topology/history, read
+p, FARM_ADMIN, /v1/realtime/tickets, write
+p, FARM_ADMIN, /v1/realtime/stream, read
 p, ADMIN, /v1/*, .*
 p, ADMIN, /runtime.system.v1.SystemService/*, .*
 g, ADMIN, FARM_ADMIN
@@ -59,3 +97,12 @@ g, ADMIN, FARM_MANAGER
 g, ADMIN, STORE_MGR
 g, ADMIN, WAREHOUSE_MGR
 g, ADMIN, DRIVER
+
+p, ADMIN, sidebar_users, read
+p, ADMIN, sidebar_farms, read
+p, ADMIN, sidebar_dashboard, read
+p, ADMIN, sidebar_trace, read
+p, WAREHOUSE_MGR, sidebar_warehouse, read
+p, STORE_MGR, sidebar_store, read
+p, DRIVER, sidebar_driver, read
+p, FARM_MANAGER, sidebar_farm_ops, read

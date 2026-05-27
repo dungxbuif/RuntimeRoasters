@@ -7,7 +7,6 @@ import L from 'leaflet';
 
 // Re-fix Leaflet default marker icon issue in Next.js
 const fixLeafletIcon = () => {
-  // @ts-expect-error - Leaflet internal property access
   delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',

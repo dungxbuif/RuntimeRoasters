@@ -1,10 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services/farm.service';
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
 import { e2eSelectors, testId } from '@/lib/utils/test-id';
+import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
+import NotificationFeed, { NotificationItem } from '@/components/common/NotificationFeed';
+
+const PICKUP_STEPS: PipelineStep[] = [
+  { key: 'CREATED', label: 'Created' },
+  { key: 'PICKUP_REQUESTED', label: 'Pickup Req' },
+  { key: 'PICKUP_ASSIGNED', label: 'Assigned' },
+  { key: 'PICKED_UP', label: 'Picked Up' },
+  { key: 'ARRIVED_WAREHOUSE', label: 'At WH' },
+  { key: 'INTAKE_CREATED', label: 'Intake' },
+];
+
+function getPickupStatus(harvestStatus: string): string {
+  const mapping: Record<string, string> = {
+    'NEW': 'CREATED',
+    'PENDING': 'PICKUP_REQUESTED',
+    'ASSIGNED': 'PICKUP_ASSIGNED',
+    'PICKED_UP': 'PICKED_UP',
+    'ARRIVED_WAREHOUSE': 'ARRIVED_WAREHOUSE',
+    'INTAKE_CREATED': 'INTAKE_CREATED',
+    'COMPLETED': 'INTAKE_CREATED',
+  };
+  return mapping[harvestStatus] || 'CREATED';
+}
 
 type ApiError = {
   response?: { data?: { message?: string } };
@@ -126,13 +150,16 @@ export default function HarvestsPage() {
                       {new Date(harvest.harvest_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 mb-2">
                         <div className={`w-2 h-2 rounded-full ${
                           HARVEST_STATUSES[harvest.status as keyof typeof HARVEST_STATUSES]?.color || 'bg-slate-300'
                         } ${harvest.status === 'NEW' ? 'animate-pulse' : ''}`}></div>
                         <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant italic">
                           {HARVEST_STATUSES[harvest.status as keyof typeof HARVEST_STATUSES]?.label || harvest.status}
                         </span>
+                      </div>
+                      <div className="max-w-[300px]">
+                        <StatusPipeline steps={PICKUP_STEPS} currentStep={getPickupStatus(harvest.status)} size="sm" />
                       </div>
                     </td>
                   </tr>
@@ -148,6 +175,18 @@ export default function HarvestsPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Pickup Notifications */}
+      <div className="max-w-md">
+        <NotificationFeed
+          title="Pickup Activity"
+          items={[
+            { id: '1', icon: 'truck', message: 'Driver assigned to latest harvest', time: '5min ago', color: 'blue' },
+            { id: '2', icon: 'warehouse', message: 'Warehouse created pickup request', time: '15min ago', color: 'amber' },
+            { id: '3', icon: 'check', message: 'Previous harvest intake completed', time: '1h ago', color: 'green' },
+          ]}
+        />
       </div>
 
       {showModal && (

@@ -55,6 +55,68 @@
       ]
     },
     {
+      "endpoint": "/v1/auth/me",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/auth/me",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/auth/snapshot/{service_name}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/auth/snapshot/{service_name}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
       "endpoint": "/v1/users",
       "method": "GET",
       "output_encoding": "no-op",
@@ -467,6 +529,71 @@
         }
       }
     },
+    {"endpoint":"/v1/traces/public/topology/config","method":"GET","output_encoding":"no-op","backend":[{"url_pattern":"/v1/traces/public/topology/config","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8087"],"disable_host_sanitize":true}]},
+    {"endpoint":"/v1/traces/public/topology/history","method":"GET","output_encoding":"no-op","input_query_strings":["flow_id","cursor","limit"],"backend":[{"url_pattern":"/v1/traces/public/topology/history","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8087"],"disable_host_sanitize":true}]},
+    {"endpoint":"/v1/traces/topology/config","method":"GET","output_encoding":"no-op","input_headers":["*","Authorization"],"backend":[{"url_pattern":"/v1/traces/topology/config","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8087"],"disable_host_sanitize":true}],"extra_config":{"auth/validator":{"alg":"RS256","jwk_url":"http://hydra:4444/.well-known/jwks.json","cache":true,"cache_duration":900,"issuer":"http://localhost:4444/","disable_jwk_security":true}}},
+    {"endpoint":"/v1/traces/topology/history","method":"GET","output_encoding":"no-op","input_headers":["*","Authorization"],"input_query_strings":["flow_id","entity_id","cursor","limit"],"backend":[{"url_pattern":"/v1/traces/topology/history","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8087"],"disable_host_sanitize":true}],"extra_config":{"auth/validator":{"alg":"RS256","jwk_url":"http://hydra:4444/.well-known/jwks.json","cache":true,"cache_duration":900,"issuer":"http://localhost:4444/","disable_jwk_security":true}}},
+    {
+      "endpoint": "/v1/realtime/tickets",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/realtime/tickets",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8091"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/realtime/stream",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Connection",
+        "Upgrade",
+        "Sec-WebSocket-Key",
+        "Sec-WebSocket-Version",
+        "Sec-WebSocket-Protocol"
+      ],
+      "input_query_strings": [
+        "ticket",
+        "flow_id"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/realtime/stream",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8091"
+          ],
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {"endpoint":"/v1/realtime/public/topology/ws","method":"GET","output_encoding":"no-op","input_headers":["*","Connection","Upgrade","Sec-WebSocket-Key","Sec-WebSocket-Version","Sec-WebSocket-Protocol"],"input_query_strings":["flow_id"],"backend":[{"url_pattern":"/v1/realtime/public/topology/ws","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8091"],"disable_host_sanitize":true}]},
     {"endpoint":"/v1/warehouse/intakes","method":"GET","output_encoding":"no-op","input_headers":["*","Authorization"],"backend":[{"url_pattern":"/v1/warehouse/intakes","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8089"],"disable_host_sanitize":true}],"extra_config":{"auth/validator":{"alg":"RS256","jwk_url":"http://hydra:4444/.well-known/jwks.json","cache":true,"cache_duration":900,"issuer":"http://localhost:4444/","disable_jwk_security":true}}},
     {"endpoint":"/v1/warehouse/pickup-requests","method":"GET","output_encoding":"no-op","input_headers":["*","Authorization"],"backend":[{"url_pattern":"/v1/warehouse/pickup-requests","encoding":"no-op","sd":"static","method":"GET","host":["http://host.docker.internal:8089"],"disable_host_sanitize":true}],"extra_config":{"auth/validator":{"alg":"RS256","jwk_url":"http://hydra:4444/.well-known/jwks.json","cache":true,"cache_duration":900,"issuer":"http://localhost:4444/","disable_jwk_security":true}}},
     {"endpoint":"/v1/warehouse/pickup-requests/{id}/dispatch","method":"POST","output_encoding":"no-op","input_headers":["Authorization","Content-Type","traceparent","tracestate"],"backend":[{"url_pattern":"/v1/warehouse/pickup-requests/{id}/dispatch","encoding":"no-op","sd":"static","method":"POST","host":["http://host.docker.internal:8089"],"disable_host_sanitize":true}],"extra_config":{"auth/validator":{"alg":"RS256","jwk_url":"http://hydra:4444/.well-known/jwks.json","cache":true,"cache_duration":900,"issuer":"http://localhost:4444/","disable_jwk_security":true}}},
@@ -608,6 +735,37 @@
       }
     },
     {
+      "endpoint": "/v1/payments/demo/stripe-webhook-key",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/payments/demo/stripe-webhook-key",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8086"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
       "endpoint": "/v1/payments/orders/{order_id}",
       "method": "GET",
       "output_encoding": "no-op",
@@ -644,6 +802,7 @@
       "output_encoding": "no-op",
       "input_headers": [
         "*",
+        "Authorization",
         "Stripe-Signature"
       ],
       "backend": [
@@ -657,7 +816,17 @@
           ],
           "disable_host_sanitize": true
         }
-      ]
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
     },
     {
       "endpoint": "/v1/webhooks/vnpay",

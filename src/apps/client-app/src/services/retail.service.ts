@@ -41,6 +41,11 @@ class RetailService {
     const res = await api.get(`/v1/orders/${id}`);
     return res.data.order;
   }
+
+  async listOrders(): Promise<Order[]> {
+    const res = await api.get(`/v1/orders`);
+    return res.data.orders || [];
+  }
 }
 
 export const retailService = new RetailService();

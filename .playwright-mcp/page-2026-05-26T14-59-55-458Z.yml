@@ -1,0 +1,87 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - complementary [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e8]: coffee
+          - generic [ref=e9]:
+            - heading "Runtime Roasters" [level=2] [ref=e10]
+            - paragraph [ref=e11]: Management Portal
+        - navigation [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e14]: Supply Chain Ops
+            - generic [ref=e15]:
+              - link "analytics Intelligence Hub" [ref=e16] [cursor=pointer]:
+                - /url: /dashboard
+                - generic [ref=e17]: analytics
+                - generic [ref=e18]: Intelligence Hub
+              - link "map Logistics Map" [ref=e19] [cursor=pointer]:
+                - /url: /dashboard/logistics
+                - generic [ref=e20]: map
+                - generic [ref=e21]: Logistics Map
+              - link "qr_code Provenance Trace" [ref=e22] [cursor=pointer]:
+                - /url: /dashboard/traceability
+                - generic [ref=e23]: qr_code
+                - generic [ref=e24]: Provenance Trace
+              - link "payments Finance" [ref=e25] [cursor=pointer]:
+                - /url: /dashboard/finance
+                - generic [ref=e26]: payments
+                - generic [ref=e27]: Finance
+          - generic [ref=e28]:
+            - paragraph [ref=e29]: Account
+            - link "manage_accounts Account Settings" [ref=e31] [cursor=pointer]:
+              - /url: /dashboard/profile
+              - generic [ref=e32]: manage_accounts
+              - generic [ref=e33]: Account Settings
+          - link "arrow_back Back to Showcase" [ref=e35] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e36]: arrow_back
+            - text: Back to Showcase
+        - generic [ref=e37]:
+          - link "auto_stories Docs" [ref=e38] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e39]: auto_stories
+            - text: Docs
+          - link "help_outline Support" [ref=e40] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e41]: help_outline
+            - text: Support
+      - generic [ref=e42]:
+        - text: ...
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: Cluster Node
+            - generic [ref=e46]: /DASHBOARD
+          - generic [ref=e48]:
+            - img [ref=e50]
+            - paragraph [ref=e54]: admin
+            - button "Logout" [ref=e55]:
+              - img [ref=e56]
+        - main [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - heading "Users & Teams" [level=1] [ref=e63]
+                - paragraph [ref=e64]: Provision and manage cluster identities.
+              - button "person_add Create New User" [ref=e65]:
+                - generic [ref=e66]: person_add
+                - text: Create New User
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: search
+                - textbox "Search by name or email..." [ref=e70]
+              - generic [ref=e71]:
+                - generic [ref=e72]: "Filter Role:"
+                - combobox [ref=e73] [cursor=pointer]:
+                  - option "All Roles" [selected]
+                  - option "System Admin"
+                  - option "Agri Admin"
+                  - option "Farm Manager"
+                  - option "Roast Master"
+                  - option "Logistics Driver"
+                  - option "Guest"
+              - generic [ref=e75]: Showing 0 of 0 Identities
+            - generic [ref=e77]: Loading Identities...
+  - button "Open Next.js Dev Tools" [ref=e83] [cursor=pointer]:
+    - img [ref=e84]
+  - alert [ref=e87]

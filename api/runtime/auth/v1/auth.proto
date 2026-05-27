@@ -35,6 +35,13 @@ service AuthService {
       get: "/v1/users"
     };
   }
+
+  // Get current user info based on context token
+  rpc GetMe(GetMeRequest) returns (GetMeResponse) {
+    option (google.api.http) = {
+      get: "/v1/auth/me"
+    };
+  }
 }
 
 message GetFullSnapshotRequest {
@@ -78,4 +85,10 @@ message ListUsersRequest {}
 
 message ListUsersResponse {
   repeated User users = 1;
+}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  User user = 1;
 }

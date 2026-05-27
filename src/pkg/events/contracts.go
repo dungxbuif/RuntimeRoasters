@@ -298,13 +298,19 @@ type NotificationAcknowledged struct {
 }
 
 type SocketBroadcastRequested struct {
-	EventID     string                 `json:"event_id"`
-	Channel     string                 `json:"channel"`
-	Role        string                 `json:"role,omitempty"`
-	StoreID     string                 `json:"store_id,omitempty"`
-	FarmID      string                 `json:"farm_id,omitempty"`
-	WarehouseID string                 `json:"warehouse_id,omitempty"`
-	EventType   string                 `json:"event_type"`
-	Payload     map[string]interface{} `json:"payload"`
-	OccurredAt  time.Time              `json:"occurred_at"`
+	EventID       string                 `json:"event_id"`
+	Channel       string                 `json:"channel"`
+	FlowID        string                 `json:"flow_id,omitempty"`
+	NodeID        string                 `json:"node_id,omitempty"`
+	EdgeID        string                 `json:"edge_id,omitempty"`
+	Visibility    string                 `json:"visibility,omitempty"`
+	Status        string                 `json:"status,omitempty"`
+	SourceService string                 `json:"source_service,omitempty"`
+	Role          string                 `json:"role,omitempty"`
+	StoreID       string                 `json:"store_id,omitempty"`
+	FarmID        string                 `json:"farm_id,omitempty"`
+	WarehouseID   string                 `json:"warehouse_id,omitempty"`
+	EventType     string                 `json:"event_type"`
+	Payload       map[string]interface{} `json:"payload"`
+	OccurredAt    time.Time              `json:"occurred_at"`
 }

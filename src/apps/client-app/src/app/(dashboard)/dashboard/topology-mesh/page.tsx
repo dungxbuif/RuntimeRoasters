@@ -3,7 +3,7 @@ import { ArchitectureDiagramCanvas } from '@/components/features/architecture-to
 export default function SystemTopologyPage() {
   return (
     <div className="h-full bg-white overflow-auto p-6">
-      <ArchitectureDiagramCanvas />
+      <ArchitectureDiagramCanvas isPrivate={true} />
     </div>
   );
 }

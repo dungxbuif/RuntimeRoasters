@@ -79,9 +79,65 @@ test.describe('Manual live evidence', () => {
       headers: { 'Idempotency-Key': `manual-evidence-${Date.now()}` },
       data: {
           store_id: storeID,
-          items: [{ sku: 'SKU-ARABICA-250G', quantity: 1 }],
+          items: [{ sku: 'SKU-AR-VN-LD-001', quantity: 1 }],
           total_amount: 19.99,
           payment_method: 'STRIPE',
+      },
+    });
+    let paymentID = '';
+    let providerRef = '';
+    await expect
+      .poll(async () => {
+        const response = await request.fetch(`http://localhost:8081/v1/payments/orders/${order.body.order.id}`, {
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            traceparent,
+          },
+        });
+        if (!response.ok()) {
+          return null;
+        }
+        const json = await response.json();
+        paymentID = json.payment?.id ?? '';
+        providerRef = json.payment?.provider_ref ?? '';
+        return providerRef || null;
+      }, { timeout: 30_000, intervals: [1_000, 2_000] })
+      .not.toBeNull();
+    if (!paymentID || !providerRef) {
+      throw new Error('payment provider_ref missing before webhook demo');
+    }
+    const webhookKey = await api<{ signing_secret: string; webhook_url: string }>('/v1/payments/demo/stripe-webhook-key');
+    const webhookPayload = JSON.stringify({
+      id: `evt_rr_evidence_${crypto.randomUUID()}`,
+      object: 'event',
+      type: 'payment_intent.succeeded',
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
+      data: {
+        object: {
+          id: providerRef,
+          object: 'payment_intent',
+          amount: 1999,
+          currency: 'usd',
+          status: 'succeeded',
+          metadata: {
+            order_id: order.body.order.id,
+            payment_id: paymentID,
+            store_id: storeID,
+          },
+        },
+      },
+    });
+    const webhookTimestamp = Math.floor(Date.now() / 1000).toString();
+    const webhookSignature = await hmacSha256Hex(webhookKey.body.signing_secret, `${webhookTimestamp}.${webhookPayload}`);
+    await request.fetch(`http://localhost:8081${webhookKey.body.webhook_url}`, {
+      method: 'POST',
+      data: webhookPayload,
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        'Content-Type': 'application/json',
+        'Stripe-Signature': `t=${webhookTimestamp},v1=${webhookSignature}`,
+        traceparent,
       },
     });
 
@@ -112,7 +168,7 @@ test.describe('Manual live evidence', () => {
           traceIDs.includes(expectedTraceID) &&
           topics.includes('retail.order.created') &&
           topics.includes('payment.intent.created') &&
-          topics.includes('payment.simulated_completed') &&
+          topics.includes('payment.completed') &&
           topics.includes('warehouse.stock.reserved')
         ) {
           return doc;
@@ -150,7 +206,20 @@ test.describe('Manual live evidence', () => {
     expect(traceIDs).toEqual([expectedTraceID]);
     expect(topics).toContain('retail.order.created');
     expect(topics).toContain('payment.intent.created');
-    expect(topics).toContain('payment.simulated_completed');
+    expect(topics).toContain('payment.completed');
     expect(topics).toContain('warehouse.stock.reserved');
   });
 });
+
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}

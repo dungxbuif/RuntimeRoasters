@@ -52,6 +52,7 @@ export async function resolveIdentityClaims(subject?: string | null): Promise<Id
     );
 
     if (!response.ok) {
+      console.error('[IdentityAdmin] Failed to fetch identity:', response.status, await response.text());
       return fallback;
     }
 
@@ -71,7 +72,8 @@ export async function resolveIdentityClaims(subject?: string | null): Promise<Id
       store_ids: Array.isArray(identity.traits?.store_ids) ? identity.traits.store_ids : [],
       warehouse_ids: Array.isArray(identity.traits?.warehouse_ids) ? identity.traits.warehouse_ids : [],
     };
-  } catch {
+  } catch (e) {
+    console.error('[IdentityAdmin] Error fetching identity:', e);
     return fallback;
   }
 }

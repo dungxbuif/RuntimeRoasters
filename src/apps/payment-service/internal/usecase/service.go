@@ -32,6 +32,38 @@ type Service struct {
 	paymentRefundedTopic  string
 }
 
+type DemoWebhookKey struct {
+	Provider      string `json:"provider"`
+	KeyName       string `json:"key_name"`
+	SigningSecret string `json:"signing_secret"`
+	WebhookURL    string `json:"webhook_url"`
+	Algorithm     string `json:"algorithm"`
+}
+
+type stripeEvent struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Type    string `json:"type"`
+	Created int64  `json:"created"`
+	Data    struct {
+		Object stripePaymentIntent `json:"object"`
+	} `json:"data"`
+}
+
+type stripePaymentIntent struct {
+	ID               string            `json:"id"`
+	Object           string            `json:"object"`
+	Status           string            `json:"status"`
+	LastPaymentError *stripePaymentErr `json:"last_payment_error,omitempty"`
+	Metadata         map[string]string `json:"metadata"`
+}
+
+type stripePaymentErr struct {
+	Type    string `json:"type"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 func NewService(db *gorm.DB, producer kafka.Producer, providers *provider.Factory, defaultProvider string, defaultCurrency string, backfillOrders bool, intentCreatedTopic string, paymentCompletedTopic string, paymentFailedTopic string, paymentRefundedTopic string) *Service {
 	return &Service{
 		db:                    db,
@@ -153,6 +185,20 @@ func (s *Service) GetPaymentByOrder(ctx context.Context, orderID string) (*domai
 	return &payment, nil
 }
 
+func (s *Service) GetDemoStripeWebhookKey(ctx context.Context) (*DemoWebhookKey, error) {
+	key, err := s.activeDemoStripeKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &DemoWebhookKey{
+		Provider:      key.Provider,
+		KeyName:       key.KeyName,
+		SigningSecret: key.SigningSecret,
+		WebhookURL:    "/v1/webhooks/stripe",
+		Algorithm:     "HMAC-SHA256",
+	}, nil
+}
+
 func (s *Service) SimulateWebhook(ctx context.Context, providerName string, payload []byte, timestamp string, signature string) error {
 	gateway, err := s.providers.Get(providerName)
 	if err != nil {
@@ -225,6 +271,108 @@ func (s *Service) SimulateWebhook(ctx context.Context, providerName string, payl
 	})
 }
 
+func (s *Service) ProcessStripeWebhook(ctx context.Context, payload []byte, signatureHeader string) error {
+	key, err := s.activeDemoStripeKey(ctx)
+	if err != nil {
+		return err
+	}
+	if err := provider.VerifyStripeSignature(payload, signatureHeader, key.SigningSecret); err != nil {
+		return err
+	}
+	var event stripeEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return err
+	}
+	if event.ID == "" {
+		return errors.New("stripe event id is required")
+	}
+	if event.Data.Object.ID == "" {
+		return errors.New("stripe payment intent id is required")
+	}
+
+	var status domain.PaymentStatus
+	reason := ""
+	switch event.Type {
+	case "payment_intent.succeeded":
+		status = domain.PaymentStatusSucceeded
+	case "payment_intent.payment_failed":
+		status = domain.PaymentStatusFailed
+		if event.Data.Object.LastPaymentError != nil {
+			reason = event.Data.Object.LastPaymentError.Message
+			if reason == "" {
+				reason = event.Data.Object.LastPaymentError.Code
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported stripe event type %s", event.Type)
+	}
+
+	return s.applyWebhookEvent(ctx, provider.ProviderStripe, event.ID, event.Data.Object.ID, status, reason)
+}
+
+func (s *Service) activeDemoStripeKey(ctx context.Context) (*domain.PaymentWebhookKey, error) {
+	key := domain.PaymentWebhookKey{
+		ID:            "00000000-0000-0000-0000-000000000451",
+		Provider:      provider.ProviderStripe,
+		KeyName:       "demo-stripe-local",
+		SigningSecret: "whsec_rr_demo_stripe_local",
+		Active:        true,
+		Demo:          true,
+	}
+	err := s.db.WithContext(ctx).
+		Where("provider = ? AND key_name = ?", provider.ProviderStripe, "demo-stripe-local").
+		FirstOrCreate(&key).Error
+	if err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
+func (s *Service) applyWebhookEvent(ctx context.Context, providerName string, eventID string, providerRef string, status domain.PaymentStatus, reason string) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var existingEvent domain.WebhookEvent
+		if err := tx.Where("provider = ? AND event_id = ?", providerName, eventID).Take(&existingEvent).Error; err == nil {
+			return nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		var payment domain.Payment
+		if err := tx.Where("provider = ? AND provider_ref = ?", providerName, providerRef).Take(&payment).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&domain.WebhookEvent{
+			ID:          uuid.NewString(),
+			Provider:    providerName,
+			EventID:     eventID,
+			ProviderRef: providerRef,
+			Status:      string(status),
+			Reason:      reason,
+			ProcessedAt: time.Now(),
+		}).Error; err != nil {
+			return err
+		}
+		switch status {
+		case domain.PaymentStatusSucceeded:
+			if err := tx.Model(&payment).Update("status", domain.PaymentStatusSucceeded).Error; err != nil {
+				return err
+			}
+			event, err := s.completedEvent(tx, payment.ID)
+			if err != nil {
+				return err
+			}
+			return s.publishPaymentEvent(ctx, events.TopicPaymentCompleted, payment.OrderID, event, payment.OrderID, eventID, "")
+		case domain.PaymentStatusFailed:
+			if err := tx.Model(&payment).Update("status", domain.PaymentStatusFailed).Error; err != nil {
+				return err
+			}
+			return s.publishPaymentEvent(ctx, s.paymentFailedTopic, payment.OrderID, failedEvent(payment, reason), payment.OrderID, eventID, "")
+		default:
+			return fmt.Errorf("unsupported webhook status %s", status)
+		}
+	})
+}
+
 func (s *Service) publishPaymentEvent(ctx context.Context, topic string, key string, payload interface{}, correlationID string, causationID string, traceID string) error {
 	metadata := paymentMetadata(payload)
 	if metadata.EventID == "" {
@@ -284,7 +432,7 @@ func (s *Service) createPayment(ctx context.Context, tx *gorm.DB, event events.R
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	status := domain.PaymentStatusSucceeded
+	status := domain.PaymentStatusPending
 	if event.TotalAmount <= 0 {
 		status = domain.PaymentStatusFailed
 	}
@@ -321,11 +469,7 @@ func (s *Service) createPayment(ctx context.Context, tx *gorm.DB, event events.R
 	if status == domain.PaymentStatusFailed {
 		return payment, intentEvent, nil, failedEvent(*payment, "invalid amount"), nil
 	}
-	completed, err := s.completedEvent(tx, payment.ID)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	return payment, intentEvent, completed, nil, nil
+	return payment, intentEvent, nil, nil, nil
 }
 
 func (s *Service) completedEvent(tx *gorm.DB, paymentID string) (*events.PaymentCompleted, error) {

@@ -44,3 +44,14 @@ type WebhookEvent struct {
 	Reason      string    `gorm:"size:512"`
 	ProcessedAt time.Time `gorm:"not null"`
 }
+
+type PaymentWebhookKey struct {
+	ID            string    `gorm:"type:uuid;primaryKey" json:"id"`
+	Provider      string    `gorm:"size:40;not null;uniqueIndex:idx_provider_key" json:"provider"`
+	KeyName       string    `gorm:"size:120;not null;uniqueIndex:idx_provider_key" json:"key_name"`
+	SigningSecret string    `gorm:"size:255;not null" json:"signing_secret"`
+	Active        bool      `gorm:"not null;default:true" json:"active"`
+	Demo          bool      `gorm:"not null;default:true" json:"demo"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}

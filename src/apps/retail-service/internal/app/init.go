@@ -33,6 +33,7 @@ func InitializeApp() (*App, func(), error) {
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-failed", cfg.StockFailedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-shipment-assigned", cfg.ShipmentAssignedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-shipment-delivered", cfg.ShipmentDeliveredTopic),
+		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-driver-returned-to-base", events.TopicLogisticsDriverReturnedToBase),
 	}
 	for _, topic := range uniqueTopics(cfg.PaymentCompletedTopic, events.TopicPaymentCompleted) {
 		consumers = append(consumers, kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-payment-completed-"+topic, topic))

@@ -8,7 +8,10 @@ import (
 	"RuntimeRoasters/apps/auth-service/internal/domain"
 	"RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
 	"RuntimeRoasters/apps/auth-service/internal/usecase"
+	"RuntimeRoasters/pkg/base/identity"
 	authv1 "RuntimeRoasters/runtime/auth/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -91,6 +94,48 @@ func (h *Handler) ListUsers(ctx context.Context, _ *authv1.ListUsersRequest) (*a
 	}
 
 	return res, nil
+}
+
+func (h *Handler) GetMe(ctx context.Context, _ *authv1.GetMeRequest) (*authv1.GetMeResponse, error) {
+	claims, ok := identity.FromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "no identity found in context")
+	}
+
+	// Currently, the identity claims have Subject which is the email or ID depending on setup.
+	// Since Kratos Subject is used, we can list users or get user by email/ID.
+	// Wait, claims.Subject is usually the user ID. But we don't have GetUser in UserUsecase yet?
+	// Let's just list all users and find the one that matches claims.Role, claims.Subject etc.
+	// Actually, the frontend just needs User details. We can construct it from claims if claims has everything,
+	// or we can fetch from DB. Let's see what UserUsecase provides.
+	// Let's use ListUsers and filter by Email or ID (since we don't have GetUserByID).
+	users, err := h.usecase.ListUsers(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch users: %v", err)
+	}
+
+	var currentUser *domain.User
+	for _, u := range users {
+		if u.Email == claims.Subject || u.ID == claims.Subject {
+			currentUser = u
+			break
+		}
+	}
+
+	if currentUser == nil {
+		// Fallback to claims if not found in DB
+		return &authv1.GetMeResponse{
+			User: &authv1.User{
+				Id:    claims.Subject,
+				Email: claims.Subject,
+				Role:  claims.Role,
+			},
+		}, nil
+	}
+
+	return &authv1.GetMeResponse{
+		User: toProtoUser(currentUser),
+	}, nil
 }
 
 func toProtoUser(user *domain.User) *authv1.User {

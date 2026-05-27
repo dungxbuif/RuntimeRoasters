@@ -107,6 +107,7 @@ For BA review, product ownership, role responsibilities, and UI-facing business 
 - **Trace Service:** HTTP `http://localhost:8087`, gRPC `localhost:50057`
 - **Audit Service:** HTTP `http://localhost:8088`, gRPC `localhost:50058`
 - **Warehouse Service:** HTTP `http://localhost:8089`, gRPC `localhost:50059`
+- **Socket Service:** HTTP `http://localhost:8091`, gRPC `localhost:50060`
 - **Kafka UI:** `http://localhost:8090`
 - **Kibana (ES):** `http://localhost:5601`
 - **Elasticsearch:** `http://localhost:9200`
@@ -116,6 +117,30 @@ For BA review, product ownership, role responsibilities, and UI-facing business 
 - **Cassandra:** `localhost:9042`
 - **Kratos Public:** `http://localhost:4433`
 - **Hydra Public:** `http://localhost:4444`
+
+### Demo Stripe Webhook Flow
+
+- `GET /v1/payments/demo/stripe-webhook-key` returns the seeded demo Stripe
+  signing key for authenticated roles.
+- `POST /v1/webhooks/stripe` is the canonical authenticated webhook endpoint.
+  The request must include `Stripe-Signature: t=<unix>,v1=<hmac>`.
+- Finance UI Pass emits `payment.completed`; Fail emits `payment.failed`.
+- Warehouse reservation starts after `payment.completed`, not immediately after
+  order creation.
+- Retail order completion waits for `logistics.driver.returned_to_base`.
+
+### Socket + Topology Flow
+
+- Public root topology pulls config/history from trace-service:
+  - `GET /v1/traces/public/topology/config`
+  - `GET /v1/traces/public/topology/history`
+- Public realtime connects to socket-service WebSocket:
+  - `GET /v1/realtime/public/topology/ws?flow_id=...`
+- Private dashboard realtime uses:
+  - `GET /v1/realtime/stream?scope=dashboard&flow_id=...`
+- `socket-service` is DB-free. It uses Kafka for events and Valkey TTL keys for
+  socket session, presence, and reconnect smoothing.
+- Generate internal service keys with `scripts/socket-keygen.sh <service-name>`.
 
 ### Kafka Topics
 - `auth.policy.changed`: Broadcasts Casbin policy updates.
@@ -163,11 +188,12 @@ This document tracks technical challenges, bug fixes, and significant implementa
 ### Sprint 6-10: The SAGA Flow
 Successfully connected the end-to-end coffee order flow:
 1.  **Retail Service:** Initiates Order.
-2.  **Warehouse Service:** Reserves coffee bean stock.
-3.  **Payment Service:** Simulates Stripe/VNPay processing.
-4.  **Logistics Service:** Assigns a driver and calculates real-time route.
-5.  **Trace Service:** Fills the Elasticsearch read model for the "Track My Order" feature.
-6.  **Audit Service:** Writes immutable logs to Cassandra for compliance.
+2.  **Payment Service:** Creates a pending Stripe/VNPay intent.
+3.  **Finance UI:** Posts the signed demo Stripe webhook Pass/Fail result.
+4.  **Warehouse Service:** Reserves coffee bean stock after payment success.
+5.  **Logistics Service:** Assigns a driver and calculates real-time route.
+6.  **Trace Service:** Fills the Elasticsearch read model for the "Track My Order" feature.
+7.  **Audit Service:** Writes immutable logs to Cassandra for compliance.
 
 ### Documentation & Knowledge Base (Current)
 Executed a comprehensive overhaul of the project's documentation to move from "Service-centric" to "Domain-centric" knowledge:

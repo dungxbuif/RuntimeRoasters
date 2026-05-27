@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	svcconfig "RuntimeRoasters/apps/trace-service/config"
 	"RuntimeRoasters/apps/trace-service/internal/usecase"
@@ -67,12 +68,35 @@ func (a *App) Shutdown() error {
 }
 
 func (a *App) routes(r *gin.Engine) {
-	v1 := r.Group("/v1/traces")
-	if a.Guards != nil {
-		v1.Use(a.Guards.Authn, a.Guards.Authz)
-	}
+	public := r.Group("/v1/traces/public")
+	public.GET("/topology/config", func(c *gin.Context) {
+		cfg, err := a.Service.GetTopologyConfig(c.Request.Context(), true)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, cfg)
+	})
+	public.GET("/topology/history", func(c *gin.Context) {
+		limit, _ := strconv.Atoi(c.Query("limit"))
+		history, err := a.Service.GetTopologyHistory(c.Request.Context(), usecase.TopologyHistoryFilter{
+			FlowID:     c.Query("flow_id"),
+			Cursor:     c.Query("cursor"),
+			Limit:      limit,
+			PublicOnly: true,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"events": history})
+	})
 
-	v1.GET("/:id", func(c *gin.Context) {
+	legacy := r.Group("/v1/trace")
+	if a.Guards != nil {
+		legacy.Use(a.Guards.Authn, a.Guards.Authz)
+	}
+	legacy.GET("/:id", func(c *gin.Context) {
 		doc, found, err := a.Service.GetTraceDocument(c.Request.Context(), c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -85,12 +109,54 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, doc)
 	})
 
-	v1.GET("/:id/events", func(c *gin.Context) {
+	legacy.GET("/:id/document", func(c *gin.Context) {
+		doc, found, err := a.Service.GetTraceDocument(c.Request.Context(), c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		if !found {
+			c.JSON(http.StatusNotFound, gin.H{"message": "trace not found"})
+			return
+		}
+		c.JSON(http.StatusOK, doc)
+	})
+
+	legacy.GET("/:id/events", func(c *gin.Context) {
 		events, err := a.Service.GetTrace(c.Request.Context(), c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"events": events})
+	})
+
+	v1 := r.Group("/v1/traces")
+	if a.Guards != nil {
+		v1.Use(a.Guards.Authn, a.Guards.Authz)
+	}
+
+	v1.GET("/topology/config", func(c *gin.Context) {
+		cfg, err := a.Service.GetTopologyConfig(c.Request.Context(), false)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, cfg)
+	})
+
+	v1.GET("/topology/history", func(c *gin.Context) {
+		limit, _ := strconv.Atoi(c.Query("limit"))
+		history, err := a.Service.GetTopologyHistory(c.Request.Context(), usecase.TopologyHistoryFilter{
+			FlowID:   c.Query("flow_id"),
+			EntityID: c.Query("entity_id"),
+			Cursor:   c.Query("cursor"),
+			Limit:    limit,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"events": history})
 	})
 }

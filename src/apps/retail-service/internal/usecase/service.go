@@ -343,6 +343,16 @@ func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, 
 			return "", "", err
 		}
 		return domain.OrderStatusCompleted, event.OrderID, nil
+	case events.TopicLogisticsDriverReturnedToBase:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.LogisticsDeliveryStatusChanged](cloudEvent)
+		if err != nil {
+			return "", "", err
+		}
+		return domain.OrderStatusCompleted, event.OrderID, nil
 	default:
 		return "", "", nil
 	}

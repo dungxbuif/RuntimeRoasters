@@ -7,6 +7,7 @@ const getEnv = (key: string, required = true): string => {
     NEXT_PUBLIC_SIGNOZ_URL: 'http://localhost:3301',
     NEXT_PUBLIC_JAEGER_URL: 'http://localhost:3301',
     NEXT_PUBLIC_SWAGGER_JSON_URL: 'http://localhost:8081/swagger/demo.swagger.json',
+    NEXT_PUBLIC_SOCKET_URL: 'ws://localhost:8091',
   };
   const value = process.env[key] ?? demoDefaults[key];
   if (required && !value) {
@@ -29,6 +30,7 @@ export const ENV = {
   SIGNOZ_URL: getEnv('NEXT_PUBLIC_SIGNOZ_URL'),
   JAEGER_URL: getEnv('NEXT_PUBLIC_JAEGER_URL'),
   SWAGGER_JSON_URL: getEnv('NEXT_PUBLIC_SWAGGER_JSON_URL'),
+  SOCKET_URL: getEnv('NEXT_PUBLIC_SOCKET_URL'),
   
   // Server-side only
   HYDRA_ADMIN_URL: getEnv('HYDRA_ADMIN_URL', false), // Hydra Admin might be internal/optional for some nodes

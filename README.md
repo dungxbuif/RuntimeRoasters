@@ -81,6 +81,7 @@ The system follows **Clean Architecture** principles to keep business logic isol
 | **Trace** | 8087 | 50057 | Supply Chain Traceability (CQRS) |
 | **Audit** | 8088 | 50058 | Immutable Event Logging |
 | **Warehouse** | 8089 | 50059 | Inventory, Pickup, Processing & Stock Reservation |
+| **Socket** | 8091 | 50060 | WebSocket realtime topology/demo fanout |
 
 Infrastructure UIs and endpoints:
 

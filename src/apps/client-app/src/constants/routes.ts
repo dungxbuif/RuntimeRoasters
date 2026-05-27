@@ -12,6 +12,9 @@ export const APP_ROUTES = {
     WAREHOUSE: '/dashboard/warehouse',
     RETAIL: '/dashboard/retail',
     RETAIL_ORDERS: '/dashboard/retail/orders',
+    STORE: '/dashboard/store',
+    DRIVER: '/dashboard/driver',
+    RESOURCES: '/dashboard/resources',
     TOPOLOGY: '/dashboard/topology-mesh',
     EXPLORER: '/dashboard/explorer',
     RESILIENCY: '/dashboard/resiliency',
@@ -19,5 +22,7 @@ export const APP_ROUTES = {
     FINANCE: '/dashboard/finance',
     AUDIT: '/dashboard/audit',
     PROFILE: '/dashboard/profile',
-  }
+  },
+  PUBLIC_TRACE: '/trace',
 } as const;
+

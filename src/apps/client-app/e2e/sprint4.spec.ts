@@ -7,6 +7,8 @@ const TEST_QUANTITY = Math.floor(Math.random() * 1000) + 100;
 test.describe('Sprint 4: Smart Harvest Declaration', () => {
   test('admin can declare harvest, downstream warehouse batch is created, and validation blocks zero quantity', async ({ page, request }) => {
     await loginViaUi(page);
+    const token = await page.evaluate(() => window.localStorage.getItem('rr_access_token'));
+    if (!token) throw new Error('missing access token');
 
     await page.goto('/dashboard/farm-ops/registry');
     const farmRow = page.locator(`[data-e2e="farm-row-${TEST_FARM_NAME}"]`);
@@ -33,12 +35,17 @@ test.describe('Sprint 4: Smart Harvest Declaration', () => {
     await expect(page.locator('[data-e2e="harvest-modal"]')).toHaveCount(0, { timeout: 15000 });
     await expect(page.locator('[data-e2e="harvest-list-table"]')).toContainText(`${TEST_QUANTITY} KG`);
     await expect.poll(async () => {
-      const res = await request.get(`/api/e2e/warehouse/batches?harvestId=${harvestId}`);
+      const res = await request.get(`http://localhost:8087/v1/trace/${harvestId}/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok()) {
         return null;
       }
       const body = await res.json();
-      return body.batch?.harvest_id ?? null;
+      const event = body.events?.find((item: { topic?: string; harvest_id?: string }) =>
+        item.topic === 'farm.harvest.created' && item.harvest_id === harvestId
+      );
+      return event?.harvest_id ?? null;
     }, { timeout: 20000 }).toBe(harvestId);
 
     await page.locator('[data-e2e="create-harvest-btn"]').click();

@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"RuntimeRoasters/apps/trace-service/internal/domain"
 	"RuntimeRoasters/apps/trace-service/internal/search"
 	"RuntimeRoasters/pkg/base/identity"
 	rrevents "RuntimeRoasters/pkg/events"
 	"RuntimeRoasters/pkg/kafka"
 	"RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/topology"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel/trace"
@@ -64,22 +65,34 @@ func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 	if spanContext := trace.SpanContextFromContext(ctx); spanContext.HasTraceID() {
 		traceID = firstNonEmpty(traceID, spanContext.TraceID().String())
 	}
+	projection := topology.ProjectEvent(cloudEvent, msg.Value)
+	displayPayload, err := json.Marshal(projection.DisplayPayload)
+	if err != nil {
+		return err
+	}
 	event := domain.TraceEvent{
-		ID:          uuid.NewString(),
-		MessageID:   messageID,
-		Topic:       cloudEvent.Type(),
-		BatchID:     ids["batch_id"],
-		OrderID:     ids["order_id"],
-		ShipmentID:  ids["shipment_id"],
-		StoreID:     ids["store_id"],
-		HarvestID:   ids["harvest_id"],
-		FarmID:      ids["farm_id"],
-		WarehouseID: ids["warehouse_id"],
-		DriverID:    ids["driver_id"],
-		VehicleID:   ids["vehicle_id"],
-		TraceID:     traceID,
-		Payload:     string(msg.Value),
-		OccurredAt:  cloudEvent.Time(),
+		ID:             uuid.NewString(),
+		MessageID:      messageID,
+		Topic:          cloudEvent.Type(),
+		BatchID:        ids["batch_id"],
+		OrderID:        ids["order_id"],
+		ShipmentID:     ids["shipment_id"],
+		StoreID:        ids["store_id"],
+		HarvestID:      ids["harvest_id"],
+		FarmID:         ids["farm_id"],
+		WarehouseID:    ids["warehouse_id"],
+		DriverID:       ids["driver_id"],
+		VehicleID:      ids["vehicle_id"],
+		TraceID:        traceID,
+		FlowID:         projection.FlowID,
+		NodeID:         projection.NodeID,
+		EdgeID:         projection.EdgeID,
+		Pattern:        projection.Pattern,
+		SourceService:  projection.SourceService,
+		Visibility:     projection.Visibility,
+		DisplayPayload: string(displayPayload),
+		Payload:        string(msg.Value),
+		OccurredAt:     cloudEvent.Time(),
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -96,6 +109,113 @@ func (s *Service) HandleEvent(ctx context.Context, msg kafkago.Message) error {
 		}
 		return nil
 	})
+}
+
+func (s *Service) GetTopologyConfig(ctx context.Context, publicOnly bool) (topology.Config, error) {
+	cfg := topology.CanonicalConfig()
+	rows := []struct {
+		FlowID     string
+		LastSeenAt time.Time
+	}{}
+	query := s.db.WithContext(ctx).Model(&domain.TraceEvent{}).Select("flow_id, max(occurred_at) as last_seen_at").Where("flow_id <> ''").Group("flow_id")
+	if publicOnly {
+		query = query.Where("visibility = ?", topology.VisibilityPublic)
+	}
+	if err := query.Scan(&rows).Error; err != nil {
+		return cfg, err
+	}
+	seen := map[string]string{}
+	for _, row := range rows {
+		if row.FlowID == "" || row.LastSeenAt.IsZero() {
+			continue
+		}
+		seen[row.FlowID] = row.LastSeenAt.UTC().Format(time.RFC3339)
+	}
+	for i := range cfg.Flows {
+		if lastSeen, ok := seen[cfg.Flows[i].ID]; ok {
+			cfg.Flows[i].LastSeenAt = &lastSeen
+		}
+	}
+	return cfg, nil
+}
+
+func (s *Service) GetTopologyHistory(ctx context.Context, filter TopologyHistoryFilter) ([]topology.HistoryEntry, error) {
+	var events []domain.TraceEvent
+	query := s.db.WithContext(ctx).Order("occurred_at DESC, created_at DESC").Limit(filter.limit())
+	if filter.PublicOnly {
+		query = query.Where("visibility = ?", topology.VisibilityPublic)
+	}
+	if filter.FlowID != "" {
+		query = query.Where("flow_id = ?", filter.FlowID)
+	}
+	if filter.EntityID != "" {
+		query = query.Where("batch_id = ? OR order_id = ? OR shipment_id = ? OR harvest_id = ?", filter.EntityID, filter.EntityID, filter.EntityID, filter.EntityID)
+	}
+	if filter.Cursor != "" {
+		if cursorTime, err := time.Parse(time.RFC3339Nano, filter.Cursor); err == nil {
+			query = query.Where("occurred_at < ?", cursorTime)
+		}
+	}
+	if claims, ok := identity.FromContext(ctx); ok && !filter.PublicOnly && !claims.IsAdmin() {
+		switch claims.Role {
+		case identity.RoleStoreMgr:
+			if len(claims.StoreIDs) == 0 {
+				return []topology.HistoryEntry{}, nil
+			}
+			query = query.Where("store_id IN ? OR store_id = ''", claims.StoreIDs)
+		case identity.RoleWarehouseMgr:
+			if len(claims.WarehouseIDs) == 0 {
+				return []topology.HistoryEntry{}, nil
+			}
+			query = query.Where("warehouse_id IN ? OR warehouse_id = ''", claims.WarehouseIDs)
+		case "DRIVER":
+			query = query.Where("driver_id = ? OR driver_id = ''", claims.Subject)
+		default:
+			query = query.Where("visibility = ?", topology.VisibilityPublic)
+		}
+	}
+	if err := query.Find(&events).Error; err != nil {
+		return nil, err
+	}
+	history := make([]topology.HistoryEntry, 0, len(events))
+	for _, event := range events {
+		var display map[string]interface{}
+		_ = json.Unmarshal([]byte(event.DisplayPayload), &display)
+		status := ""
+		if value, ok := display["status"].(string); ok {
+			status = value
+		}
+		history = append(history, topology.HistoryEntry{
+			EventID:        event.MessageID,
+			Topic:          event.Topic,
+			Status:         status,
+			FlowID:         event.FlowID,
+			NodeID:         event.NodeID,
+			EdgeID:         event.EdgeID,
+			Pattern:        event.Pattern,
+			SourceService:  event.SourceService,
+			Visibility:     event.Visibility,
+			TraceID:        event.TraceID,
+			OccurredAt:     event.OccurredAt,
+			DisplayPayload: display,
+		})
+	}
+	return history, nil
+}
+
+type TopologyHistoryFilter struct {
+	FlowID     string
+	EntityID   string
+	Cursor     string
+	Limit      int
+	PublicOnly bool
+}
+
+func (f TopologyHistoryFilter) limit() int {
+	if f.Limit <= 0 || f.Limit > 200 {
+		return 80
+	}
+	return f.Limit
 }
 
 func (s *Service) GetTrace(ctx context.Context, entityID string) ([]domain.TraceEvent, error) {

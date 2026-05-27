@@ -107,6 +107,24 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"payment": payment})
 	})
 
+	v1.GET("/orders/:id", func(c *gin.Context) {
+		payment, err := a.Service.GetPaymentByOrder(c.Request.Context(), c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"payment": payment})
+	})
+
+	v1.GET("/demo/stripe-webhook-key", func(c *gin.Context) {
+		key, err := a.Service.GetDemoStripeWebhookKey(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, key)
+	})
+
 	v1.POST("/webhook/:provider", func(c *gin.Context) {
 		payload, _ := io.ReadAll(c.Request.Body)
 		err := a.Service.SimulateWebhook(
@@ -117,6 +135,19 @@ func (a *App) routes(r *gin.Engine) {
 			c.GetHeader("X-Signature"),
 		)
 		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "processed"})
+	})
+
+	webhooks := r.Group("/v1/webhooks")
+	if a.Guards != nil {
+		webhooks.Use(a.Guards.Authn, a.Guards.Authz)
+	}
+	webhooks.POST("/stripe", func(c *gin.Context) {
+		payload, _ := io.ReadAll(c.Request.Body)
+		if err := a.Service.ProcessStripeWebhook(c.Request.Context(), payload, c.GetHeader("Stripe-Signature")); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}

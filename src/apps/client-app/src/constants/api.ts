@@ -22,6 +22,10 @@ export const API_ENDPOINTS = {
   TRACE: {
     BY_ID: (id: string) => `/v1/trace/${id}`,
     DOCUMENT: (id: string) => `/v1/trace/${id}/document`,
+    PUBLIC_TOPOLOGY_CONFIG: '/v1/traces/public/topology/config',
+    PUBLIC_TOPOLOGY_HISTORY: '/v1/traces/public/topology/history',
+    TOPOLOGY_CONFIG: '/v1/traces/topology/config',
+    TOPOLOGY_HISTORY: '/v1/traces/topology/history',
   },
   LOGISTICS: {
     SHIPMENTS: '/v1/logistics/shipments',
@@ -34,8 +38,13 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     PAYMENTS: '/v1/payments',
     BY_ORDER: (orderId: string) => `/v1/payments/orders/${orderId}`,
+    STRIPE_WEBHOOK_KEY: '/v1/payments/demo/stripe-webhook-key',
+    STRIPE_WEBHOOK: '/v1/webhooks/stripe',
   },
   AUDIT: {
     BY_PARTITION: (partition: string) => `/v1/audit/${partition}`,
+  },
+  REALTIME: {
+    TICKETS: '/v1/realtime/tickets',
   },
 } as const;

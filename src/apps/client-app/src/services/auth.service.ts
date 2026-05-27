@@ -42,6 +42,16 @@ class AuthService {
     });
     return data;
   }
+
+  async getMe(): Promise<{ user: { id: string; email: string; role: string; name: string } }> {
+    const { data } = await api.get('/v1/auth/me');
+    return data;
+  }
+
+  async getPolicies(): Promise<{ policies: string[] }> {
+    const { data } = await api.get('/v1/auth/snapshot/frontend');
+    return data;
+  }
 }
 
 export const authService = new AuthService();

@@ -1,0 +1,128 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - complementary [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e8]: coffee
+          - generic [ref=e9]:
+            - heading "Runtime Roasters" [level=2] [ref=e10]
+            - paragraph [ref=e11]: Management Portal
+        - navigation [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e14]: Supply Chain Ops
+            - generic [ref=e15]:
+              - link "analytics Intelligence Hub" [ref=e16] [cursor=pointer]:
+                - /url: /dashboard
+                - generic [ref=e17]: analytics
+                - generic [ref=e18]: Intelligence Hub
+              - link "map Logistics Map" [ref=e19] [cursor=pointer]:
+                - /url: /dashboard/logistics
+                - generic [ref=e20]: map
+                - generic [ref=e21]: Logistics Map
+              - link "qr_code Provenance Trace" [ref=e22] [cursor=pointer]:
+                - /url: /dashboard/traceability
+                - generic [ref=e23]: qr_code
+                - generic [ref=e24]: Provenance Trace
+              - link "payments Finance" [ref=e25] [cursor=pointer]:
+                - /url: /dashboard/finance
+                - generic [ref=e26]: payments
+                - generic [ref=e27]: Finance
+          - generic [ref=e28]:
+            - paragraph [ref=e29]: Account
+            - link "manage_accounts Account Settings" [ref=e31] [cursor=pointer]:
+              - /url: /dashboard/profile
+              - generic [ref=e32]: manage_accounts
+              - generic [ref=e33]: Account Settings
+          - link "arrow_back Back to Showcase" [ref=e35] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e36]: arrow_back
+            - text: Back to Showcase
+        - generic [ref=e37]:
+          - link "auto_stories Docs" [ref=e38] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e39]: auto_stories
+            - text: Docs
+          - link "help_outline Support" [ref=e40] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e41]: help_outline
+            - text: Support
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - img [ref=e46]
+          - heading "System Bootstrap" [level=2] [ref=e50]
+          - paragraph [ref=e51]: The system detects that the initial data has not been seeded. Would you like to initialize the core data now?
+          - button "Initialize Data" [ref=e52]
+        - paragraph [ref=e54]: ADMIN PRIVILEGES REQUIRED
+      - generic [ref=e55]:
+        - text: ...
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: Cluster Node
+            - generic [ref=e59]: /DASHBOARD
+          - generic [ref=e61]:
+            - img [ref=e63]
+            - paragraph [ref=e67]: admin
+            - button "Logout" [ref=e68]:
+              - img [ref=e69]
+        - main [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - heading "Users & Teams" [level=1] [ref=e76]
+                - paragraph [ref=e77]: Provision and manage cluster identities.
+              - button "person_add Create New User" [ref=e78]:
+                - generic [ref=e79]: person_add
+                - text: Create New User
+            - generic [ref=e80]:
+              - generic [ref=e81]:
+                - generic [ref=e82]: search
+                - textbox "Search by name or email..." [ref=e83]
+              - generic [ref=e84]:
+                - generic [ref=e85]: "Filter Role:"
+                - combobox [ref=e86] [cursor=pointer]:
+                  - option "All Roles" [selected]
+                  - option "System Admin"
+                  - option "Agri Admin"
+                  - option "Farm Manager"
+                  - option "Roast Master"
+                  - option "Logistics Driver"
+                  - option "Guest"
+              - generic [ref=e88]: Showing 1 of 1 Identities
+            - table [ref=e90]:
+              - rowgroup [ref=e91]:
+                - row "User Role Status ID Actions" [ref=e92]:
+                  - columnheader "User" [ref=e93]
+                  - columnheader "Role" [ref=e94]
+                  - columnheader "Status" [ref=e95]
+                  - columnheader "ID" [ref=e96]
+                  - columnheader "Actions" [ref=e97]
+              - rowgroup [ref=e98]:
+                - row "a System Administrator admin@runtimeroasters.com System Admin Active e019f617-5346-46d2-91ef-f8ed77d7834d manage_accounts" [ref=e99]:
+                  - cell "a System Administrator admin@runtimeroasters.com" [ref=e100]:
+                    - generic [ref=e101]:
+                      - generic [ref=e102]: a
+                      - generic [ref=e103]:
+                        - paragraph [ref=e104]: System Administrator
+                        - paragraph [ref=e105]: admin@runtimeroasters.com
+                  - cell "System Admin" [ref=e106]
+                  - cell "Active" [ref=e107]:
+                    - generic [ref=e110]: Active
+                  - cell "e019f617-5346-46d2-91ef-f8ed77d7834d" [ref=e111]:
+                    - code [ref=e112]: e019f617-5346-46d2-91ef-f8ed77d7834d
+                  - cell "manage_accounts" [ref=e113]:
+                    - button "manage_accounts" [ref=e114]:
+                      - generic [ref=e115]: manage_accounts
+  - generic [ref=e120] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e121]:
+      - img [ref=e122]
+    - generic [ref=e125]:
+      - button "Open issues overlay" [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: "7"
+          - generic [ref=e129]: "8"
+        - generic [ref=e130]:
+          - text: Issue
+          - generic [ref=e131]: s
+      - button "Collapse issues badge" [ref=e132]:
+        - img [ref=e133]
+  - alert [ref=e135]

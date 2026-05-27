@@ -104,7 +104,11 @@ func (g *simulatedGateway) Refund(ctx context.Context, providerRef string, amoun
 }
 
 func (g *simulatedGateway) VerifyWebhook(payload []byte, timestamp string, signature string) error {
-	if g.webhookSecret == "" {
+	return VerifySignedPayload(payload, timestamp, signature, g.webhookSecret, g.hash)
+}
+
+func VerifySignedPayload(payload []byte, timestamp string, signature string, secret string, hash func(string, []byte) string) error {
+	if secret == "" {
 		return errors.New("webhook secret is not configured")
 	}
 	if timestamp == "" || signature == "" {
@@ -119,11 +123,16 @@ func (g *simulatedGateway) VerifyWebhook(payload []byte, timestamp string, signa
 	if signedAt.Before(now.Add(-5*time.Minute)) || signedAt.After(now.Add(5*time.Minute)) {
 		return errors.New("webhook timestamp outside tolerance")
 	}
-	expected := g.hash(g.webhookSecret, []byte(timestamp+"."+string(payload)))
+	expected := hash(secret, []byte(timestamp+"."+string(payload)))
 	if !hmac.Equal([]byte(expected), []byte(signature)) {
 		return errors.New("invalid webhook signature")
 	}
 	return nil
+}
+
+func VerifyStripeSignature(payload []byte, signatureHeader string, secret string) error {
+	timestamp, signature := StripeSignatureTimestamp(signatureHeader)
+	return VerifySignedPayload(payload, timestamp, signature, secret, sha256Hash)
 }
 
 func StripeSignatureTimestamp(header string) (string, string) {

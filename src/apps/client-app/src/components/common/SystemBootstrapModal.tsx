@@ -33,15 +33,17 @@ export default function SystemBootstrapModal() {
     // Allow force trigger via URL for testing
     const params = new URLSearchParams(window.location.search);
     if (params.get('bootstrap') === 'true' && user?.role === 'ADMIN') {
-      setShow(true);
+      window.setTimeout(() => setShow(true), 0);
       return;
     }
 
     if (user?.role === 'ADMIN') {
       console.debug('[SystemBootstrapModal] User is ADMIN, checking system status...');
-      checkStatus();
+      window.setTimeout(() => {
+        void checkStatus();
+      }, 0);
     } else {
-      setShow(false);
+      window.setTimeout(() => setShow(false), 0);
     }
   }, [user]);
 

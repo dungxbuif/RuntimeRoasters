@@ -44,11 +44,17 @@ CREATE TABLE IF NOT EXISTS inbox_events (
     event_type  VARCHAR(120) NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
--- Retail Service Seed Data
+
 INSERT INTO stores (id, name, city, address, manager_email, status) VALUES
-('11111111-1111-1111-1111-111111111101', 'Cửa hàng Hoàn Kiếm', 'Hanoi', '2 Ly Thai To', 'mgr.hn.hoankiem@runtimeroasters.com', 'ACTIVE'),
-('11111111-1111-1111-1111-111111111102', 'Cửa hàng Cầu Giấy', 'Hanoi', '102 Tran Thai Tong', 'mgr.hn.caugiay@runtimeroasters.com', 'ACTIVE'),
-('11111111-1111-1111-1111-111111111103', 'Cửa hàng Quận 1', 'Ho Chi Minh City', '45 Le Thanh Ton', 'mgr.hcm.q1@runtimeroasters.com', 'ACTIVE'),
-('11111111-1111-1111-1111-111111111104', 'Cửa hàng Quận 7', 'Ho Chi Minh City', 'Phu My Hung', 'mgr.hcm.q7@runtimeroasters.com', 'ACTIVE'),
-('11111111-1111-1111-1111-111111111105', 'Cửa hàng Hải Châu', 'Da Nang', '15 Bach Dang', 'mgr.dn.haichau@runtimeroasters.com', 'ACTIVE')
-ON CONFLICT (id) DO NOTHING;
+('11111111-1111-1111-1111-111111111101', 'Hoan Kiem Store', 'Hanoi', '2 Ly Thai To', 'mgr.hn.hoankiem@runtimeroasters.com', 'ACTIVE'),
+('11111111-1111-1111-1111-111111111102', 'Cau Giay Store', 'Hanoi', '102 Tran Thai Tong', 'mgr.hn.caugiay@runtimeroasters.com', 'ACTIVE'),
+('11111111-1111-1111-1111-111111111103', 'District 1 Store', 'Ho Chi Minh City', '45 Le Thanh Ton', 'mgr.hcm.q1@runtimeroasters.com', 'ACTIVE'),
+('11111111-1111-1111-1111-111111111104', 'District 7 Store', 'Ho Chi Minh City', 'Phu My Hung', 'mgr.hcm.q7@runtimeroasters.com', 'ACTIVE'),
+('11111111-1111-1111-1111-111111111105', 'Hai Chau Store', 'Da Nang', '15 Bach Dang', 'mgr.dn.haichau@runtimeroasters.com', 'ACTIVE')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    city = EXCLUDED.city,
+    address = EXCLUDED.address,
+    manager_email = EXCLUDED.manager_email,
+    status = EXCLUDED.status,
+    updated_at = CURRENT_TIMESTAMP;

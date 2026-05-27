@@ -1,0 +1,19 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e7]: coffee
+      - heading "System Access" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Please authenticate to manage cluster nodes
+    - main [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - text: Email
+            - textbox "Enter your email..." [ref=e14]: admin@runtimeroasters.com
+          - generic [ref=e15]:
+            - text: Password
+            - textbox "Enter your password..." [ref=e16]: Hello@123
+        - button "Authenticate" [ref=e18]
+  - button "Open Next.js Dev Tools" [ref=e24] [cursor=pointer]:
+    - img [ref=e25]
+  - alert [ref=e28]

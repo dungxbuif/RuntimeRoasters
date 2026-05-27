@@ -49,6 +49,29 @@
         ]
       }
     },
+    "/v1/auth/me": {
+      "get": {
+        "summary": "Get current user info based on context token",
+        "operationId": "AuthService_GetMe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
     "/v1/auth/snapshot/{serviceName}": {
       "get": {
         "summary": "GetFullSnapshot returns all policies for a given service",
@@ -223,6 +246,14 @@
             "type": "string"
           },
           "title": "CSV formatted lines: p, role, obj, act"
+        }
+      }
+    },
+    "v1GetMeResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/v1User"
         }
       }
     },

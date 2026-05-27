@@ -888,12 +888,38 @@ Canonical topics:
 | `logistics.pickup.completed` | Logistics | Warehouse, Farm UI, Trace, Audit |
 | `logistics.driver.return_started` | Logistics | Warehouse UI, Retail/Farm UI, Trace, Audit |
 | `logistics.driver.return_completed` | Logistics | Warehouse UI, Retail/Farm UI, Trace, Audit |
+
+Current demo contract: paid orders stay `PENDING` after
+`payment.intent.created`. The Finance UI obtains the seeded demo Stripe signing
+key from `GET /v1/payments/demo/stripe-webhook-key`, signs a Stripe-compatible
+payload, and posts it to authenticated `POST /v1/webhooks/stripe`. A successful
+webhook emits `payment.completed`; a failed webhook emits `payment.failed`.
+Warehouse stock reservation starts only from `payment.completed` in this branch.
 | `logistics.driver.returned_to_base` | Logistics | Warehouse UI, Retail UI, Trace, Audit |
 | `logistics.gps.updated` | Logistics | Trace, Audit |
 | `logistics.shipment.status_changed` | Logistics | Trace, Audit, UI |
 | `notification.created` | Notification | UI, Trace, Audit |
 | `notification.acknowledged` | Notification | UI, Trace, Audit |
 | `socket.broadcast.requested` | Backend services | Socket service, Trace, Audit |
+
+## Socket Service And Topology Runtime
+
+`socket-service` is a DB-free realtime transport service. It uses Gorilla
+WebSocket, consumes Kafka traceable topics, accepts internal API-key pushes at
+`POST /internal/v1/socket/events`, and stores only ephemeral session/presence
+state in Valkey. Durable history and topology query ownership stay in
+`trace-service`.
+
+Trace-service exposes canonical topology pull APIs:
+
+- `GET /v1/traces/public/topology/config`
+- `GET /v1/traces/public/topology/history`
+- `GET /v1/traces/topology/config`
+- `GET /v1/traces/topology/history`
+
+The UI builds `ArchitectureTopology` from those backend contracts and connects
+to WebSocket for live updates. If WebSocket fails, the UI keeps polling
+trace-service history.
 
 RR-URG-02 defines the contract for all canonical topics above. Some producers/state machines are implemented by later urgent tickets, but trace/audit must already accept the full list.
 
@@ -972,13 +998,13 @@ Retail order:
 }
 ```
 
-Simulated payment completion:
+Stripe webhook payment completion:
 
 ```json
 {
   "specversion": "1.0",
   "id": "evt-payment-1",
-  "type": "payment.simulated_completed",
+  "type": "payment.completed",
   "source": "/services/payment-service",
   "subject": "orders/order-1",
   "time": "2026-05-24T10:00:05Z",

@@ -1,0 +1,35 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img [ref=e8]
+          - heading "Runtime Roasters" [level=2] [ref=e10]
+        - button "Access Terminal" [ref=e12]:
+          - img [ref=e13]
+          - text: Access Terminal
+      - generic [ref=e18]:
+        - generic [ref=e20]:
+          - heading "Architecture Topology" [level=1] [ref=e21]:
+            - generic [ref=e22]: Architecture Topology
+          - paragraph [ref=e23]: Left-to-right Runtime Roasters service map
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]: Flow
+              - generic [ref=e29]: connecting
+            - button "Socket Push/Pull Fallback realtime topology." [ref=e31]:
+              - generic [ref=e32]: Socket Push/Pull
+              - generic [ref=e33]: Fallback realtime topology.
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - generic [ref=e36]: Socket Push/Pull
+              - generic [ref=e37]: 0 events observed
+            - link "React Flow attribution" [ref=e43] [cursor=pointer]:
+              - /url: https://reactflow.dev
+              - text: React Flow
+          - generic [ref=e45]:
+            - generic [ref=e46]: History
+            - generic [ref=e48]: No history yet
+  - button "Open Next.js Dev Tools" [ref=e54] [cursor=pointer]:
+    - img [ref=e55]

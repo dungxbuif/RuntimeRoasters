@@ -4,25 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { APP_ROUTES } from "@/constants/routes";
-import { RoleGuard } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
+import { PermissionGuard } from "@/lib/auth/casbin";
 
 export default function Sidebar() {
   const pathname = usePathname();
-
-  const managementLinks = [
-    { href: APP_ROUTES.DASHBOARD.USERS, label: "Manage Users", icon: "group_add" },
-    { href: APP_ROUTES.DASHBOARD.FARMS, label: "Manage Farms", icon: "admin_panel_settings" },
-    { href: APP_ROUTES.DASHBOARD.PROFILE, label: "Account Settings", icon: "manage_accounts" },
-  ];
-
-  const operationalLinks = [
-    { href: "/dashboard", label: "Intelligence Hub", icon: "analytics" },
-    { href: APP_ROUTES.DASHBOARD.TRACEABILITY, label: "Provenance Trace", icon: "qr_code" },
-  ];
-
-  const diagnosticLinks = [
-    { href: APP_ROUTES.DASHBOARD.EXPLORER, label: "System Explorer", icon: "dns" },
-  ];
+  const { user } = useAuth();
 
   return (
     <aside className="flex flex-col h-full p-4 space-y-2 fixed left-0 top-0 z-40 bg-[#f2f4f6] w-64 border-r border-outline-variant/10 shadow-2xl shadow-black/20">
@@ -37,41 +24,67 @@ export default function Sidebar() {
       </div>
       
       <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
-        {/* Priority Management Section - PROTECTED */}
-        <div className="px-1 mb-8">
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Identity & Access</p>
-          <div className="space-y-1">
-            <RoleGuard roles={['ADMIN']}>
-              <SidebarLink {...managementLinks[0]} active={pathname === managementLinks[0].href} />
-            </RoleGuard>
-            <RoleGuard roles={['ADMIN', 'FARM_ADMIN', 'FARM_MANAGER']}>
-              <SidebarLink {...managementLinks[1]} active={pathname === managementLinks[1].href} />
-            </RoleGuard>
-            <SidebarLink {...managementLinks[2]} active={pathname === managementLinks[2].href} />
-          </div>
-        </div>
+        {/* ADMIN: Identity & Access */}
+        <PermissionGuard action="read" resource="sidebar_users">
+          <NavSection label="Identity & Access">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.USERS} label="Manage Users" icon="group_add" active={pathname === APP_ROUTES.DASHBOARD.USERS} />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.RESOURCES} label="Resources" icon="domain" active={pathname === APP_ROUTES.DASHBOARD.RESOURCES} />
+          </NavSection>
+        </PermissionGuard>
 
-        {/* Operational Section - PROTECTED */}
-        <div className="px-1 mb-8 pt-4 border-t border-outline-variant/10">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">Supply Chain Ops</p>
-          <div className="space-y-1">
-            {operationalLinks.map((link) => (
-              <SidebarLink key={link.href} {...link} active={pathname === link.href} small />
-            ))}
-          </div>
-        </div>
+        {/* ADMIN / FARM_ADMIN / FARM_MANAGER: Farm Operations */}
+        <PermissionGuard action="read" resource="sidebar_farms">
+          <NavSection label="Farm Operations">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.FARMS} label="Farm Registry" icon="eco" active={pathname === APP_ROUTES.DASHBOARD.FARMS} />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.HARVESTS} label="Harvests" icon="grass" active={pathname === APP_ROUTES.DASHBOARD.HARVESTS} />
+          </NavSection>
+        </PermissionGuard>
 
-        {/* System & Diagnostics Section - PROTECTED */}
-        <div className="px-1 pt-4 border-t border-outline-variant/10">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 px-4 italic opacity-70">System Intelligence</p>
-          <div className="space-y-1">
-            <RoleGuard roles={['ADMIN']}>
-              <SidebarLink {...diagnosticLinks[0]} active={pathname === diagnosticLinks[0].href} small />
-            </RoleGuard>
-          </div>
-        </div>
+        {/* WAREHOUSE_MGR / PROCESSOR: Warehouse Operations */}
+        <PermissionGuard action="read" resource="sidebar_warehouse">
+          <NavSection label="Warehouse Operations">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.WAREHOUSE} label="Warehouse Ops" icon="warehouse" active={pathname === APP_ROUTES.DASHBOARD.WAREHOUSE} />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.BATCHES} label="Batch Lifecycle" icon="science" active={pathname === APP_ROUTES.DASHBOARD.BATCHES} />
+          </NavSection>
+        </PermissionGuard>
 
-        {/* Home/Showcase Link */}
+        {/* STORE_MGR: Retail Operations */}
+        <PermissionGuard action="read" resource="sidebar_store">
+          <NavSection label="Retail Operations">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.STORE} label="Store Dashboard" icon="storefront" active={pathname === APP_ROUTES.DASHBOARD.STORE} />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL_ORDERS} label="Create Order" icon="add_shopping_cart" active={pathname === APP_ROUTES.DASHBOARD.RETAIL_ORDERS} />
+          </NavSection>
+        </PermissionGuard>
+
+        {/* DRIVER: Driver Client */}
+        <PermissionGuard action="read" resource="sidebar_driver">
+          <NavSection label="Driver Client">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.DRIVER} label="My Shipments" icon="local_shipping" active={pathname.startsWith(APP_ROUTES.DASHBOARD.DRIVER)} />
+          </NavSection>
+        </PermissionGuard>
+
+        {/* All authenticated: Supply Chain Ops */}
+        <NavSection label="Supply Chain Ops">
+          <SidebarLink href="/dashboard" label="Intelligence Hub" icon="analytics" active={pathname === '/dashboard'} small />
+          <SidebarLink href={APP_ROUTES.DASHBOARD.LOGISTICS} label="Logistics Map" icon="map" active={pathname === APP_ROUTES.DASHBOARD.LOGISTICS} small />
+          <SidebarLink href={APP_ROUTES.DASHBOARD.TRACEABILITY} label="Provenance Trace" icon="qr_code" active={pathname === APP_ROUTES.DASHBOARD.TRACEABILITY} small />
+          <SidebarLink href={APP_ROUTES.DASHBOARD.FINANCE} label="Finance" icon="payments" active={pathname === APP_ROUTES.DASHBOARD.FINANCE} small />
+        </NavSection>
+
+        {/* ADMIN only: System Intelligence */}
+        <PermissionGuard action="read" resource="sidebar_dashboard">
+          <NavSection label="System Intelligence">
+            <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL} label="Saga Monitor" icon="device_hub" active={pathname === APP_ROUTES.DASHBOARD.RETAIL} small />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.EXPLORER} label="System Explorer" icon="dns" active={pathname === APP_ROUTES.DASHBOARD.EXPLORER} small />
+            <SidebarLink href={APP_ROUTES.DASHBOARD.AUDIT} label="Audit Logs" icon="shield" active={pathname === APP_ROUTES.DASHBOARD.AUDIT} small />
+          </NavSection>
+        </PermissionGuard>
+
+        {/* Account + Showcase link */}
+        <NavSection label="Account">
+          <SidebarLink href={APP_ROUTES.DASHBOARD.PROFILE} label="Account Settings" icon="manage_accounts" active={pathname === APP_ROUTES.DASHBOARD.PROFILE} small />
+        </NavSection>
+
         <div className="mt-10 px-4">
           <Link 
             href={APP_ROUTES.HOME}
@@ -94,6 +107,15 @@ export default function Sidebar() {
         </Link>
       </div>
     </aside>
+  );
+}
+
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="px-1 mb-6 pt-4 border-t border-outline-variant/10 first:border-t-0 first:pt-0">
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 px-4 italic opacity-70">{label}</p>
+      <div className="space-y-1">{children}</div>
+    </div>
   );
 }
 

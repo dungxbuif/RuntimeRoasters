@@ -291,13 +291,14 @@ Paid retail orders trigger warehouse reservation and delivery. The production-de
 2. User opens assigned Retail dashboard.
 3. User creates a paid retail order for an assigned store.
 4. Retail service publishes order event.
-5. Payment succeeds through real webhook or simulated payment success.
+5. Payment remains pending until the demo Stripe webhook Pass/Fail action.
 6. Warehouse reserves finished inventory with concurrency guard.
 7. Warehouse dashboard shows outbound dispatch request.
 8. `WAREHOUSE_MGR` assigns vehicle/driver.
 9. `DRIVER` opens assigned shipment in Driver Client.
 10. Driver starts route simulation; browser posts GPS/status updates to backend.
-11. Driver confirms store arrival and delivery completion.
+11. Driver confirms store arrival and delivery, then returns to base before the
+    order becomes completed.
 12. Retail order reaches delivery-completed status after driver delivery confirmation.
 13. Driver return-to-base is mandatory and must be recorded.
 
@@ -729,6 +730,9 @@ This document maps user roles to dashboard actions and explains how each UI acti
 
 - Driver Client simulation requires authenticated `DRIVER`.
 - Private dashboard realtime streams require JWT and role/entity scoping.
+- Public topology demo uses trace-service pull APIs for config/history and
+  socket-service WebSocket for push updates. Socket-service has no durable DB;
+  Valkey stores only ephemeral session/presence/reconnect state.
 - Public root architecture stream can be unauthenticated only if sanitized.
 - Socket events are display transport only; backend persisted state remains source of truth.
 
@@ -969,8 +973,10 @@ CREATE TABLE outbox_events (
 
 Every Webhook from Stripe must pass through `HMAC` middleware before processing:
 
-1. Stripe sends `POST /api/v1/webhooks/stripe` with the `Stripe-Signature` header.
-2. The `Payment Service` uses the `Webhook Secret` to hash the received payload using `crypto/hmac` (Go).
+1. The demo client sends authenticated `POST /v1/webhooks/stripe` with the
+   `Stripe-Signature` header.
+2. The `Payment Service` loads the active demo signing key from
+   `payment_webhook_keys` and verifies the raw body using `crypto/hmac` (Go).
 3. Compares the calculated hash with `Stripe-Signature` → if they match, process; otherwise, reject (`HTTP 403`).
 4. **Principle:** Never trust any request to `/webhooks/*` without `HMAC verification`.
 
@@ -1070,8 +1076,8 @@ The `Webhook Service` is a specialized gateway, **completely separate** from the
 | `process.batch.completed`          | Processing       | Warehouse, Trace, Audit             |
 | `retail.order.created`             | Retail           | Payment, Trace, Audit               |
 | `payment.intent.created`           | Payment          | Retail, Trace, Audit                |
-| `payment.completed`                | Payment          | Warehouse, Retail, Trace, Audit     |
-| `payment.simulated_completed`      | Payment          | Warehouse, Retail, Trace, Audit     |
+| `payment.completed`                | Payment webhook  | Warehouse, Retail, Trace, Audit     |
+| `payment.simulated_completed`      | Payment          | Legacy/demo compatibility           |
 | `payment.failed`                   | Payment          | Retail, Trace, Audit                |
 | `payment.refunded`                 | Payment          | Retail, Trace, Audit                |
 | `warehouse.stock.reserved`         | Warehouse        | Logistics, Payment, Trace, Audit    |

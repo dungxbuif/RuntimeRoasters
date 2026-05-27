@@ -9,7 +9,9 @@ import (
 	"RuntimeRoasters/apps/auth-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
 	"RuntimeRoasters/pkg/base/auth/provider"
+	authinterceptor "RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"RuntimeRoasters/pkg/kafka"
+	"google.golang.org/grpc"
 )
 
 func InitializeApp() (*App, func(), error) {
@@ -44,6 +46,15 @@ func InitializeApp() (*App, func(), error) {
 	baseApp := base.NewApp(base.Options{
 		Name:   "auth-service",
 		Config: cfg.BaseConfig,
+		GRPCServerOptions: []grpc.ServerOption{
+			grpc.ChainUnaryInterceptor(
+				authinterceptor.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer, authinterceptor.WithPublicRoutes(
+					"/runtime.auth.v1.AuthService/GetFullSnapshot", // Internal service-to-service
+					"/runtime.auth.v1.AuthService/ListUsers",       // Internal
+					"/runtime.auth.v1.AuthService/AcceptLogin",     // Internal via Gateway
+				)),
+			),
+		},
 	})
 
 	// 5. Handlers & Usecases

@@ -29,24 +29,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const { authService } = await import('@/services/auth.service');
-        const session = await authService.getSession();
-        
-        if (session.identity) {
-          const traits = session.identity.traits as { email: string; name?: string; role?: string };
-          const user: AuthUser = {
-            id: session.identity.id,
-            email: traits.email,
-            role: (traits.role as UserRole) || 'GUEST',
-            name: traits.name,
-          };
-          
-          setState({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            token,
-          });
-          return;
+        try {
+          const { user: apiUser } = await authService.getMe();
+          if (apiUser) {
+            const user: AuthUser = {
+              id: apiUser.id,
+              email: apiUser.email,
+              role: (apiUser.role as UserRole) || 'GUEST',
+              name: apiUser.name,
+            };
+            setState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              token,
+            });
+            return;
+          }
+        } catch (meError) {
+          console.warn('[Auth] getMe failed, trying session fallback', meError);
+          // Fallback to Kratos session
+          const session = await authService.getSession();
+          if (session.identity) {
+            const traits = session.identity.traits as { email: string; name?: string; role?: string };
+            const user: AuthUser = {
+              id: session.identity.id,
+              email: traits.email,
+              role: (traits.role as UserRole) || 'GUEST',
+              name: traits.name,
+            };
+            
+            setState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              token,
+            });
+            return;
+          }
         }
       } catch (e) {
         console.warn('[Auth] Session validation failed', e);

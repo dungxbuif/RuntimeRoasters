@@ -111,35 +111,45 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, res)
 	})
 
-	v1.GET("/stores", func(c *gin.Context) {
-		stores, err := a.Service.ListStores(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"stores": stores})
-	})
+	registerBusinessRoutes := func(group *gin.RouterGroup) {
+		group.GET("/stores", func(c *gin.Context) {
+			stores, err := a.Service.ListStores(c.Request.Context())
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"stores": stores})
+		})
 
-	v1.POST("/orders", func(c *gin.Context) {
-		var req usecase.CreateOrderRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-		order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("X-Idempotency-Key"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusCreated, gin.H{"order": order})
-	})
+		group.POST("/orders", func(c *gin.Context) {
+			var req usecase.CreateOrderRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				return
+			}
+			order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("X-Idempotency-Key"))
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusCreated, gin.H{"order": order})
+		})
 
-	v1.GET("/orders/:id", func(c *gin.Context) {
-		order, err := a.Service.GetOrder(c.Request.Context(), c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"order": order})
-	})
+		group.GET("/orders/:id", func(c *gin.Context) {
+			order, err := a.Service.GetOrder(c.Request.Context(), c.Param("id"))
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"order": order})
+		})
+	}
+
+	registerBusinessRoutes(v1)
+
+	legacy := r.Group("/v1")
+	if a.Guards != nil {
+		legacy.Use(a.Guards.Authn, a.Guards.Authz)
+	}
+	registerBusinessRoutes(legacy)
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/lib/auth';
+import { CasbinProvider } from '@/lib/auth/casbin';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { useState } from 'react';
 
@@ -17,7 +18,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
+        <CasbinProvider>
+          {children}
+        </CasbinProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

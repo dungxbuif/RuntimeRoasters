@@ -1,50 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { ArchitectureDiagramCanvas } from '@/components/features/architecture-topology/ArchitectureTopology';
-import { FlowControlPanel, FlowScenario } from '@/components/features/chaos-topology/FlowControlPanel';
-import { TraceLog } from '@/components/features/chaos-topology/TraceLog';
 import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAuth } from '@/lib/auth';
 import { storageService } from '@/services/storage.service';
-import { ArrowRight, Coffee, Key, LogOut, User } from 'lucide-react';
+import { Coffee, Key, LogOut, User, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { testId } from '@/lib/utils/test-id';
 
-const SCENARIOS: FlowScenario[] = [
-  {
-    id: 'oidc-login',
-    name: 'OIDC Login Flow',
-    description: 'Trace how identity is verified across KrakenD, Hydra, and Kratos.',
-  },
-  {
-    id: 'outbox-sync',
-    name: 'Transactional Outbox',
-    description: 'Simulate data persistence and eventual consistency via Kafka relay.',
-  },
-  {
-    id: 'resilient-casbin',
-    name: 'Resilient Casbin Sync',
-    description: 'Bootstrapping and live authorization policy refresh.',
-  },
-];
-
-const OIDC_LOGS = [
-  'Browser initiates OAuth2 authorization through Hydra.',
-  'Kratos validates identity and browser session.',
-  'Auth Service accepts login and issues role-aware claims.',
-  'Farm Service refreshes Casbin policy from auth snapshot.',
-  'Kafka carries live policy-change notifications.',
-];
-
 export default function DashboardPage() {
   const { isAuthenticated, login, logout, refreshSession } = useAuth();
-  const [activeScenario, setActiveScenario] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [traceLogs, setTraceLogs] = useState<{ id: string; timestamp: string; step: number; description: string }[]>([]);
-  const [history, setHistory] = useState<{ id: string; name: string; timestamp: string }[]>([]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -59,51 +26,6 @@ export default function DashboardPage() {
       window.location.href = APP_ROUTES.DASHBOARD.USERS;
     });
   }, [refreshSession]);
-
-  const resetAnimation = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentStep(-1);
-    setTraceLogs([]);
-  }, []);
-
-  const playScenario = () => {
-    if (!activeScenario) return;
-    setIsPlaying(true);
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying && activeScenario === 'oidc-login') {
-      interval = setInterval(() => {
-        setCurrentStep((prev) => {
-          const next = prev + 1;
-          if (next >= OIDC_LOGS.length) {
-            setIsPlaying(false);
-            setHistory((h) => [{
-              id: Date.now().toString(),
-              name: 'OIDC Login Flow',
-              timestamp: new Date().toLocaleTimeString(),
-            }, ...h.slice(0, 4)]);
-            return prev;
-          }
-
-          setTraceLogs((logs) => [...logs, {
-            id: Date.now().toString(),
-            timestamp: new Date().toLocaleTimeString(),
-            step: next + 1,
-            description: OIDC_LOGS[next],
-          }]);
-
-          return next;
-        });
-      }, 1500);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, activeScenario]);
-
-  const progress = activeScenario === 'oidc-login'
-    ? ((currentStep + 1) / OIDC_LOGS.length) * 100
-    : 0;
 
   return (
     <div className="flex flex-col h-screen bg-[#f7f9fb] font-body overflow-hidden">
@@ -162,27 +84,6 @@ export default function DashboardPage() {
           <div className="flex-1 relative bg-white overflow-auto p-0">
             <ArchitectureDiagramCanvas />
           </div>
-
-          <div className="h-48 shrink-0">
-            <TraceLog entries={traceLogs} />
-          </div>
-        </div>
-
-        <div className="w-80 h-full border-l border-outline-variant/10 bg-white">
-          <FlowControlPanel
-            scenarios={SCENARIOS}
-            activeScenarioId={activeScenario}
-            onSelectScenario={(id) => {
-              resetAnimation();
-              setActiveScenario(id);
-            }}
-            onPlay={playScenario}
-            onPause={() => setIsPlaying(false)}
-            onReset={resetAnimation}
-            isPlaying={isPlaying}
-            progress={progress}
-            history={history}
-          />
         </div>
       </div>
     </div>
