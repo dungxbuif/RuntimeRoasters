@@ -172,6 +172,11 @@ Expected result: one browser-driven gateway flow produces one trace ID across `r
 - Do not close cross-service tickets using direct service-port tests when the real flow requires KrakenD/browser auth.
 - When services are running for manual browser testing, keep them running only if the user explicitly wants to review them live; otherwise clean up processes before final.
 
+### System Seeding & FRX (First-run Experience)
+- **UI Bootstrap**: When an ADMIN logs in, the `SystemBootstrapModal.tsx` in `client-app` checks `/system/status` across services. If not seeded, it prompts for "Initialize DB".
+- **Deterministic Seeding**: We use fixed identities (e.g., `mgr.caudat@runtimeroasters.com`) to ensure a consistent demo state. Always refer to `docs/product/standards/BOOTSTRAP.md` for the full mapping.
+- **Saga Simulation**: Real-time Kafka processing is bypassed for historical data. Direct DB insertion into `trace-service` and `payment-service` is used to populate dashboards immediately.
+
 <!-- HARNESS:BEGIN -->
 ## Harness
 

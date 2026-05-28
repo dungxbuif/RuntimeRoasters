@@ -1,102 +1,54 @@
-# Technical Design: Modular Bootstrap Pattern (Reusability)
+# System Bootstrap & Seeding Protocol
 
-Goal: Eliminate redundancy (Boilerplate) in `apps/*/internal/app/app.go` and `cmd/main.go` by moving orchestration logic into the `pkg/base` package.
+This document defines the process for initializing the Runtime Roasters environment with a consistent, demo-ready state.
 
-## 1. Current Problem
-Currently, whenever a new service is created (such as the Farm Service), we have to copy-paste approximately 80% of the code from `demo-service/internal/app/app.go`. The repeating parts include:
-- Initializing Casbin background sync.
-- Registering Auth Middleware for HTTP.
-- Setting up Readiness checks (ping DB/Valkey).
-- Configuring Swagger/Gateway.
-- Graceful Shutdown logic.
+## 1. First-Run Experience (FRX)
 
-## 2. Solution: Orchestrator Pattern (Facade)
-We will upgrade `pkg/base` so that it not only provides "registration" functions but also serves as a complete **Orchestrator**.
+When the system is started with empty databases, the Admin Dashboard provides a guided bootstrap process.
 
-### Selected Design Pattern: **Template Method (via Composition) + Functional Hooks**.
+- **Trigger**: The `SystemBootstrapModal.tsx` component in `client-app` automatically detects the unseeded state.
+- **Check Mechanism**: Calls `GET /v1/logistics/system/status` and `GET /v1/retail/system/status`. If `seeded: false` is returned, the modal appears.
+- **Action**: Clicking "Initialize DB" calls the `seedAll` method in `systemService`, which triggers the `/system/seed` POST endpoints on backend services.
 
-### Proposed Structure in `pkg/base`:
+## 2. Deterministic Identity Mapping
 
-#### A. Definition of `Dependencies` (Common Components)
-Consolidate components used by all services into a centralized struct within `base`:
-```go
-type Dependencies struct {
-    DB           *database.DB
-    RDB          *valkeyclient.Client
-    CasbinEngine casbin.Engine
-    KeyProvider  provider.KeyProvider
-}
+To ensure a predictable demo environment, we use the following fixed identities. All accounts use a standard default password (refer to local `.env`).
+
+| Role | Email | Assigned Entity |
+| :--- | :--- | :--- |
+| `ADMIN` | `admin@runtimeroasters.com` | Global System Admin |
+| `FARM_MANAGER` | `mgr.caudat@runtimeroasters.com` | Cầu Đất Farm (Arabica) |
+| `FARM_MANAGER` | `mgr.bmt@runtimeroasters.com` | Buôn Ma Thuột Farm (Robusta) |
+| `WAREHOUSE_MGR` | `mgr.songthan@runtimeroasters.com` | KCN Sóng Thần Warehouse |
+| `STORE_MGR` | `mgr.hcm01@runtimeroasters.com` | Store: District 1, HCM |
+| `STORE_MGR` | `mgr.hn01@runtimeroasters.com` | Store: Hoàn Kiếm, Hà Nội |
+| `DRIVER` | `driver.songthan01@runtimeroasters.com` | Assigned to Sóng Thần Warehouse |
+
+## 3. Historical Data Simulation (Saga Seeding)
+
+Real-time Saga flows can take several minutes to complete across the distributed system. To provide immediate visualization on dashboards, the seeder simulates a historical timeline by directly inserting records into read models.
+
+### Timeline Simulation (7-Day Span)
+- **Day 1**: Harvest created at Cầu Đất.
+- **Day 2**: Logistics pickup from Farm to Warehouse.
+- **Day 3**: Roasting Batch finalized at Roastery.
+- **Day 4**: Stock updated and made available.
+- **Day 5**: Retail Order placed by Store Manager.
+- **Day 6**: Payment successfully processed.
+- **Day 7**: Final delivery to Retail Store.
+
+### Target Read Models
+- **Trace Service**: `trace_events` (PostgreSQL) and `coffee_traceability` (Elasticsearch).
+- **Finance**: `payments` table (PostgreSQL) in `payment-db`.
+- **Logistics**: `shipment_logs` in `logistics-db`.
+
+## 4. Resetting State
+
+To perform a clean demo, developers should use the provided script:
+
+```bash
+# Deletes all data, resets Kafka offsets, and prepares for a fresh bootstrap
+./deployments/reset-demo-state.sh
 ```
 
-#### B. Definition of `ServiceRegistrar` (Interface)
-Each service only needs to provide its own identification information and handlers:
-```go
-type ServiceRegistrar interface {
-    RegisterGRPC(server *grpc.Server)
-    RegisterGateway(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
-    RegisterHTTP(router *gin.RouterGroup) // Optional
-}
-```
-
-#### C. Centralized Bootstrap Function (`Launcher`)
-This function will execute the entire "standard" flow that we are currently performing manually in `app.go`:
-```go
-func (a *App) Launch(deps Dependencies, registrar ServiceRegistrar) {
-    // 1. Automatically run Casbin Sync if an Engine exists
-    if deps.CasbinEngine != nil {
-        if reader, ok := deps.CasbinEngine.(*casbin.ResilientReader); ok {
-            reader.StartBackgroundSync(context.Background())
-        }
-    }
-
-    // 2. Call the service-specific registration logic
-    registrar.RegisterGRPC(a.grpcServer)
-    a.RegisterGateway(registrar.RegisterGateway, a.config.GRPCPort)
-
-    // 3. Automatically inject Auth Middleware into all requests via Gateway (if needed)
-    // Or provide a group that is already wrapped with Auth for the Service
-    
-    // 4. Automatically register Readiness checks for DB & Valkey
-    a.RegisterReadiness(func() error {
-        if deps.DB != nil { /* ping */ }
-        if deps.RDB != nil { /* ping */ }
-        return nil
-    })
-
-    // 5. Run server
-    a.Run(...)
-}
-```
-
-## 3. Benefits After Implementation
-
-### Code in `farm-service/internal/app/app.go` will be reduced to:
-```go
-func (a *App) Run() {
-    a.Base.Launch(a.Deps, a.Handler) // Just a single line!
-}
-```
-
-### Code in `cmd/main.go` (Using Manual DI):
-Virtually unchanged, but the initialization logic will be cleaner as the passed parameters are encapsulated within `Dependencies`. All dependencies are initialized and passed manually at the Composition Root.
-
-## 4. Implementation Roadmap (Post-Sprint 3)
-1. **Refactor `pkg/base`**: Add the `Dependencies` struct and the `Launch` function.
-2. **Standardize `Config`**: Ensure every service configuration is compatible so that `base` can read common parameters.
-3. **Migration**: Convert `demo-service` to use `base.Launch` for verification. Subsequently, apply it to `farm-service`.
-
-## 💡 Philosophy
-"Base is the backbone, Service is the flesh." The backbone handles survival functions (Security, Health, Sync), while the flesh handles business functions (Business Logic).
-
-## 5. Mandatory Baseline For Every Service
-
-Every service must use `pkg/base.App` unless there is a documented worker-only exception. A worker-only exception must still initialize the same baseline manually:
-
-- `logger.InitLogger`
-- `telemetry.InitTracer`
-- `database.NewPostgres` for Postgres access
-- `pkg/kafka.NewProducer` and `pkg/kafka.NewConsumer` for Kafka
-- graceful shutdown for producers, consumers, DB, and tracer provider
-- idempotency via `pkg/kafka.MessageID(msg)` for consumed Kafka messages
-
-Do not accept a service as production-demo ready if it skips the shared bootstrap baseline only because it has no HTTP routes. Worker services still participate in distributed traces and SAGA correctness.
+After running this script, log in as `admin@runtimeroasters.com` to trigger the "Initialize DB" modal.

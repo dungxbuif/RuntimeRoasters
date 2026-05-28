@@ -28,6 +28,7 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
      - *Data Seed & Financial Integrity*: Hệ thống thiếu tập data seed khởi tạo đầy đủ.
      - *Traceability Page Empty*: Trang `/dashboard/traceability` hiện tại đang hoàn toàn trống rỗng (empty).
    - **Mong muốn chung**: Gộp chung thành 1 kế hoạch Data Seeding toàn diện. Xây dựng bộ data mẫu có tính lịch sử (Saga flow) để trang Traceability và Finance có sẵn số liệu demo. Cập nhật lại tài liệu kịch bản demo (GUIDE.md).
+      - Seed users email nên lấy tên của các entity mà account đó quản lý hoặc tên rút gọn của roles
 
 ### **[logistics-map light mode]** - [IN_PROGRESS](items/FB-20260528-04-logistics-map-ux)
    - **Mô tả**: logistics-map đang dark mode
@@ -78,4 +79,10 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
 
 
 
-   
+   Payment webhook demo key. set ở biến môi trường chứ ko phải DB
+
+
+! Note: cẦn viết docs technical chi tiết
+   - Bài toán logistic get and publlish realtime
+   - Bài toán trace CQRS đang làm thế nào 
+   - Bài toán phê duyệt đơn hàng
