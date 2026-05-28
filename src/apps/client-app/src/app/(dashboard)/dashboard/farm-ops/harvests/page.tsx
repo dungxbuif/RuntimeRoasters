@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services/farm.service';
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
 import { e2eSelectors, testId } from '@/lib/utils/test-id';
 import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
-import NotificationFeed, { NotificationItem } from '@/components/common/NotificationFeed';
+import NotificationFeed from '@/components/common/NotificationFeed';
 
 const PICKUP_STEPS: PipelineStep[] = [
   { key: 'CREATED', label: 'Created' },

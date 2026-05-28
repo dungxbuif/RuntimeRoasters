@@ -1,15 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { warehouseService } from '@/services/warehouse.service';
-import { logisticsService } from '@/services/logistics.service';
-import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
-import NotificationFeed, { NotificationItem } from '@/components/common/NotificationFeed';
-import { Warehouse, Package, Truck, CheckCircle2, Factory, Database, ArrowRight, MapPin } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes';
-import Link from 'next/link';
+import { NotificationItem } from '@/components/common/NotificationFeed';
+import StatusPipeline from '@/components/common/StatusPipeline';
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
+import { warehouseService } from '@/services/warehouse.service';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, MapPin, Truck, Warehouse } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 
 

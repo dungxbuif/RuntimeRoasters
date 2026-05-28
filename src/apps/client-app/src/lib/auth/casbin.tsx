@@ -1,12 +1,11 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-// @ts-expect-error casbin.js does not ship complete TypeScript declarations for this import shape.
-import { Enforcer, newEnforcer } from 'casbin.js';
-import { useAuth } from './AuthProvider';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { authService } from '@/services/auth.service';
-import React from 'react';
+import * as casbin from 'casbin-core';
+import { useAuth } from './AuthProvider';
+import { CASBIN_MODEL } from '@/constants/casbin';
 
 interface CasbinContextType {
-  enforcer: Enforcer | null;
+  enforcer: casbin.Enforcer | null;
   can: (action: string, resource: string) => boolean;
 }
 
@@ -17,7 +16,7 @@ const CasbinContext = createContext<CasbinContextType>({
 
 export const CasbinProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
-  const [enforcer, setEnforcer] = useState<Enforcer | null>(null);
+  const [enforcer, setEnforcer] = useState<casbin.Enforcer | null>(null);
 
   useEffect(() => {
     const initCasbin = async () => {
@@ -25,25 +24,14 @@ export const CasbinProvider = ({ children }: { children: ReactNode }) => {
         try {
           const { policies } = await authService.getPolicies();
           
-          // Basic Casbin model definition compatible with casbin.js
-          const model = `
-          [request_definition]
-          r = sub, obj, act
+          const m = new casbin.Model(CASBIN_MODEL);
+          const a = new casbin.MemoryAdapter(policies.join('\n'));
+          const e = await casbin.newEnforcer(m, a);
 
-          [policy_definition]
-          p = sub, obj, act
+          // Register keyMatch and regexMatch functions (they are synchronous)
+          e.addFunction('keyMatch', casbin.Util.keyMatchFunc);
+          e.addFunction('regexMatch', casbin.Util.regexMatchFunc);
 
-          [role_definition]
-          g = _, _
-
-          [policy_effect]
-          e = some(where (p.eft == allow))
-
-          [matchers]
-          m = g(r.sub, p.sub) && (r.obj == p.obj || p.obj == '*') && (r.act == p.act || p.act == '*')
-          `;
-          
-          const e = await newEnforcer(model, policies.join('\\n'));
           setEnforcer(e);
         } catch (error) {
           console.error('[Casbin] Failed to initialize Casbin policies:', error);

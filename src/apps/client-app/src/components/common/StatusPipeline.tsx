@@ -21,8 +21,8 @@ export default function StatusPipeline({ steps, currentStep, size = 'md' }: Stat
       {steps.map((step, i) => {
         const isCompleted = i < currentIndex;
         const isCurrent = i === currentIndex;
-        const isFuture = i > currentIndex;
         const dotSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+
         const textSize = size === 'sm' ? 'text-[7px]' : 'text-[8px]';
 
         return (

@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { AUTH_ACTIONS, AUTH_RESOURCES } from "@/constants/resources";
 import { APP_ROUTES } from "@/constants/routes";
-import { useAuth } from "@/lib/auth";
 import { PermissionGuard } from "@/lib/auth/casbin";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
 
   return (
     <aside className="flex flex-col h-full p-4 space-y-2 fixed left-0 top-0 z-40 bg-[#f2f4f6] w-64 border-r border-outline-variant/10 shadow-2xl shadow-black/20">
@@ -24,46 +23,40 @@ export default function Sidebar() {
       </div>
       
       <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
-        {/* ADMIN: Identity & Access */}
-        <PermissionGuard action="read" resource="sidebar_users">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.SYSTEM_SERVICE}>
           <NavSection label="Identity & Access">
             <SidebarLink href={APP_ROUTES.DASHBOARD.USERS} label="Manage Users" icon="group_add" active={pathname === APP_ROUTES.DASHBOARD.USERS} />
             <SidebarLink href={APP_ROUTES.DASHBOARD.RESOURCES} label="Resources" icon="domain" active={pathname === APP_ROUTES.DASHBOARD.RESOURCES} />
           </NavSection>
         </PermissionGuard>
 
-        {/* ADMIN / FARM_ADMIN / FARM_MANAGER: Farm Operations */}
-        <PermissionGuard action="read" resource="sidebar_farms">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.FARM}>
           <NavSection label="Farm Operations">
             <SidebarLink href={APP_ROUTES.DASHBOARD.FARMS} label="Farm Registry" icon="eco" active={pathname === APP_ROUTES.DASHBOARD.FARMS} />
             <SidebarLink href={APP_ROUTES.DASHBOARD.HARVESTS} label="Harvests" icon="grass" active={pathname === APP_ROUTES.DASHBOARD.HARVESTS} />
           </NavSection>
         </PermissionGuard>
 
-        {/* WAREHOUSE_MGR / PROCESSOR: Warehouse Operations */}
-        <PermissionGuard action="read" resource="sidebar_warehouse">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.WAREHOUSE_INVENTORY}>
           <NavSection label="Warehouse Operations">
             <SidebarLink href={APP_ROUTES.DASHBOARD.WAREHOUSE} label="Warehouse Ops" icon="warehouse" active={pathname === APP_ROUTES.DASHBOARD.WAREHOUSE} />
             <SidebarLink href={APP_ROUTES.DASHBOARD.BATCHES} label="Batch Lifecycle" icon="science" active={pathname === APP_ROUTES.DASHBOARD.BATCHES} />
           </NavSection>
         </PermissionGuard>
 
-        {/* STORE_MGR: Retail Operations */}
-        <PermissionGuard action="read" resource="sidebar_store">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.STORE}>
           <NavSection label="Retail Operations">
             <SidebarLink href={APP_ROUTES.DASHBOARD.STORE} label="Store Dashboard" icon="storefront" active={pathname === APP_ROUTES.DASHBOARD.STORE} />
             <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL_ORDERS} label="Create Order" icon="add_shopping_cart" active={pathname === APP_ROUTES.DASHBOARD.RETAIL_ORDERS} />
           </NavSection>
         </PermissionGuard>
 
-        {/* DRIVER: Driver Client */}
-        <PermissionGuard action="read" resource="sidebar_driver">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.LOGISTICS_SHIPMENT}>
           <NavSection label="Driver Client">
             <SidebarLink href={APP_ROUTES.DASHBOARD.DRIVER} label="My Shipments" icon="local_shipping" active={pathname.startsWith(APP_ROUTES.DASHBOARD.DRIVER)} />
           </NavSection>
         </PermissionGuard>
 
-        {/* All authenticated: Supply Chain Ops */}
         <NavSection label="Supply Chain Ops">
           <SidebarLink href="/dashboard" label="Intelligence Hub" icon="analytics" active={pathname === '/dashboard'} small />
           <SidebarLink href={APP_ROUTES.DASHBOARD.LOGISTICS} label="Logistics Map" icon="map" active={pathname === APP_ROUTES.DASHBOARD.LOGISTICS} small />
@@ -72,7 +65,7 @@ export default function Sidebar() {
         </NavSection>
 
         {/* ADMIN only: System Intelligence */}
-        <PermissionGuard action="read" resource="sidebar_dashboard">
+        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.AUDIT_LOGS}>
           <NavSection label="System Intelligence">
             <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL} label="Saga Monitor" icon="device_hub" active={pathname === APP_ROUTES.DASHBOARD.RETAIL} small />
             <SidebarLink href={APP_ROUTES.DASHBOARD.EXPLORER} label="System Explorer" icon="dns" active={pathname === APP_ROUTES.DASHBOARD.EXPLORER} small />
@@ -80,7 +73,6 @@ export default function Sidebar() {
           </NavSection>
         </PermissionGuard>
 
-        {/* Account + Showcase link */}
         <NavSection label="Account">
           <SidebarLink href={APP_ROUTES.DASHBOARD.PROFILE} label="Account Settings" icon="manage_accounts" active={pathname === APP_ROUTES.DASHBOARD.PROFILE} small />
         </NavSection>

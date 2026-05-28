@@ -28,7 +28,7 @@ const DELIVERY_STEPS: PipelineStep[] = [
 type SimSpeed = 30 | 45 | 60;
 
 export default function DriverClientPage() {
-  const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
+  const [selectedShipmentId] = useState<string | null>(null);
   const [simActive, setSimActive] = useState(false);
   const [simSpeed, setSimSpeed] = useState<SimSpeed>(30);
   const [waypointIndex, setWaypointIndex] = useState(0);
@@ -305,9 +305,9 @@ export default function DriverClientPage() {
                     const isCompleted = i < currentMilestoneIndex;
                     const isCurrent = i === currentMilestoneIndex;
                     const isNext = i === currentMilestoneIndex + 1;
-                    const isDisabled = i > currentMilestoneIndex + 1 || (i === 0);
 
                     return (
+
                       <button key={m} onClick={() => isNext && handleMilestone(m)}
                         disabled={!isNext}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all ${

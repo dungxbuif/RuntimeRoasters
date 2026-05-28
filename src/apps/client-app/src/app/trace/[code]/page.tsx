@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
 import { Coffee, Sprout, Truck, Factory, Package, ShoppingCart, CheckCircle2, MapPin } from 'lucide-react';
-import Link from 'next/link';
 
 interface JourneyStep {
   icon: React.ElementType;

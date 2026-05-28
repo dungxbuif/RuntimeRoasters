@@ -3,4 +3,4 @@
 ## Description
 TypeError: (0, ...newEnforcer) is not a function.
 
-Status: IN_PROGRESS
+Status: FIXED

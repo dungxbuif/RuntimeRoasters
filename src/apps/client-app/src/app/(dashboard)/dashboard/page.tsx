@@ -1,15 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { farmService } from '@/services/farm.service';
 import { adminService } from '@/services/admin.service';
 import { Coffee, Users, MapPin, Truck, AlertTriangle, TrendingUp } from 'lucide-react';
-import { testId } from '@/lib/utils/test-id';
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
 
   const { data: farms = [] } = useQuery({
     queryKey: ['farms'],

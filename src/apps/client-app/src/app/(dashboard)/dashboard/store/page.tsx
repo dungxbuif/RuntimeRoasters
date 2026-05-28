@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { retailService } from '@/services/retail.service';
-import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import NotificationFeed, { NotificationItem } from '@/components/common/NotificationFeed';
-import { Store, Truck, Clock, Plus, ShoppingBag, MapPin } from 'lucide-react';
-import { APP_ROUTES } from '@/constants/routes';
-import Link from 'next/link';
+import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
 import { DataGrid } from '@/components/ui/templates/DataGrid';
-import { Order } from '@/services/retail.service';
+import { APP_ROUTES } from '@/constants/routes';
+import { Order, retailService } from '@/services/retail.service';
+import { useQuery } from '@tanstack/react-query';
+import { Clock, MapPin, Plus, ShoppingBag, Store, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 
 const ORDER_STEPS: PipelineStep[] = [
   { key: 'CREATED', label: 'Created' },
@@ -75,7 +74,8 @@ export default function StoreDashboardPage() {
     {
       key: 'items',
       header: 'Items',
-      render: (order: Order) => <span className="text-xs font-bold text-slate-600">Retail Order</span>
+      render: (_order: Order) => <span className="text-xs font-bold text-slate-600">Retail Order</span>
+
     },
     {
       key: 'amount',

@@ -97,12 +97,3 @@ g, ADMIN, FARM_MANAGER
 g, ADMIN, STORE_MGR
 g, ADMIN, WAREHOUSE_MGR
 g, ADMIN, DRIVER
-
-p, ADMIN, sidebar_users, read
-p, ADMIN, sidebar_farms, read
-p, ADMIN, sidebar_dashboard, read
-p, ADMIN, sidebar_trace, read
-p, WAREHOUSE_MGR, sidebar_warehouse, read
-p, STORE_MGR, sidebar_store, read
-p, DRIVER, sidebar_driver, read
-p, FARM_MANAGER, sidebar_farm_ops, read
