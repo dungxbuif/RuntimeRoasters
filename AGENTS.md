@@ -6,7 +6,7 @@ Last updated: 2026-05-25
 
 ## Mission
 
-Runtime Roasters is a production-grade Farm-to-Cup supply-chain showcase built as a Go microservices monorepo with a Next.js control-plane UI. The project demonstrates distributed systems patterns: OIDC login, centralized authorization, gRPC/REST gatewaying, Kafka events, transactional outbox, service-local enforcement, and dashboard visualization.
+Runtime Roasters is a production-grade educational and showcase Farm-to-Cup supply-chain system built as a Go microservices monorepo with a Next.js control-plane UI. The project serves as a highly robust learning platform and technical showcase, demonstrating premium distributed systems patterns: OIDC login, centralized authorization, gRPC/REST gatewaying, Kafka events, transactional outbox, service-local enforcement, and dashboard visualization.
 
 ## Current App Shape
 
@@ -152,6 +152,7 @@ Expected result: one browser-driven gateway flow produces one trace ID across `r
 ## Documentation Pointers
 
 - Mandatory engineering guardrails: `docs/product/standards/ENGINEERING_RULES.md`
+- Unit Testing Guardrails for Agents: `docs/product/standards/UNIT_TEST_RULES.md`
 - System Specifications: `docs/product/SPEC.md`
 - Master Technical Spec: `docs/product/TECH.md`
 - Developer Guide & Ops: `docs/product/GUIDE.md`

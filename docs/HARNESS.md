@@ -123,6 +123,9 @@ User-provided spec or prompt
 docs/product/*
   current product contract derived from accepted input
 
+docs/FEEDBACK_WORKFLOW.md
+  supplemental policy for turning human feedback into investigated work
+
 docs/stories/*
   story-sized work packets and historical evidence
 
@@ -201,15 +204,16 @@ scripts/bin/harness-cli query friction
 For every task:
 
 1. Classify the request with `docs/FEATURE_INTAKE.md`.
-2. Record the classification with `scripts/bin/harness-cli intake`.
-3. Locate the affected product docs and story files.
-4. Check proof status with `scripts/bin/harness-cli query matrix`.
-5. Work only inside the selected lane: tiny, normal, or high-risk.
-6. Before finishing, ask whether product truth, validation expectations,
+2. If the request processes human feedback, follow `docs/FEEDBACK_WORKFLOW.md`.
+3. Record the classification with `scripts/bin/harness-cli intake`.
+4. Locate the affected product docs and story files.
+5. Check proof status with `scripts/bin/harness-cli query matrix`.
+6. Work only inside the selected lane: tiny, normal, or high-risk.
+7. Before finishing, ask whether product truth, validation expectations,
    architecture rules, repeated failure patterns, or next-agent instructions
    changed.
-7. Record a trace with `scripts/bin/harness-cli trace`.
-8. If harness friction was found, either fix it directly or record it with
+8. Record a trace with `scripts/bin/harness-cli trace`.
+9. If harness friction was found, either fix it directly or record it with
    `scripts/bin/harness-cli backlog add`.
 
 ## Harness Change Policy

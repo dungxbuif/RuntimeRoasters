@@ -5,6 +5,7 @@ This directory holds the project harness and the product contract.
 ## Main Files
 
 - `HARNESS.md`: how humans and agents collaborate.
+- `FEEDBACK_WORKFLOW.md`: how human feedback becomes investigated work.
 - `FEATURE_INTAKE.md`: how prompts become tiny, normal, or high-risk work.
 - `ARCHITECTURE.md`: high-level architecture rules and stack overview.
 - `TEST_MATRIX.md`: legacy proof map; current proof status is queried with

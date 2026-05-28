@@ -20,6 +20,7 @@ Dự án áp dụng mô hình kiểm thử 3 lớp:
 3.  **Lớp 3: Business Logic (Unit Test)**
     *   **Mục tiêu:** Test các hàm xử lý tính toán (ví dụ: Roasting Loss, ID Formatting).
     *   **Vị trí:** Cùng thư mục với code nghiệp vụ (`*_test.go`).
+    *   **Quy định Chi tiết:** Agents phải tuân thủ nghiêm ngặt 10 quy tắc thiết kế test case tại [UNIT_TEST_RULES.md](file:///Users/dungxbuif/workspace/RuntimeRoasters/docs/product/standards/UNIT_TEST_RULES.md).
 
 ---
 

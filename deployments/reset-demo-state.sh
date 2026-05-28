@@ -4,6 +4,32 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/deployments/docker-compose.dev.yaml"
 
+# 1. Check if Docker daemon is running
+if ! docker info >/dev/null 2>&1; then
+  echo "❌ Error: Docker daemon is not running! Please start Docker first."
+  exit 1
+fi
+
+# 2. Check if infrastructure containers are running. If not, auto-start them
+if ! docker ps --format '{{.Names}}' | grep -q "rr-postgres"; then
+  echo "🚀 Infrastructure containers are not running. Starting them via Docker Compose..."
+  docker compose -f "$COMPOSE_FILE" up -d
+  echo "⏳ Waiting 5 seconds for databases and Kafka to initialize..."
+  sleep 5
+fi
+
+# Kill any lingering backend processes running on microservice HTTP ports
+echo "Cleaning up lingering microservice processes..."
+for port in 8082 8083 8084 8085 8086 8087 8088; do
+  pids=$(lsof -t -i:"$port" 2>/dev/null || true)
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      echo "Stopping process $pid listening on port $port"
+      kill -9 "$pid" 2>/dev/null || true
+    done
+  fi
+done
+
 topics=(
   retail.order.created
   payment.intent.created
