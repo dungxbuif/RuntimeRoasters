@@ -95,3 +95,13 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
      - Audit UI hiện tại và phân loại real UI / simulated UI / mock UI.
      - Chỉ lên plan/docs chi tiết, chưa implement code.
 
+### **[Documentation Gap Audit & Streamlining]** - [IN_PROGRESS](items/FB-20260528-09-docs-gap-streamlining)
+   - **Mô tả**:
+     - Hệ tài liệu hiện đã có nhiều nguồn giá trị (`SPEC.md`, `TECH.md`, `GUIDE.md`, runbook, standards, feedback items, story history), nhưng ranh giới source-of-truth chưa đủ rõ.
+     - Một số tài liệu đang trộn trạng thái hiện tại, kế hoạch, lịch sử triển khai, demo script và business contract khiến reviewer/agent dễ hiểu nhầm phần nào là current runtime, phần nào là reference/archive.
+     - Cần audit docs-only để ghi nhận gap/missing, map lại canonical docs, và đề xuất hướng tinh gọn trước khi thực hiện refactor lớn.
+   - **Mong muốn**:
+     - Tạo báo cáo gap audit có severity và path liên quan.
+     - Xác định source-of-truth map cho business, technical, runbook, demo contract, standards, feedback planning và story archive.
+     - Lập backlog các tài liệu còn thiếu như learning path, docs governance, current-state matrix và promoted demo contract.
+     - Chỉ tạo audit/plan trong ticket này; không xóa, di chuyển hoặc refactor toàn bộ docs.
