@@ -81,8 +81,17 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
 
    Payment webhook demo key. set ở biến môi trường chứ ko phải DB
 
+### **[Demo Flow Contract & Simulation Boundaries]** - [IN_PROGRESS](items/FB-20260528-08-demo-flow-contract)
+   - **Mô tả**:
+     - Dự án là production-grade demo nên nhiều luồng đã được simulate có chủ đích.
+     - Docs hiện đang dàn trải giữa `SPEC.md`, `TECH.md`, `GUIDE.md`, story history, feedback items và UI mock, dễ làm reviewer/agent hiểu sai context.
+     - Cần xác định rõ luồng nào là runtime thật, luồng nào backend-simulated, luồng nào browser-simulated, và UI nào chỉ là mock/visualizer.
+     - Cần giải quyết bài toán demo nhiều account đăng nhập cùng lúc.
+     - Cần technical docs chi tiết cho Logistics realtime get/publish, Trace CQRS, và order approval/fulfillment.
+   - **Mong muốn**:
+     - Tạo một demo technical contract làm source of truth.
+     - Ghi rõ các luồng bị lược bỏ và lý do simulate.
+     - Chuẩn hóa hướng demo nhiều account bằng nhiều browser profiles/incognito.
+     - Audit UI hiện tại và phân loại real UI / simulated UI / mock UI.
+     - Chỉ lên plan/docs chi tiết, chưa implement code.
 
-! Note: cẦn viết docs technical chi tiết
-   - Bài toán logistic get and publlish realtime
-   - Bài toán trace CQRS đang làm thế nào 
-   - Bài toán phê duyệt đơn hàng

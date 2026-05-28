@@ -2,6 +2,8 @@
 
 This document provides the definitive technical specification for the **Runtime Roasters** ecosystem. It outlines the architectural patterns, service responsibilities, and infrastructure blueprints that enable a resilient, scalable, and observable coffee supply chain platform.
 
+> For current demo/runtime boundaries, see [FB-20260528-08 Demo Flow Contract](../feedbacks/items/FB-20260528-08-demo-flow-contract/DEMO_FLOW_CONTRACT.md). It classifies real runtime flows, backend simulation, browser route replay, UI mock-only surfaces, and planned behavior.
+
 ---
 
 ## 1. Architectural Strategy
