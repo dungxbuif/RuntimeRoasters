@@ -25,7 +25,7 @@ The system ensures that every served product has a complete digital profile, aut
 | **Warehouse** | The hub for storage management, preservation, and where value-added conversion operations (Processing, Roasting) occur. |
 | **Order** | Represents customer demand, serving as the trigger for inventory reservation and supply coordination. |
 | **Shipment** | The physical movement of goods between nodes in the value chain. |
-| **Vehicle / Driver** | Demo fleet resources assigned by Warehouse/Logistics. Driver accounts execute route simulation and confirm shipment milestones. |
+| **Vehicle / Driver** | Fleet resources that are automatically seeded (auto-seeded) when a Warehouse is created (Keep it simple). Driver accounts execute route simulation and confirm shipment milestones. |
 | **Notification** | A role-scoped operational prompt shown on dashboards when a user action is required. |
 | **Trace / Correlation** | Technical and business identifiers used to connect domain events, telemetry, and UI journey visualization. |
 
@@ -50,6 +50,7 @@ Ensures absolute consistency between sales and fulfillment capability.
 - **Order Status Coordination**: The system automatically coordinates the steps: Inventory Check ➔ Payment Confirmation ➔ Release Order. All these steps must occur synchronously; if any step fails, previous steps are automatically rolled back to restore the original inventory state.
 
 ### 3.4. Transportation & Journey Monitoring
+- **Auto-seeding Resources**: Vehicles and drivers are automatically generated (auto-seeded) as demo resources when a Warehouse is created, bypassing the need for manual ADMIN creation of individual drivers.
 - **Shipment Dispatching**: Warehouse Manager assigns available vehicles and drivers to inbound farm pickup or outbound retail delivery.
 - **Driver Client Simulation**: In production-demo mode, the driver logs in with a `DRIVER` account, starts the route simulation from the UI, and the browser posts GPS/status updates to backend as if it were a driver device.
 - **Progress Tracking**: The goods' journey is continuously monitored in real time on Warehouse, Logistics, Farm, Retail, Trace, and public architecture views.
@@ -76,12 +77,14 @@ Ensures absolute consistency between sales and fulfillment capability.
 
 Information access rights are strictly established based on actual job responsibilities:
 
-1.  **System Administrator (`ADMIN`)**: Creates manager accounts, farms, warehouses, stores, vehicles, and driver records; assigns managers; views aggregate health. It is not the normal operator for harvest, dispatch, receipt, GPS, or processing actions.
+1.  **System Administrator (`ADMIN`)**: Creates manager accounts, farms, warehouses, and stores; views aggregate health. **Note:** Vehicles and drivers are auto-seeded upon warehouse creation (Keep it simple).
 2.  **Farm Manager (`FARM_MANAGER`)**: Creates harvests and watches pickup status for assigned farms.
 3.  **Warehouse Manager (`WAREHOUSE_MGR`)**: Receives pickup notifications, dispatches vehicles/drivers, receives returned shipments, creates intakes, manages processing and inventory.
 4.  **Store Manager (`STORE_MGR`)**: Creates paid retail orders for assigned stores and watches incoming delivery status.
 5.  **Driver (`DRIVER`)**: Views only assigned shipments, starts route simulation, posts GPS/location updates, and confirms pickup/delivery/return milestones.
 6.  **Processor (`PROCESSOR`, optional split)**: Runs or assists processing steps if the final role split separates production from warehouse management.
+
+**Policy Management Rule:** To keep authorization simple, dynamic policy updates are avoided. To change a user's role or permissions, the user account must be deleted and recreated. Permissions are automatically assigned when entities are bound.
 
 ---
 
