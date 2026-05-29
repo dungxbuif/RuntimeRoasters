@@ -18,7 +18,7 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
    - **Cách tái hiện:**:L Ở trang chủ `ArchitectureDiagramCanvas.tsx`
    - **Mong muốn**: Architecture Diagram nên fix cứng bố cục theo quy tắc của các architectures phổ biến. Ví dụ: Frontend đặt ở bên trái, backend ở giữa, database ở bên phải. Tự fit screeen bao chọn bố cục
 
-### **[CSS: Pointer for buttons]** - [IN_PROGRESS](items/FB-20260528-02-css-pointer)
+### **[CSS: Pointer for buttons]** - [RESOLVED](items/FB-20260528-02-css-pointer)
    - **Mô tả:** Tất cả các nút bấm phải có pointer là `cursor-pointer`
 
 ### **[Data Seeding Improvements]** - [IN_PROGRESS](items/FB-20260528-03-data-seeding-improvements)
