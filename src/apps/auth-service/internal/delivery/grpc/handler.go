@@ -1,31 +1,43 @@
 package grpc
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+	"sync"
+	"time"
 
+	"RuntimeRoasters/apps/auth-service/config"
 	"RuntimeRoasters/apps/auth-service/internal/domain"
 	"RuntimeRoasters/apps/auth-service/internal/infrastructure/casbin"
 	"RuntimeRoasters/apps/auth-service/internal/usecase"
 	"RuntimeRoasters/pkg/base/identity"
+	"RuntimeRoasters/pkg/logger"
 	authv1 "RuntimeRoasters/runtime/auth/v1"
+	systemv1 "RuntimeRoasters/runtime/system/v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
 	authv1.UnimplementedAuthServiceServer
+	cfg      *config.Config
 	enforcer *casbin.Enforcer
 	usecase  usecase.UserUsecase
 }
 
-func NewHandler(enforcer *casbin.Enforcer, u usecase.UserUsecase) *Handler {
+func NewHandler(cfg *config.Config, enforcer *casbin.Enforcer, u usecase.UserUsecase) *Handler {
 	return &Handler{
+		cfg:      cfg,
 		enforcer: enforcer,
 		usecase:  u,
 	}
 }
+
 
 func (h *Handler) GetFullSnapshot(ctx context.Context, req *authv1.GetFullSnapshotRequest) (*authv1.GetFullSnapshotResponse, error) {
 	policies, _ := h.enforcer.GetPolicy()
@@ -150,3 +162,114 @@ func toProtoUser(user *domain.User) *authv1.User {
 		Role:  user.Role,
 	}
 }
+
+func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (*systemv1.SeedDataResponse, error) {
+	log := logger.FromContext(ctx)
+	log.Info("Starting centralized system seeding from auth-service", zap.Bool("force", req.Force))
+
+	// 1. Fetch users from Kratos via ListUsers to construct the users map
+	usersMap := make(map[string]string)
+	if h.usecase != nil {
+		users, err := h.usecase.ListUsers(ctx)
+		if err != nil {
+			log.Error("failed to fetch users from Kratos for seeding", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
+		}
+		for _, u := range users {
+			if u.Email != "" && u.ID != "" {
+				usersMap[u.Email] = u.ID
+			}
+		}
+		log.Info("Successfully compiled users map from Kratos", zap.Int("user_count", len(usersMap)))
+	}
+
+	// 2. Define downstream services to propagate the seed command
+	farmURL := "http://localhost:8083"
+	retailURL := "http://localhost:8084"
+	logisticsURL := "http://localhost:8085"
+	warehouseURL := "http://localhost:8089"
+
+	if h.cfg != nil && (strings.Contains(h.cfg.KratosAdminURL, "rr-kratos") || strings.Contains(h.cfg.KratosAdminURL, "kratos")) && !strings.Contains(h.cfg.KratosAdminURL, "localhost") {
+		farmURL = "http://farm-service:8083"
+		retailURL = "http://retail-service:8084"
+		logisticsURL = "http://logistics-service:8085"
+		warehouseURL = "http://warehouse-service:8089"
+	}
+
+	targets := []string{
+		farmURL + "/v1/system/seed",
+		retailURL + "/v1/system/seed",
+		logisticsURL + "/v1/system/seed",
+		warehouseURL + "/v1/system/seed",
+	}
+
+	// 3. Construct JSON propagation payload
+	type PropagatePayload struct {
+		Force    bool              `json:"force"`
+		UsersMap map[string]string `json:"users_map"`
+	}
+	payload := PropagatePayload{
+		Force:    req.Force,
+		UsersMap: usersMap,
+	}
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to marshal payload: %v", err)
+	}
+
+	// 4. Call each downstream service's /v1/system/seed in parallel
+	httpClient := &http.Client{Timeout: 15 * time.Second}
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(targets))
+
+	for _, target := range targets {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			log.Info("Propagating seed request to downstream", zap.String("url", url))
+			httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBytes))
+			if err != nil {
+				errChan <- fmt.Errorf("failed to create request for %s: %w", url, err)
+				return
+			}
+			httpReq.Header.Set("Content-Type", "application/json")
+			if h.cfg != nil && h.cfg.InternalSecret != "" {
+				httpReq.Header.Set("X-Internal-Secret", h.cfg.InternalSecret)
+			}
+
+			resp, err := httpClient.Do(httpReq)
+			if err != nil {
+				errChan <- fmt.Errorf("failed to call %s: %w", url, err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+				errChan <- fmt.Errorf("calling %s returned status %d", url, resp.StatusCode)
+				return
+			}
+			log.Info("Successfully seeded downstream service", zap.String("url", url))
+		}(target)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	var errs []string
+	for err := range errChan {
+		errs = append(errs, err.Error())
+	}
+	if len(errs) > 0 {
+		errMsg := strings.Join(errs, "; ")
+		log.Error("Centralized seeding completed with errors", zap.String("errors", errMsg))
+		return nil, status.Errorf(codes.Internal, "propagation errors: %s", errMsg)
+	}
+
+	log.Info("Centralized seeding completed successfully across all services")
+	return &systemv1.SeedDataResponse{
+		Success:        true,
+		Message:        "Centralized system seeding completed successfully",
+		RecordsCreated: int64(len(usersMap)),
+	}, nil
+}
+

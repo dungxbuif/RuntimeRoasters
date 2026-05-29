@@ -4,6 +4,7 @@ import (
 	"context"
 
 	svcconfig "RuntimeRoasters/apps/warehouse-service/config"
+	warehousegrpc "RuntimeRoasters/apps/warehouse-service/internal/delivery/grpc"
 	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
 	"RuntimeRoasters/apps/warehouse-service/internal/worker"
 	"RuntimeRoasters/pkg/base"
@@ -62,8 +63,10 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
+	systemHandler := usecase.NewSystemHandler(db)
+
 	baseApp := base.NewApp(base.Options{Name: cfg.AppName, Config: cfg.BaseConfig})
-	app := NewApp(baseApp, &cfg, db, pickupUseCase, aggregationUC, processingUC, inventoryUC, consumers, harvestWorker, orderWorker, guards)
+	app := NewApp(baseApp, &cfg, db, pickupUseCase, aggregationUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)
 
 	cleanup := func() {
 		guards.Close()

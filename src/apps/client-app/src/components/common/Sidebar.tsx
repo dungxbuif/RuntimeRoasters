@@ -44,12 +44,14 @@ export default function Sidebar() {
           </NavSection>
         </PermissionGuard>
 
-        <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.STORE}>
-          <NavSection label="Retail Operations">
+        <NavSection label="Retail Operations">
+          <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.STORE}>
             <SidebarLink href={APP_ROUTES.DASHBOARD.STORE} label="Store Dashboard" icon="storefront" active={pathname === APP_ROUTES.DASHBOARD.STORE} />
+          </PermissionGuard>
+          <PermissionGuard action={AUTH_ACTIONS.WRITE} resource={AUTH_RESOURCES.ORDER}>
             <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL_ORDERS} label="Create Order" icon="add_shopping_cart" active={pathname === APP_ROUTES.DASHBOARD.RETAIL_ORDERS} />
-          </NavSection>
-        </PermissionGuard>
+          </PermissionGuard>
+        </NavSection>
 
         <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.LOGISTICS_SHIPMENT}>
           <NavSection label="Driver Client">
@@ -64,12 +66,11 @@ export default function Sidebar() {
           <SidebarLink href={APP_ROUTES.DASHBOARD.FINANCE} label="Finance" icon="payments" active={pathname === APP_ROUTES.DASHBOARD.FINANCE} small />
         </NavSection>
 
-        {/* ADMIN only: System Intelligence */}
         <PermissionGuard action={AUTH_ACTIONS.READ} resource={AUTH_RESOURCES.AUDIT_LOGS}>
           <NavSection label="System Intelligence">
-            <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL} label="Saga Monitor" icon="device_hub" active={pathname === APP_ROUTES.DASHBOARD.RETAIL} small />
-            <SidebarLink href={APP_ROUTES.DASHBOARD.EXPLORER} label="System Explorer" icon="dns" active={pathname === APP_ROUTES.DASHBOARD.EXPLORER} small />
-            <SidebarLink href={APP_ROUTES.DASHBOARD.AUDIT} label="Audit Logs" icon="shield" active={pathname === APP_ROUTES.DASHBOARD.AUDIT} small />
+             <SidebarLink href={APP_ROUTES.DASHBOARD.RETAIL} label="Saga Monitor" icon="device_hub" active={pathname === APP_ROUTES.DASHBOARD.RETAIL} small />
+             <SidebarLink href={APP_ROUTES.DASHBOARD.AUDIT} label="Audit Logs" icon="shield" active={pathname === APP_ROUTES.DASHBOARD.AUDIT} small />
+
           </NavSection>
         </PermissionGuard>
 

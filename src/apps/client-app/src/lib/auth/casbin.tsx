@@ -4,6 +4,14 @@ import * as casbin from 'casbin-core';
 import { useAuth } from './AuthProvider';
 import { CASBIN_MODEL } from '@/constants/casbin';
 
+// Helper to handle ESM/CJS interop for casbin-core
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getCasbinCore = (lib: any) => {
+  if (lib.newEnforcer) return lib;
+  if (lib.default && lib.default.newEnforcer) return lib.default;
+  return lib;
+};
+
 interface CasbinContextType {
   enforcer: casbin.Enforcer | null;
   can: (action: string, resource: string) => boolean;
@@ -24,13 +32,14 @@ export const CasbinProvider = ({ children }: { children: ReactNode }) => {
         try {
           const { policies } = await authService.getPolicies();
           
-          const m = new casbin.Model(CASBIN_MODEL);
-          const a = new casbin.MemoryAdapter(policies.join('\n'));
-          const e = await casbin.newEnforcer(m, a);
+          const core = getCasbinCore(casbin);
+          const m = new core.Model(CASBIN_MODEL);
+          const a = new core.MemoryAdapter(policies.join('\n'));
+          const e = await core.newEnforcer(m, a);
 
           // Register keyMatch and regexMatch functions (they are synchronous)
-          e.addFunction('keyMatch', casbin.Util.keyMatchFunc);
-          e.addFunction('regexMatch', casbin.Util.regexMatchFunc);
+          e.addFunction('keyMatch', core.Util.keyMatchFunc);
+          e.addFunction('regexMatch', core.Util.regexMatchFunc);
 
           setEnforcer(e);
         } catch (error) {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	svcconfig "RuntimeRoasters/apps/warehouse-service/config"
+	warehousegrpc "RuntimeRoasters/apps/warehouse-service/internal/delivery/grpc"
 	"RuntimeRoasters/apps/warehouse-service/internal/domain"
 	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
 	"RuntimeRoasters/apps/warehouse-service/internal/worker"
@@ -14,6 +15,7 @@ import (
 	"RuntimeRoasters/pkg/database"
 	"RuntimeRoasters/pkg/kafka"
 	"RuntimeRoasters/pkg/logger"
+	systemv1 "RuntimeRoasters/runtime/system/v1"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -26,13 +28,14 @@ type App struct {
 	Aggregation   *usecase.AggregationUseCase
 	Processing    *usecase.ProcessingUseCase
 	Inventory     *usecase.InventoryUseCase
+	SystemHandler *warehousegrpc.SystemHandler
 	HarvestWorker *worker.HarvestWorker
 	OrderWorker   *worker.OrderWorker
 	Consumers     []kafka.Consumer
 	Guards        *security.HTTPGuards
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, aggregation *usecase.AggregationUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, aggregation *usecase.AggregationUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, systemHandler *warehousegrpc.SystemHandler, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
 	return &App{
 		Base:          baseApp,
 		Cfg:           cfg,
@@ -41,6 +44,7 @@ func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc
 		Aggregation:   aggregation,
 		Processing:    processing,
 		Inventory:     inventory,
+		SystemHandler: systemHandler,
 		Consumers:     consumers,
 		HarvestWorker: harvestWorker,
 		OrderWorker:   orderWorker,
@@ -62,6 +66,7 @@ func (a *App) Run() {
 		}
 	}()
 	a.Base.RegisterHTTP(a.routes)
+	a.Base.RegisterGRPC(&systemv1.SystemService_ServiceDesc, a.SystemHandler)
 	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
 	a.Base.FinalizeRoutes()
 	a.Base.Run(a.Cfg.AppPort, a.Cfg.GRPCPort)
@@ -84,6 +89,34 @@ func (a *App) routes(r *gin.Engine) {
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
 	}
+
+	sys := r.Group("/v1/system")
+	sys.Use(func(c *gin.Context) {
+		secret := c.GetHeader("X-Internal-Secret")
+		if secret == "" || secret != a.Cfg.InternalSecret {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid or missing internal secret"})
+			return
+		}
+		c.Next()
+	})
+	sys.GET("/status", func(c *gin.Context) {
+		res, err := a.SystemHandler.GetStatus(c.Request.Context(), &systemv1.GetStatusRequest{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	sys.POST("/seed", func(c *gin.Context) {
+		var req systemv1.SeedDataRequest
+		_ = c.ShouldBindJSON(&req)
+		res, err := a.SystemHandler.SeedData(c.Request.Context(), &req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, res)
+	})
 
 	v1.GET("/intakes", func(c *gin.Context) {
 		intakes, err := a.Aggregation.GetUnassignedIntakes(c.Request.Context())
