@@ -183,24 +183,43 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		log.Info("Successfully compiled users map from Kratos", zap.Int("user_count", len(usersMap)))
 	}
 
-	// 2. Define downstream services to propagate the seed command
-	farmURL := "http://localhost:8083"
-	retailURL := "http://localhost:8084"
-	logisticsURL := "http://localhost:8085"
-	warehouseURL := "http://localhost:8089"
-
-	if h.cfg != nil && (strings.Contains(h.cfg.KratosAdminURL, "rr-kratos") || strings.Contains(h.cfg.KratosAdminURL, "kratos")) && !strings.Contains(h.cfg.KratosAdminURL, "localhost") {
-		farmURL = "http://farm-service:8083"
-		retailURL = "http://retail-service:8084"
-		logisticsURL = "http://logistics-service:8085"
-		warehouseURL = "http://warehouse-service:8089"
+	// 2. Define downstream services to propagate the seed command from configuration
+	var targets []string
+	if h.cfg != nil {
+		if h.cfg.FarmServiceURL != "" {
+			targets = append(targets, h.cfg.FarmServiceURL+"/v1/system/seed")
+		}
+		if h.cfg.RetailServiceURL != "" {
+			targets = append(targets, h.cfg.RetailServiceURL+"/v1/system/seed")
+		}
+		if h.cfg.LogisticsServiceURL != "" {
+			targets = append(targets, h.cfg.LogisticsServiceURL+"/v1/system/seed")
+		}
+		if h.cfg.WarehouseServiceURL != "" {
+			targets = append(targets, h.cfg.WarehouseServiceURL+"/v1/system/seed")
+		}
 	}
 
-	targets := []string{
-		farmURL + "/v1/system/seed",
-		retailURL + "/v1/system/seed",
-		logisticsURL + "/v1/system/seed",
-		warehouseURL + "/v1/system/seed",
+	// Fallback to legacy hardcoded logic if no targets defined in config
+	if len(targets) == 0 {
+		farmURL := "http://localhost:8083"
+		retailURL := "http://localhost:8084"
+		logisticsURL := "http://localhost:8085"
+		warehouseURL := "http://localhost:8089"
+
+		if h.cfg != nil && (strings.Contains(h.cfg.KratosAdminURL, "rr-kratos") || strings.Contains(h.cfg.KratosAdminURL, "kratos")) && !strings.Contains(h.cfg.KratosAdminURL, "localhost") {
+			farmURL = "http://farm-service:8083"
+			retailURL = "http://retail-service:8084"
+			logisticsURL = "http://logistics-service:8085"
+			warehouseURL = "http://warehouse-service:8089"
+		}
+
+		targets = []string{
+			farmURL + "/v1/system/seed",
+			retailURL + "/v1/system/seed",
+			logisticsURL + "/v1/system/seed",
+			warehouseURL + "/v1/system/seed",
+		}
 	}
 
 	// 3. Construct JSON propagation payload

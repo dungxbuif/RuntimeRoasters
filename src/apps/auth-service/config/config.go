@@ -18,6 +18,12 @@ type Config struct {
 	JWKSURL        string `mapstructure:"JWKS_URL"`
 	JWKSCacheTTL   string `mapstructure:"JWKS_CACHE_TTL"`
 	ExpectedIssuer string `mapstructure:"EXPECTED_ISSUER"`
+
+	// Downstream Services for Seeding
+	FarmServiceURL      string `mapstructure:"FARM_SERVICE_URL"`
+	RetailServiceURL    string `mapstructure:"RETAIL_SERVICE_URL"`
+	LogisticsServiceURL string `mapstructure:"LOGISTICS_SERVICE_URL"`
+	WarehouseServiceURL string `mapstructure:"WAREHOUSE_SERVICE_URL"`
 }
 
 // Load loads the auth-service configuration
