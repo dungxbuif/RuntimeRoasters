@@ -75,14 +75,24 @@ Ensures absolute consistency between sales and fulfillment capability.
 
 ## 4. Authorization Model & Business Responsibilities
 
-Information access rights are strictly established based on actual job responsibilities:
+Information access rights and operational authorities are strictly established based on actual job responsibilities:
 
-1.  **System Administrator (`ADMIN`)**: Creates manager accounts, farms, warehouses, and stores; views aggregate health. **Note:** Vehicles and drivers are auto-seeded upon warehouse creation (Keep it simple).
-2.  **Farm Manager (`FARM_MANAGER`)**: Creates harvests and watches pickup status for assigned farms.
-3.  **Warehouse Manager (`WAREHOUSE_MGR`)**: Receives pickup notifications, dispatches vehicles/drivers, receives returned shipments, creates intakes, manages processing and inventory.
-4.  **Store Manager (`STORE_MGR`)**: Creates paid retail orders for assigned stores and watches incoming delivery status.
-5.  **Driver (`DRIVER`)**: Views only assigned shipments, starts route simulation, posts GPS/location updates, and confirms pickup/delivery/return milestones.
-6.  **Processor (`PROCESSOR`, optional split)**: Runs or assists processing steps if the final role split separates production from warehouse management.
+1.  **System Administrator (`ADMIN`)**: 
+    - **Entity Creation**: The sole authority for creating Accounts (with Roles), Farms, Warehouses, and Retail Stores.
+    - **Assignment**: Responsible for binding Managers to their respective entities.
+    - **Global Overview**: Views aggregate system health and chain integrity.
+2.  **Farm Manager (`FARM_MANAGER`)**: 
+    - **Operational Authority**: Exclusive right to execute Farm APIs and resources.
+    - **Harvesting**: Declares harvests and manages cultivation profiles for assigned farms.
+3.  **Warehouse Manager (`WAREHOUSE_MGR`)**: 
+    - **Integrated Operations**: Manages warehouse inventory and processing (Roasting).
+    - **Logistics Control**: Inherits all logistics management logic. Receives pickup notifications and manages the outbound queue.
+    - **Fleet Assignment**: Authority to assign Vehicles and Drivers (created by Admin) to specific shipments.
+    - **Simplified Fleet**: No CRUD UI exists for Drivers/Vehicles; they are managed through Seed Data.
+4.  **Store Manager (`STORE_MGR`)**: 
+    - **Retail focus**: Exclusive authority over retail operations, store demand (Orders), and incoming delivery verification for assigned stores.
+5.  **Driver (`DRIVER`)**: 
+    - **Execution**: Views only assigned shipments, starts route simulation, and confirms physical milestones (Pickup/Delivery/Return).
 
 **Policy Management Rule:** To keep authorization simple, dynamic policy updates are avoided. To change a user's role or permissions, the user account must be deleted and recreated. Permissions are automatically assigned when entities are bound.
 

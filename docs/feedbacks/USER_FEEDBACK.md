@@ -28,60 +28,46 @@ Tài liệu này dùng để lưu lại các phản hồi, nhận xét hoặc gh
      - *Data Seed & Financial Integrity*: Hệ thống thiếu tập data seed khởi tạo đầy đủ.
      - *Traceability Page Empty*: Trang `/dashboard/traceability` hiện tại đang hoàn toàn trống rỗng (empty).
    - **Mong muốn chung**: Gộp chung thành 1 kế hoạch Data Seeding toàn diện. Xây dựng bộ data mẫu có tính lịch sử (Saga flow) để trang Traceability và Finance có sẵn số liệu demo. Cập nhật lại tài liệu kịch bản demo (GUIDE.md).
-      - Seed users email nên lấy tên của các entity mà account đó quản lý hoặc tên rút gọn của roles
+     - Seed users email nên lấy tên của các entity mà account đó quản lý hoặc tên rút gọn của roles.
+   - **Comment**: Đã hoàn thành implementation cho bộ seeder lịch sử (7 ngày), chuẩn hóa tài khoản Kratos deterministic, và tích hợp vào `task env:reset`. Sẵn sàng để Verify theo `docs/stories/MANUALLY_VERIFICATION.md`.
 
-### **[logistics-map light mode]** - [IN_PROGRESS](items/FB-20260528-04-logistics-map-ux)
+### **[logistics-map light mode]** - [TODO](items/FB-20260528-04-logistics-map-ux)
    - **Mô tả**: logistics-map đang dark mode
    - **Mong muốn**: Audit hệ thống toàn bộ phải ưu tiên light color. Chưa cần apply các mode
 
-### **[logistics-map Routes]** - [IN_PROGRESS](items/FB-20260528-04-logistics-map-ux)
+### **[logistics-map Routes]** - [TODO](items/FB-20260528-04-logistics-map-ux)
    - **Mô tả**: Logistic map đang hiện sẵn các lộ trình giao hàng
    - **Mong muốn**: Map chỉ nên show các địa điểm không cần show mặc định routes. Routes phục vụ cho việc hiển thị các đơn giao hàng. Chỉ hiển thị real time khi thực sự có 1 xe đang giao hàng. => Hiện tại logic đang sai. Cần plan với Reviewer
 
+### **[Admin & Policy Gaps]** - [IN_PROGRESS](items/FB-20260528-05-admin-ui-and-policy)
+   - **Mô tả**: 
+     1. ADMIN đang có quyền khai báo thu hoạch (`harvests`). Theo nghiệp vụ, chỉ `FARM_MANAGER` mới được làm việc này.
+     2. ADMIN đang xem được và truy cập được trang tạo đơn hàng (`/dashboard/retail/orders`). Trang này chỉ dành cho `STORE_MGR`.
+     3. Thiếu UI cho Admin tạo Warehouse và Retails (hiện mới có Farm).
+     4. Logic gộp Logistics vào Warehouse Manager cần được phản ánh đúng: Admin tạo Account Driver, Warehouse Manager Assign Driver/Vehicle (không cần UI CRUD cho Fleet, dùng seed data).
+   - **Mong muốn**: Thắt chặt chính sách Casbin và PermissionGuard. Hoàn thiện UI Admin cho các thực thể còn thiếu. Đảm bảo đúng vai trò tác nghiệp.
 
-### **[MISSING ADMIN UI]** - [IN_PROGRESS](items/FB-20260528-05-admin-ui-and-policy)
-   - **Mô tả**: Mới chỉ show số lượng kho bãi, farms. Nhưng chưa thấy list chi tiết, 
-   - **Mong muốn**: Admin ngoài thấy các số lượng tổng quan. Còn cần xem được chi tiết từng item và quản lý được các mục đó. Ví dụ: xem chi tiết từng kho bãi, từng lô, từng user, từng đơn hàng..., Danh sách. Có thể có page riêng hoặc tận dụng Map. Cần plan
-   
-### **[User & Policy Management]** - [IN_PROGRESS](items/FB-20260528-05-admin-ui-and-policy)
-   - **Mô tả**: Để giữ cho cơ chế phân quyền đơn giản (Keep it simple), khi muốn thay đổi quyền của user thì chỉ cần xóa user đó đi tạo lại. Quyền hạn trong hệ thống đã được định nghĩa sẵn khi gán (assign) hoặc khi user thực hiện hành động sẽ tự động thêm quyền cho các entities tương ứng.
-   - **Mong muốn**: Thống nhất luồng nghiệp vụ quản trị phân quyền theo hướng tinh gọn này để tránh phức tạp hóa hệ thống quản lý chính sách động, giúp việc kiểm thử và vận hành trở nên tường minh.
-
-### **[Orders Page Not Found]** - [IN_PROGRESS](items/FB-20260528-06-orders-routing)
-   - **Mô tả**: Khi truy cập đường dẫn `http://localhost:3000/dashboard/orders` báo lỗi trang không tìm thấy (Not Found).
-   - **Mong muốn**: Cần sửa lại định tuyến (routing) hoặc tạo trang quản lý đơn hàng cho Admin/Users để hiển thị danh sách đơn hàng.
-
-
-
-### **[Business Gap Analysis: Admin Resource Creation & Assignment]** - [IN_PROGRESS](items/FB-20260528-05-admin-ui-and-policy)
-   - **Mô tả**: Có sự không đồng nhất (Gap) lớn giữa tài liệu thiết kế nghiệp vụ (`docs/product/SPEC.md`) và thực tế triển khai ở giao diện Frontend:
-     1. **Theo Business Docs**: `ADMIN` chịu trách nhiệm tạo thủ công tất cả: Nông trại (Farms), Kho bãi (Warehouses), Cửa hàng (Stores/Retail), Đội xe (Vehicles) và Tài xế (Drivers) rồi gán thủ công từng người quản trị.
-     2. **Thực tế triển khai**:
-        - Giao diện Admin chỉ có UI tạo Nông trại (`FARM`) và gán Manager. Hoàn toàn **thiếu UI** để tạo và gán quản lý cho **Kho bãi (Warehouses)** và **Cửa hàng (Stores/Retail)**.
-        - Hệ thống đang dùng cơ chế **Auto-seed đơn giản hóa (Keep it simple)**: Khi một kho bãi/nông trại được tạo, đội tài xế/xe liên quan sẽ tự động được sinh mẫu ngầm để sẵn sàng chạy thử nghiệm thay vì bắt ADMIN tạo thủ công từng dòng dữ liệu xe/tài xế.
-   - **Mong muốn**: Cập nhật lại tài liệu `docs/product/SPEC.md` để ghi nhận cơ chế "Tự động seed tài xế/xe khi tạo kho bãi" (Keep it simple), đồng thời lên kế hoạch phát triển các trang UI quản lý và gán Quản lý cho Kho bãi và Cửa hàng.
-
-### **[Missing Users Sidebar Menu Item]** - [IN_PROGRESS](items/FB-20260528-05-admin-ui-and-policy)
-   - **Mô tả**: Không có tùy chọn (item) trên thanh Menu Sidebar để đi tới trang quản lý người dùng `http://localhost:3000/dashboard/users`. Người dùng hiện tại phải tự gõ thủ công URL trên thanh địa chỉ của trình duyệt để truy cập.
-   - **Mong muốn**: Bổ sung liên kết (Link) "Quản lý người dùng" hoặc "Users" vào thanh Sidebar Menu dành cho tài khoản Admin để thuận tiện cho việc truy cập nhanh.
+### **[Orders API & UI Issues]** - [TODO](items/FB-20260528-06-orders-routing)
+   - **Mô tả**: 
+     1. Trang `http://localhost:3000/dashboard/retail/orders` có UI không ổn định, Admin không nên xem được.
+     2. Lỗi `GET /v1/orders` trả về `405 Method Not Allowed`.
+     3. Lỗi `POST /v1/orders` trả về `Network Error`.
+     4. Lỗi `CORS` trên endpoint `/v1/orders`.
+   - **Mong muốn**: Sửa lỗi routing KrakenD (đã fix sơ bộ), kiểm tra kết nối Retail Service, và cải thiện UI trang Order. Chỉ `STORE_MGR` của cửa hàng mới được tạo order.
 
 ### **[Casbin JS Bug: Manager Login Double Click Issue]** - [IN_PROGRESS](items/FB-20260528-07-casbin-login-bug)
-   - **Mô tả**: Khi đăng nhập bằng tài khoản Manager (ví dụ: `mgr.1779846686075@runtimeroasters.com`), giao diện gặp lỗi Casbin khiến người dùng phải bấm click đăng nhập lần thứ hai mới vào được Dashboard.
-   - **Cách tái hiện**: Đăng nhập bằng tài khoản Manager, kiểm tra F12 Console trình duyệt sẽ thấy thông báo lỗi:
-     ```text
-     [browser] [Casbin] Failed to initialize Casbin policies: TypeError: (0 , __TURBOPACK__imported__module__...newEnforcer) is not a function
-         at CasbinProvider.useEffect.initCasbin (src/lib/auth/casbin.tsx:46:38)
-     ```
-   - **Nguyên nhân kỹ thuật**: Thư viện `casbin.js` trong môi trường Turbopack (Next.js) không export hàm `newEnforcer` theo cách thông thường (`import { newEnforcer } from 'casbin.js'`), dẫn đến hàm bị undefined và gây crash luồng khởi tạo chính sách phân quyền ở lần tải đầu tiên.
-   - **Mong muốn**: Cần sửa lại cách import thư viện `casbin.js` tại [casbin.tsx](file:///Users/dungxbuif/workspace/RuntimeRoasters/src/apps/client-app/src/lib/auth/casbin.tsx) (ví dụ: sử dụng default import `import * as casbin` hoặc import tương thích với Next.js/Turbopack) để luồng phân quyền chạy mượt mà ngay từ lần đăng nhập đầu tiên.
+   - **Mô tả**: Khi đăng nhập bằng tài khoản Manager, giao diện gặp lỗi Casbin khiến người dùng phải bấm click đăng nhập lần thứ hai mới vào được Dashboard.
+   - **Nguyên nhân kỹ thuật**: Thư viện `casbin.js` trong môi trường Turbopack (Next.js) không export hàm `newEnforcer` theo cách thông thường.
 
+### **[Technical API Bugs]** - [REOPENED](items/FB-20260528-08-technical-api-bugs)
+   - **Mô tả**: Ghi nhận các lỗi 405, Network Error, CORS trên hệ thống Orders API.
+   - **Mong muốn**: Đảm bảo Gateway và Microservices thông suốt cho luồng SAGA.
 
+### **[Delete Redundant Explorer Page]** - [RESOLVED](items/FB-20260528-09-redundant-explorer-page)
+   - **Mô tả**: Trang `System Explorer` (`/dashboard/explorer`) không còn cần thiết.
+   - **Hành động**: Đã xóa code và gỡ link sidebar.
 
-
-
-   Payment webhook demo key. set ở biến môi trường chứ ko phải DB
-
-
+---
 ! Note: cẦn viết docs technical chi tiết
    - Bài toán logistic get and publlish realtime
    - Bài toán trace CQRS đang làm thế nào 

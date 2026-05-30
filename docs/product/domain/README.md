@@ -33,6 +33,18 @@ Hệ thống được cấu thành bởi một mạng lưới các nút thắt g
 ### 2.3. Rào chắn Scoping (Fail-closed)
 Mọi nhân sự quản lý (Manager) đều vận hành trong một "không gian làm việc" (Scope) hữu hạn. Nếu bạn là Quản lý Farm A, bạn sẽ không thấy dữ liệu của Farm B. Nếu bạn chưa được ADMIN gán vào bất kỳ cơ sở nào, hệ thống sẽ ở trạng thái **Fail-closed** (Bị khóa hoàn toàn) để bảo vệ sự riêng tư và bảo mật dữ liệu.
 
+### 2.4. Phân định Vai trò và Quyền hạn (Strict Role Mandates)
+Hệ thống tuân thủ một bộ quy tắc quản trị phân quyền khắt khe để đảm bảo đúng người, đúng việc:
+- **System Administrator (ADMIN)**: Đóng vai trò là người thiết lập hệ thống (Global Orchestrator). 
+  - *Được phép*: Tạo mới các thực thể nền tảng (Accounts, Roles, Warehouses, Farms, Retail Stores) và thực hiện hành động "Gán" (Assign) các Manager tương ứng vào các thực thể này. Tạo tài khoản Driver.
+  - *Không được phép*: Tham gia vào bất kỳ nghiệp vụ tác nghiệp nào (không tạo đơn hàng, không khai báo thu hoạch).
+- **Farm Manager (FARM_MANAGER)**:
+  - *Được phép*: Có toàn quyền thực hiện các APIs, truy cập resources và thực thi các nghiệp vụ liên quan đến nông trại được gán (ví dụ: Khai báo thu hoạch).
+- **Warehouse Manager (WAREHOUSE_MGR)**:
+  - *Được phép*: Quản lý toàn bộ tài nguyên và nghiệp vụ của kho bãi. Do yêu cầu rút gọn hệ thống, logic quản lý Logistics được gộp chung cho Warehouse Manager. Mặc dù lý thuyết cần có CRUD cho Xe và Tài xế, nhưng ở đây UI CRUD này được lược bỏ (thay bằng Seed Data). Warehouse Manager chỉ có quyền **điều phối/gán** Tài xế và Xe tải vào các chuyến hàng.
+- **Store Manager (STORE_MGR)**:
+  - *Được phép*: Chỉ tập trung quản lý các nghiệp vụ bán lẻ của cửa hàng được gán (ví dụ: Tạo đơn hàng).
+
 ---
 
 ## CHƯƠNG 3: HÀNH TRÌNH GIỮ GÌN GIÁ TRỊ (PRODUCT JOURNEY)

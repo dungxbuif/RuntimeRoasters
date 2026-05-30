@@ -86,7 +86,7 @@ Local ports:
 - `GET /v1/harvests` is not currently a proto route. The frontend harvest list should use `GET /v1/farms/{id}/harvests`.
 - farm-service must not crash when auth-service is not yet ready. Its resilient reader background bootstrap should retry snapshot sync.
 - REST business services from retail/payment/logistics/trace/audit require auth-service at startup because their HTTP guards bootstrap JWKS and the Casbin snapshot.
-- Kafka consumers default to latest-offset startup for demo flows. Use `deployments/reset-demo-state.sh` before clean local SAGA demos.
+- Kafka consumers default to latest-offset startup for demo flows. Use `scripts/reset-env.sh` before clean local SAGA demos.
 - Kafka dev infrastructure uses the official Apache Kafka image `apache/kafka:4.3.0` without ZooKeeper. Do not reintroduce ZooKeeper.
 - Observability uses SigNoz + ClickHouse through `otel-collector` in `deployments/docker-compose.dev.yaml`; SigNoz UI is `http://localhost:3301`.
 - The SigNoz ClickHouse coordination service is not part of Kafka. Do not connect Kafka to it.
@@ -171,6 +171,21 @@ Expected result: one browser-driven gateway flow produces one trace ID across `r
 - For live verification, ensure only one instance of each service consumer is running; mixed old/new `go run` binaries invalidate evidence.
 - Do not close cross-service tickets using direct service-port tests when the real flow requires KrakenD/browser auth.
 - When services are running for manual browser testing, keep them running only if the user explicitly wants to review them live; otherwise clean up processes before final.
+- Always export the current session/task context, active changes, and outstanding tasks to `docs/CONTEXT.md` before concluding.
+
+### Strict Business Rules & Role Mandates
+- **ADMIN (Global Orchestrator)**:
+    - Responsible for creating all base entities: Accounts (with Roles), Warehouses, Farms, and Retail stores.
+    - Responsible for assigning the corresponding Managers to these entities.
+- **FARM_MANAGER**:
+    - Full authority over Farm APIs, resources, and specific business operations (e.g., Harvest Declaration) for assigned farms.
+- **WAREHOUSE_MGR (Integrated Operations)**:
+    - Manages Warehouse resources and business operations.
+    - **Merged Logistics**: Logistics management logic is merged into this role.
+    - **Fleet Assignment**: While ADMIN creates Driver accounts, only the `WAREHOUSE_MGR` has the authority to assign Drivers and Vehicles to shipments.
+    - **UI Simplification**: There is NO CRUD UI for Vehicles or Drivers. These are handled via Seed Data.
+- **STORE_MGR**:
+    - Exclusive authority over Retail operations for assigned stores.
 
 ### System Seeding & FRX (First-run Experience)
 - **UI Bootstrap**: When an ADMIN logs in, the `SystemBootstrapModal.tsx` in `client-app` checks `/system/status` across services. If not seeded, it prompts for "Initialize DB".

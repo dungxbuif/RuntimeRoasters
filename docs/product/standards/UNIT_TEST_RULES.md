@@ -266,7 +266,7 @@ func TestGetFarmDetails_AccessControl(t *testing.T) {
 
 ## 🛠️ Quy định Thực thi cho Agents
 
-1.  **Đọc tệp tin này trước khi viết code:** Agent luôn kiểm tra sự tồn tại của [UNIT_TEST_RULES.md](file:///Users/dungxbuif/workspace/RuntimeRoasters/docs/product/standards/UNIT_TEST_RULES.md) và coi đây là tiêu chuẩn cao nhất cho chất lượng Test.
+1.  **Đọc tệp tin này trước khi viết code:** Agent luôn kiểm tra sự tồn tại của [UNIT_TEST_RULES.md](./UNIT_TEST_RULES.md) và coi đây là tiêu chuẩn cao nhất cho chất lượng Test.
 2.  **Rà soát file đích:** Khi tạo hoặc cập nhật file test `*_test.go` hoặc `*.spec.ts`, hãy cố gắng cấu trúc bảng dữ liệu đầu vào (Table-driven Tests) để bao phủ đầy đủ ít nhất 5 lớp đầu tiên (Happy Path, Edge, Boundary, Invalid Input, Error cases).
 3.  **Chạy lệnh verify cục bộ để kiểm tra lỗi:**
     ```bash

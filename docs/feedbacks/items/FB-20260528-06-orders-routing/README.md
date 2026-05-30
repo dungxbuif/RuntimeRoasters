@@ -1,6 +1,15 @@
-# Orders Page Not Found
+# Orders API & UI Issues
+
+## Status: REOPENED
 
 ## Description
-http://localhost:3000/dashboard/orders not found.
+1. UI instability on the orders page.
+2. `GET /v1/orders` returns 405.
+3. `POST /v1/orders` returns Network Error.
+4. CORS issues on `/v1/orders`.
 
-Status: IN_PROGRESS
+## Update (2026-05-29)
+- Ticket reopened to address specific API failures and UI instability.
+- Fixed: Added GET route to KrakenD and Retail Service.
+- Fixed: Added Idempotency-Key to KrakenD CORS headers.
+- Fixed: Restrict page access to STORE_MGR only.

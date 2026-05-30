@@ -6,13 +6,13 @@ The validation for Phase 13 will be performed at three levels to ensure that the
 
 ### 1. Deterministic Identity Verification
 - **Target:** Ory Kratos & System Profiles.
-- **Protocol:** Run `./deployments/reset-demo-state.sh` and verify that all pre-defined accounts can log in and have the correct profile data (Name, Role, Location).
+- **Protocol:** Run `./scripts/reset-env.sh` and verify that all pre-defined accounts can log in and have the correct profile data (Name, Role, Location).
 - **Tooling:** Kratos CLI and gRPC System Handler tests.
 
 ### 2. Historical Data Integrity
 - **Target:** Trace PostgreSQL, Elasticsearch, and Payment PostgreSQL.
 - **Protocol:** Check row counts in `trace_events`, `trace_documents`, and `payments` tables immediately after environment reset. Verify that Elasticsearch contains the same events as PostgreSQL for graph rendering.
-- **Tooling:** `psql`, `curl` (for ES), and `go run src/apps/demo-service/cmd/seeder/main.go --verify`.
+- **Tooling:** `psql`, `curl` (for ES), and `go run src/scripts/historical_seeder/main.go --verify`.
 
 ### 3. Frontend Dashboard Readiness
 - **Target:** Admin Intelligence Hub, Traceability Graph, and Finance View.
@@ -23,7 +23,7 @@ The validation for Phase 13 will be performed at three levels to ensure that the
 
 | Scenario | Input | Expected Output | Status |
 | :--- | :--- | :--- | :--- |
-| **System Bootstrap** | `./deployments/reset-demo-state.sh` | Zero errors, all 11 DBs seeded, 100+ events in Trace DB. | `PENDING` |
+| **System Bootstrap** | `./scripts/reset-env.sh` | Zero errors, all 11 DBs seeded, 100+ events in Trace DB. | `PENDING` |
 | **Login Verification** | `mgr.caudat@runtimeroasters.com` | Success login, role: `FARM_MANAGER`, view: Cầu Đất Farm. | `PENDING` |
 | **Graph Visualization** | Access `/dashboard/traceability` | Graph shows Harvest -> Roastery -> Store delivery path. | `PENDING` |
 | **Financial Audit** | Access `/dashboard/finance` | Revenue > $0 from historical seeded retail orders. | `PENDING` |

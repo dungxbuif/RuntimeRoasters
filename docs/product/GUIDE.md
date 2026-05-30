@@ -73,9 +73,10 @@ We employ a multi-layered testing strategy to ensure system reliability:
 
 ### 🔄 3.3. Environment Reset & Seeding
 To maintain a clean development state or prepare for a fresh demo:
-1.  **Full Reset:** Run `task env:reset`. This stops all containers, wipes all volumes (DB/Kafka/Valkey), restarts infra, and runs schema migrations.
-2.  **Infrastructure Seed:** Automatically handled by `env:reset`, this creates the default `ADMIN` user and OAuth2 clients.
-3.  **Business Data Seeding:** Unlike infrastructure, business data (Farms, Stores, Drivers) is **not** auto-seeded. After logging in as `ADMIN`, a bootstrap modal will appear on the Dashboard to trigger manual seeding via protected microservice endpoints.
+1.  **Full Reset:** Run `./deployments/reset-demo-state.sh`. This clears all databases, resets Kafka topics, drops Elasticsearch indices, and auto-starts the comprehensive seeding flow.
+2.  **Infrastructure & Identity Seed:** Automatically handled by the reset script, this creates the OAuth2 clients and provisions all deterministic user identities (e.g., `admin@runtimeroasters.com`, `mgr.caudat@runtimeroasters.com`, `driver.songthan01@runtimeroasters.com`) in Ory Kratos.
+3.  **Business Data Seeding (FRX):** After a reset, logging in as `ADMIN` triggers a bootstrap modal on the Dashboard. Clicking "Initialize DB" populates the system with static master data (farms, stores, warehouses).
+4.  **Historical Saga Data:** The reset script also triggers a Go seeder (`src/scripts/historical_seeder`) that injects a completed 7-day "Farm-to-Cup" historical flow directly into the read models. This ensures the Traceability, Finance, and Logistics dashboards are fully populated and demo-ready immediately.
 
 ### Coding Standards
 - **DRY:** Use shared logic in `src/pkg/` (logger, database, telemetry).

@@ -55,6 +55,11 @@ tasks:
     cmds:
       - docker compose -f deployments/docker-compose.dev.yaml up seeder
 
+  seed:demo:
+    desc: Run dynamic Ultra-Rich Farm-to-Cup simulation seeder directly into DB, ES, and Cassandra
+    cmds:
+      - go run src/scripts/seed_demo/main.go
+
   be:
     desc: Start all backend services with hot-reload (Air)
     cmds:

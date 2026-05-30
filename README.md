@@ -45,10 +45,12 @@ Follow these steps to get the system running locally:
     ```
     *Wait for all containers to be healthy (approx. 30-60s).*
 
-4.  **Seed Initial Data (Admin User & OAuth2 Clients):**
+4.  **Seed Initial Data (Users, OAuth2 Clients, Historical Saga):**
     ```bash
-    task seed
+    task seed:infra
+    cd src && go run scripts/historical_seeder/main.go
     ```
+    *Note: The environment reset script (`task env:reset` or `./scripts/reset-env.sh`) will do this automatically.*
 
 5.  **Generate Protobuf & gRPC Code:**
     ```bash

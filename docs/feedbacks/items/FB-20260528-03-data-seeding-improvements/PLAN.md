@@ -51,7 +51,7 @@ Standardize resource identities and manager accounts across the system to ensure
 
 <task type="auto">
   <name>Task 2: Align SeedData Logic</name>
-  <files>src/apps/retail-service/internal/usecase/service.go, src/apps/logistics-service/internal/usecase/service.go</files>
+  <files>src/apps/retail-service/internal/usecase/service.go, src/apps/logistics-service/internal/usecase/service.go, src/apps/retail-service/internal/seed/seed.go, src/apps/logistics-service/internal/seed/seed.go</files>
   <action>
     Update the internal/seed/seed.go or usecase logic to ensure that calling SeedData over gRPC correctly processes the updated JSON files and handles UPSERT logic to prevent duplicates.
   </action>
@@ -79,8 +79,7 @@ type: execute
 wave: 2
 depends_on: ["13-01"]
 files_modified:
-  - src/apps/demo-service/cmd/seeder/main.go
-  - src/apps/demo-service/internal/seeder/history.go
+  - src/scripts/historical_seeder/main.go
 autonomous: true
 requirements: [SEED-03]
 
@@ -89,7 +88,7 @@ must_haves:
     - "Historical Traceability data is visible on the dashboard immediately after reset."
     - "Historical revenue is visible on the Finance dashboard."
   artifacts:
-    - path: "src/apps/demo-service/cmd/seeder/main.go"
+    - path: "src/scripts/historical_seeder/main.go"
       provides: "Main entry point for E2E seeder"
   key_links:
     - "seeder -> trace_db (PostgreSQL)"
@@ -104,7 +103,7 @@ Implement a historical data seeder that directly populates the Trace and Payment
 <tasks>
 <task type="auto">
   <name>Task 1: Scaffold E2E Seeder</name>
-  <files>src/apps/demo-service/cmd/seeder/main.go</files>
+  <files>src/scripts/historical_seeder/main.go</files>
   <action>
     Create a new Go entry point that connects to trace_db and payment_db. 
     Define the historical timeline logic constants:
@@ -115,19 +114,19 @@ Implement a historical data seeder that directly populates the Trace and Payment
     - T-1 day: Payment completed
     - T-6 hours: Delivery completed
   </action>
-  <verify>grep "T-5 days" src/apps/demo-service/cmd/seeder/main.go || grep "Time.Now().Add(-5 \* 24 \* time.Hour)" src/apps/demo-service/cmd/seeder/main.go</verify>
+  <verify>grep "T-5 days" src/scripts/historical_seeder/main.go || grep "Time.Now().Add(-5 \* 24 \* time.Hour)" src/scripts/historical_seeder/main.go</verify>
   <done>Seeder project structure and timeline logic are ready.</done>
 </task>
 
 <task type="auto">
   <name>Task 2: Implement Direct DB Insertion</name>
-  <files>src/apps/demo-service/internal/seeder/history.go</files>
+  <files>src/scripts/historical_seeder/main.go</files>
   <action>
     Implement logic to insert TraceEvents and TraceDocuments into PostgreSQL (trace_db) and index them into Elasticsearch (coffee_traceability).
     Insert completed Payment records into PostgreSQL (payment_db).
     Use the deterministic IDs from Plan 01 to ensure the graph is connected.
   </action>
-  <verify>go run src/apps/demo-service/cmd/seeder/main.go && docker exec postgres psql -U user -d trace_db -c "SELECT count(*) FROM trace_events;"</verify>
+  <verify>go run src/scripts/historical_seeder/main.go && docker exec postgres psql -U user -d trace_db -c "SELECT count(*) FROM trace_events;"</verify>
   <done>Seeder can generate and insert historical data into all required tables and indices.</done>
 </task>
 </tasks>
@@ -141,7 +140,7 @@ type: execute
 wave: 3
 depends_on: ["13-02"]
 files_modified:
-  - deployments/reset-demo-state.sh
+  - scripts/reset-env.sh
   - docs/product/GUIDE.md
   - README.md
 autonomous: true
@@ -152,11 +151,12 @@ must_haves:
     - "Environment reset flow is fully automated and includes all new seeders."
     - "Documentation accurately reflects the seeded demo state."
   artifacts:
-    - path: "deployments/reset-demo-state.sh"
+    - path: "scripts/reset-env.sh"
       provides: "Unified demo reset orchestration"
   key_links:
     - "reset-demo-state.sh -> logistics/retail SeedData"
     - "reset-demo-state.sh -> demo-service seeder"
+    - "reset-demo-state.sh -> seed.sh"
 ---
 
 <objective>
@@ -166,14 +166,15 @@ Integrate the comprehensive seeding flow into the environment reset script and u
 <tasks>
 <task type="auto">
   <name>Task 1: Update Reset Script</name>
-  <files>deployments/reset-demo-state.sh</files>
+  <files>scripts/reset-env.sh</files>
   <action>
     Modify reset-demo-state.sh to:
     1. Call the SeedData gRPC endpoints for logistics and retail services.
-    2. Execute the new E2E history seeder (go run src/apps/demo-service/cmd/seeder/main.go).
+    2. Execute the new E2E history seeder (go run src/scripts/historical_seeder/main.go).
+    3. Ensure seed.sh is called to refresh Kratos identities.
     Ensure the script handles service readiness wait times.
   </action>
-  <verify>./deployments/reset-demo-state.sh</verify>
+  <verify>./scripts/reset-env.sh</verify>
   <done>Environment reset automatically triggers comprehensive seeding.</done>
 </task>
 

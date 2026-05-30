@@ -8,7 +8,7 @@ When the system is started with empty databases, the Admin Dashboard provides a 
 
 - **Trigger**: The `SystemBootstrapModal.tsx` component in `client-app` automatically detects the unseeded state.
 - **Check Mechanism**: Calls `GET /v1/logistics/system/status` and `GET /v1/retail/system/status`. If `seeded: false` is returned, the modal appears.
-- **Action**: Clicking "Initialize DB" calls the `seedAll` method in `systemService`, which triggers the `/system/seed` POST endpoints on backend services.
+- **Action**: Clicking "Initialize DB" triggers a single POST request to the `/v1/system/seed` endpoint on `auth-service`. The `auth-service` then dynamically fetches user identities from Ory Kratos, maps their emails to dynamic Kratos UUIDs, and propagates this `users_map` internally to downstream services (Logistics, Retail, Farm, etc.) to perform fully mapped relational seeding.
 
 ## 2. Deterministic Identity Mapping
 
