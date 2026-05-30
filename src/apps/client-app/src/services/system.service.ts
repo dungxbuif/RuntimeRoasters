@@ -13,19 +13,24 @@ export interface SeedResult {
   records_created: number;
 }
 
+export interface UnifiedStatus {
+  all_seeded: boolean;
+  services_status: Record<string, boolean>;
+}
+
 export const systemService = {
+  getSystemStatus: async () => {
+    const response = await api.get<UnifiedStatus>('/v1/auth/system/status');
+    return response.data;
+  },
+
+  seedSystem: async (force: boolean = false) => {
+    const response = await api.post<SeedResult>('/v1/auth/seed', { force });
+    return response.data;
+  },
+
   getLogisticsStatus: async () => {
     const response = await api.get<SystemStatus>('/v1/logistics/system/status');
-    return response.data;
-  },
-
-  seedLogistics: async (force: boolean = false) => {
-    const response = await api.post<SeedResult>('/v1/logistics/system/seed', { force });
-    return response.data;
-  },
-
-  getRetailStatus: async () => {
-    const response = await api.get<SystemStatus>('/v1/retail/system/status');
     return response.data;
   },
 
@@ -34,31 +39,29 @@ export const systemService = {
     return response.data;
   },
 
-  // Add more services as they are implemented
   checkAllStatus: async () => {
-    // For now logistics and retail
     try {
-      console.debug('[SystemService] Checking status for logistics and retail...');
-      const [logistics, retail] = await Promise.all([
-        systemService.getLogisticsStatus(),
-        systemService.getRetailStatus()
-      ]);
-      console.debug('[SystemService] Logistics:', logistics.seeded, 'Retail:', retail.seeded);
+      console.debug('[SystemService] Checking unified status via auth service...');
+      const status = await systemService.getSystemStatus();
+      console.debug('[SystemService] Unified Status:', status.all_seeded, status.services_status);
       return {
-        allSeeded: logistics.seeded && retail.seeded,
-        services: { logistics, retail }
+        allSeeded: status.all_seeded,
+        services: status.services_status
       };
     } catch (err) {
-      console.error('[SystemService] Failed to check system status:', err);
-      return { allSeeded: false, services: {} }; // Show modal if check fails to be safe
+      console.error('[SystemService] Failed to check unified system status:', err);
+      return { allSeeded: false, services: {} };
     }
   },
 
   seedAll: async () => {
-    const results = await Promise.allSettled([
-      systemService.seedLogistics(),
-      systemService.seedRetail()
-    ]);
-    return results;
+    try {
+      console.debug('[SystemService] Triggering unified seed via auth service...');
+      const result = await systemService.seedSystem(true);
+      return [result];
+    } catch (err) {
+      console.error('[SystemService] Unified seed failed:', err);
+      throw err;
+    }
   }
 };

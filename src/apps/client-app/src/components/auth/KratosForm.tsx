@@ -79,14 +79,6 @@ const FormNode: React.FC<{ node: UiNode }> = ({ node }) => {
       return null; // We use our own submit button
     }
 
-    let defaultValue = inputAttr.value as string;
-    if (inputAttr.name === 'identifier' && !defaultValue) {
-      defaultValue = 'admin@runtimeroasters.com';
-    }
-    if (inputAttr.name === 'password' && !defaultValue) {
-      defaultValue = 'Hello@123';
-    }
-
     return (
       <div className="space-y-3" data-e2e={`form-field-${inputAttr.name}`}>
         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant opacity-80 ml-4">
@@ -95,7 +87,7 @@ const FormNode: React.FC<{ node: UiNode }> = ({ node }) => {
         <Input
           name={inputAttr.name}
           type={inputAttr.type}
-          defaultValue={defaultValue}
+          defaultValue={inputAttr.value as string}
           placeholder={`Enter your ${meta.label?.text?.toLowerCase() || inputAttr.name}...`}
           required={inputAttr.required}
           className="h-16 shadow-inner"

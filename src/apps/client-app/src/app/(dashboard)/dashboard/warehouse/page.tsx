@@ -7,6 +7,7 @@ import { warehouseService } from '@/services/warehouse.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, MapPin, Truck, Warehouse } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { CasbinGuard } from '@/lib/auth';
 
 
 
@@ -113,9 +114,11 @@ export default function WarehouseOperationsPage() {
                  </div>
                  
                  {req.status === 'CREATED' && (
-                   <button onClick={() => handleDispatch('pickup', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
-                     <Truck className="w-4 h-4" /> Dispatch Pickup
-                   </button>
+                   <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
+                    <button onClick={() => handleDispatch('pickup', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
+                      <Truck className="w-4 h-4" /> Dispatch Pickup
+                    </button>
+                   </CasbinGuard>
                  )}
                  {(req.status === 'DISPATCHED' || req.status === 'LOADED') && (
                    <div>
@@ -124,9 +127,11 @@ export default function WarehouseOperationsPage() {
                    </div>
                  )}
                  {(req.status === 'LOADED' || req.status === 'DISPATCHED') && (
-                   <button onClick={() => handleConfirmReceipt(req.id)} className="w-full mt-3 bg-green-600 text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all">
-                     <CheckCircle2 className="w-4 h-4" /> Confirm Receipt
-                   </button>
+                   <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_RECEIVE} act={AUTH_ACTIONS.WRITE}>
+                    <button onClick={() => handleConfirmReceipt(req.id)} className="w-full mt-3 bg-green-600 text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all">
+                      <CheckCircle2 className="w-4 h-4" /> Confirm Receipt
+                    </button>
+                   </CasbinGuard>
                  )}
               </div>
             ))}
@@ -223,9 +228,11 @@ export default function WarehouseOperationsPage() {
                  </div>
                  
                  {req.status === 'STOCK_RESERVED' && (
-                   <button onClick={() => handleDispatch('delivery', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
-                     <Truck className="w-4 h-4" /> Dispatch Delivery
-                   </button>
+                   <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
+                    <button onClick={() => handleDispatch('delivery', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
+                      <Truck className="w-4 h-4" /> Dispatch Delivery
+                    </button>
+                   </CasbinGuard>
                  )}
                  {req.status === 'DISPATCHED' && (
                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">

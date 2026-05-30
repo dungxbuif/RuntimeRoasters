@@ -93,9 +93,13 @@ function LoginContent() {
           window.location.href = redirect_to;
           return;
         }
+      } else if (session.identity?.id) {
+        LOG('handleLogin: no challenge but session established, starting Hydra flow to get token');
+        login();
+        return;
       }
 
-      LOG('handleLogin: no challenge, pushing to DASHBOARD');
+      LOG('handleLogin: fallback pushing to DASHBOARD');
       router.push(APP_ROUTES.DASHBOARD.USERS);
     } catch (err: unknown) {
       console.error('[AUTH] handleLogin error:', err);

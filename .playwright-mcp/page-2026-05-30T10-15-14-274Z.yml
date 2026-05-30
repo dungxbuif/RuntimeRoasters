@@ -1,0 +1,16 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e7]: coffee
+      - heading "System Access" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Please authenticate to manage cluster nodes
+    - main [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e13]:
+          - text: Password
+          - textbox "Enter your password..." [active] [ref=e14]
+        - generic [ref=e15]: Please confirm this action by verifying that it is you.
+        - button "Authenticate" [ref=e17] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]

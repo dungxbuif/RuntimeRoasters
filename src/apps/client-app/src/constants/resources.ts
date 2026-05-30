@@ -11,6 +11,8 @@ export const AUTH_RESOURCES = {
   STORE: '/v1/stores',
   PAYMENT: '/v1/payments',
   WAREHOUSE_INVENTORY: '/v1/warehouse/inventory',
+  WAREHOUSE_DISPATCH: '/v1/warehouse/dispatch',
+  WAREHOUSE_RECEIVE: '/v1/warehouse/receive',
   LOGISTICS_SHIPMENT: '/v1/logistics/shipments',
   
   // System Resources

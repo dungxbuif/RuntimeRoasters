@@ -6,6 +6,7 @@ import { retailService, CreateOrderRequest } from '@/services/retail.service';
 import { Store, ShoppingBag, Plus, Trash2, Send, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { CasbinGuard } from '@/lib/auth';
 
 export default function CreateOrderPage() {
   const router = useRouter();
@@ -152,18 +153,20 @@ export default function CreateOrderPage() {
                     <div className="text-xs font-black italic tracking-tighter">Distributed Transaction (Saga)</div>
                  </div>
               </div>
-              <button 
-                type="submit"
-                disabled={mutation.isPending}
-                className="bg-white text-slate-900 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl disabled:opacity-50 disabled:grayscale"
-              >
-                {mutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Processing...
-                  </span>
-                ) : 'Broadcast Order'}
-              </button>
+              <CasbinGuard obj={AUTH_RESOURCES.ORDER} act={AUTH_ACTIONS.WRITE}>
+                <button 
+                  type="submit"
+                  disabled={mutation.isPending}
+                  className="bg-white text-slate-900 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl disabled:opacity-50 disabled:grayscale"
+                >
+                  {mutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : 'Broadcast Order'}
+                </button>
+              </CasbinGuard>
            </div>
 
            {mutation.isError && (

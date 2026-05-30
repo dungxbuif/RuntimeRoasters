@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services/farm.service';
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
 import { e2eSelectors, testId } from '@/lib/utils/test-id';
+import { CasbinGuard } from '@/lib/auth';
 import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import NotificationFeed from '@/components/common/NotificationFeed';
 
@@ -100,14 +101,16 @@ export default function HarvestsPage() {
           </h1>
           <p className="text-on-surface-variant font-medium">Record harvests and broadcast to <span className="text-primary font-black italic">Warehouse Service</span> via Kafka.</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          {...testId(e2eSelectors.CREATE_HARVEST_BTN)}
-          className="bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined !text-sm">add_circle</span>
-          Declare New Harvest
-        </button>
+        <CasbinGuard obj={AUTH_RESOURCES.HARVEST} act={AUTH_ACTIONS.WRITE}>
+          <button 
+            onClick={() => setShowModal(true)}
+            {...testId(e2eSelectors.CREATE_HARVEST_BTN)}
+            className="bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined !text-sm">add_circle</span>
+            Declare New Harvest
+          </button>
+        </CasbinGuard>
       </div>
 
       <div className="bg-surface-container-lowest rounded-3xl border border-outline-variant/10 overflow-hidden shadow-sm">

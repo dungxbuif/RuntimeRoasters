@@ -5,7 +5,7 @@ import { adminService, CreateFarmRequest, User } from '@/services/admin.service'
 import { farmService, Farm } from '@/services/farm.service';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/lib/auth';
+import { useAuth, CasbinGuard } from '@/lib/auth';
 import { FARM_LOCATIONS, COFFEE_TYPES } from '@/constants/domain';
 
 export default function AdminFarmsPage() {
@@ -131,14 +131,16 @@ export default function AdminFarmsPage() {
           </h1>
           <p className="text-on-surface-variant font-medium">Manage and provision origin coffee nodes.</p>
         </div>
-        <button 
-          onClick={openCreateModal}
-          {...testId(e2eSelectors.CREATE_FARM_BTN)}
-          className="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined !text-sm">add</span>
-          Create New Farm
-        </button>
+        <CasbinGuard obj={AUTH_RESOURCES.FARM} act={AUTH_ACTIONS.WRITE}>
+          <button 
+            onClick={openCreateModal}
+            {...testId(e2eSelectors.CREATE_FARM_BTN)}
+            className="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined !text-sm">add</span>
+            Create New Farm
+          </button>
+        </CasbinGuard>
       </div>
 
       <div className="bg-surface-container-lowest rounded-3xl border border-outline-variant/10 overflow-hidden shadow-sm">

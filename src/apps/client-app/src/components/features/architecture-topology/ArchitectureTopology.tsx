@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import dagre from 'dagre';
 import ReactFlow, { Controls, Edge, Handle, MarkerType, Node, NodeProps, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { topologyService } from '@/services/topology.service';
@@ -37,7 +36,15 @@ function ArchitectureNode({ data }: NodeProps<AppNodeData>) {
   );
 }
 
-const nodeTypes = { architectureNode: ArchitectureNode };
+function GroupNode({ data }: NodeProps) {
+  return (
+    <div className="w-full h-full rounded-[2rem] border-2 border-dashed border-slate-300 bg-slate-50/40 p-5 shadow-sm">
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{data.label}</div>
+    </div>
+  );
+}
+
+const nodeTypes = { architectureNode: ArchitectureNode, groupNode: GroupNode };
 
 const fallbackConfig: TopologyConfig = {
   nodes: [
@@ -58,33 +65,91 @@ const fallbackConfig: TopologyConfig = {
   ],
 };
 
-function layout(nodes: Node[], edges: Edge[]): Node[] {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'LR', ranksep: 90, nodesep: 42, marginx: 26, marginy: 24 });
-  nodes.forEach((node) => g.setNode(node.id, { width: Number(node.style?.width ?? 172), height: Number(node.style?.height ?? 76) }));
-  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
-  dagre.layout(g);
-  return nodes.map((node) => {
-    const point = g.node(node.id) || { x: 0, y: 0 };
-    const width = Number(node.style?.width ?? 172);
-    const height = Number(node.style?.height ?? 76);
-    return { ...node, sourcePosition: Position.Right, targetPosition: Position.Left, position: { x: point.x - width / 2, y: point.y - height / 2 } };
-  });
-}
-
 function buildGraph(config: TopologyConfig, activeFlowId: string, history: TopologyHistoryEntry[]) {
   const activeFlow = config.flows.find((flow) => flow.id === activeFlowId) || config.flows[0];
   const activeNodes = new Set(activeFlow?.node_ids || config.nodes.map((node) => node.id));
   const activeEdges = new Set(activeFlow?.edge_ids || config.edges.map((edge) => edge.id));
   const recent = history[0];
-  const nodes: Node[] = config.nodes.map((node) => ({
-    id: node.id,
-    type: 'architectureNode',
-    data: { ...node, tone: node.tone || 'service', active: activeNodes.has(node.id), recent: recent?.node_id === node.id, width: 174, height: 76 },
-    position: { x: 0, y: 0 },
-    style: { width: 174, height: 76 },
-  }));
+
+  const groupNodes: Node[] = [
+    {
+      id: 'group-frontend',
+      type: 'groupNode',
+      position: { x: 0, y: 150 },
+      style: { width: 220, height: 160 },
+      data: { label: 'Client / Edge' },
+      zIndex: -1,
+    },
+    {
+      id: 'group-gateway',
+      type: 'groupNode',
+      position: { x: 280, y: 150 },
+      style: { width: 220, height: 160 },
+      data: { label: 'API Gateway' },
+      zIndex: -1,
+    },
+    {
+      id: 'group-services',
+      type: 'groupNode',
+      position: { x: 560, y: 0 },
+      style: { width: 630, height: 450 },
+      data: { label: 'Microservices' },
+      zIndex: -1,
+    },
+    {
+      id: 'group-infra',
+      type: 'groupNode',
+      position: { x: 1250, y: 50 },
+      style: { width: 430, height: 350 },
+      data: { label: 'Data & Infrastructure' },
+      zIndex: -1,
+    }
+  ];
+
+  const fixedPositions: Record<string, { x: number, y: number, parentNode?: string }> = {
+    'client.web': { x: 24, y: 54, parentNode: 'group-frontend' },
+    
+    'gateway.krakend': { x: 24, y: 54, parentNode: 'group-gateway' },
+    
+    'identity.hydra': { x: 24, y: 54, parentNode: 'group-services' },
+    'identity.kratos': { x: 228, y: 54, parentNode: 'group-services' },
+    'service.auth': { x: 432, y: 54, parentNode: 'group-services' },
+    
+    'service.farm': { x: 24, y: 154, parentNode: 'group-services' },
+    'service.retail': { x: 228, y: 154, parentNode: 'group-services' },
+    'service.payment': { x: 432, y: 154, parentNode: 'group-services' },
+    
+    'service.warehouse': { x: 24, y: 254, parentNode: 'group-services' },
+    'service.logistics': { x: 228, y: 254, parentNode: 'group-services' },
+    'service.trace': { x: 432, y: 254, parentNode: 'group-services' },
+
+    'service.audit': { x: 24, y: 354, parentNode: 'group-services' },
+    'service.socket': { x: 228, y: 354, parentNode: 'group-services' },
+    
+    'infra.postgres': { x: 24, y: 54, parentNode: 'group-infra' },
+    'infra.valkey': { x: 228, y: 54, parentNode: 'group-infra' },
+    'infra.kafka': { x: 24, y: 154, parentNode: 'group-infra' },
+    'infra.elasticsearch': { x: 228, y: 154, parentNode: 'group-infra' },
+    'infra.cassandra': { x: 24, y: 254, parentNode: 'group-infra' },
+    'infra.otel': { x: 228, y: 254, parentNode: 'group-infra' },
+  };
+
+  const nodes: Node[] = config.nodes.map((node) => {
+    const pos = fixedPositions[node.id] || { x: 0, y: 0 };
+    return {
+      id: node.id,
+      type: 'architectureNode',
+      parentNode: pos.parentNode,
+      extent: 'parent',
+      data: { ...node, tone: node.tone || 'service', active: activeNodes.has(node.id), recent: recent?.node_id === node.id, width: 174, height: 76 },
+      position: { x: pos.x, y: pos.y },
+      style: { width: 174, height: 76 },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      zIndex: 10,
+    };
+  });
+
   const edges: Edge[] = config.edges
     .filter((edge) => activeEdges.has(edge.id) || activeNodes.has(edge.source) || activeNodes.has(edge.target))
     .map((edge) => ({
@@ -97,7 +162,7 @@ function buildGraph(config: TopologyConfig, activeFlowId: string, history: Topol
       style: { stroke: recent?.edge_id === edge.id ? '#16a34a' : activeEdges.has(edge.id) ? '#334155' : '#cbd5e1', strokeWidth: recent?.edge_id === edge.id ? 3 : 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: recent?.edge_id === edge.id ? '#16a34a' : '#334155', width: 18, height: 18 },
     }));
-  return { nodes: layout(nodes, edges), edges, activeFlow };
+  return { nodes: [...groupNodes, ...nodes], edges, activeFlow };
 }
 
 export function ArchitectureDiagramCanvas({ isPrivate = false }: { isPrivate?: boolean }) {
