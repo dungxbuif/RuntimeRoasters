@@ -11,9 +11,11 @@ import (
 	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
 	"RuntimeRoasters/pkg/kafka"
+	"RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -59,13 +61,13 @@ func (s *Service) SeedDrivers(ctx context.Context, vehicles []domain.Vehicle, dr
 		return errors.New("logistics driver seed is empty")
 	}
 	for _, vehicle := range vehicles {
-		if err := s.db.WithContext(ctx).Where("id = ?", vehicle.ID).FirstOrCreate(&vehicle).Error; err != nil {
+		if err := s.db.WithContext(ctx).Save(&vehicle).Error; err != nil {
 			return err
 		}
 	}
 
 	for i, driver := range drivers {
-		if err := s.db.WithContext(ctx).Where("id = ?", driver.ID).FirstOrCreate(&driver).Error; err != nil {
+		if err := s.db.WithContext(ctx).Save(&driver).Error; err != nil {
 			return err
 		}
 		if err := s.storeDriverLocation(ctx, driver.ID, 21.0285+float64(i)*0.002, 105.8542+float64(i)*0.002); err != nil {
@@ -80,7 +82,7 @@ func (s *Service) SeedLocations(ctx context.Context, locations []domain.Location
 		return errors.New("logistics location seed is empty")
 	}
 	for _, location := range locations {
-		if err := s.db.WithContext(ctx).Where("id = ?", location.ID).FirstOrCreate(&location).Error; err != nil {
+		if err := s.db.WithContext(ctx).Save(&location).Error; err != nil {
 			return err
 		}
 	}
@@ -106,7 +108,7 @@ func (s *Service) GetSystemStatus(ctx context.Context) (*domain.SystemStatus, er
 	}, nil
 }
 
-func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult, error) {
+func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]string) (*domain.SeedResult, error) {
 	status, err := s.GetSystemStatus(ctx)
 	if err != nil {
 		return nil, err
@@ -122,6 +124,18 @@ func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult,
 	seedData, err := logisticsseed.Load()
 	if err != nil {
 		return nil, err
+	}
+
+	// Enrich drivers with Kratos UserID from usersMap
+	for i := range seedData.Drivers {
+		if id, ok := usersMap[seedData.Drivers[i].UserID]; ok {
+			seedData.Drivers[i].UserID = id
+		} else {
+			// Fallback or warning if email not found in Kratos
+			logger.GetLogger().Warn("Driver email not found in users_map during seeding", 
+				zap.String("email", seedData.Drivers[i].UserID),
+				zap.String("driver", seedData.Drivers[i].Name))
+		}
 	}
 
 	if err := s.SeedDrivers(ctx, seedData.Vehicles, seedData.Drivers); err != nil {

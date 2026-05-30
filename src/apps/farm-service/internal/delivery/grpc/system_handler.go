@@ -1,20 +1,19 @@
-package warehousegrpc
+package grpc
 
 import (
 	"context"
 
-	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
+	"RuntimeRoasters/apps/farm-service/internal/usecase"
 	systemv1 "RuntimeRoasters/runtime/system/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SystemHandler struct {
 	systemv1.UnimplementedSystemServiceServer
-	usecase *usecase.SystemUseCase
+	usecase usecase.SystemUsecase
 }
 
-func NewSystemHandler(u *usecase.SystemUseCase) *SystemHandler {
+func NewSystemHandler(u usecase.SystemUsecase) *SystemHandler {
 	return &SystemHandler{
 		usecase: u,
 	}
@@ -23,20 +22,24 @@ func NewSystemHandler(u *usecase.SystemUseCase) *SystemHandler {
 func (h *SystemHandler) GetStatus(ctx context.Context, req *systemv1.GetStatusRequest) (*systemv1.GetStatusResponse, error) {
 	seeded, counts, err := h.usecase.GetStatus(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get status: %v", err)
+		return nil, err
 	}
 
 	return &systemv1.GetStatusResponse{
-		Seeded:       seeded,
-		ServiceName:  "warehouse-service",
-		RecordCounts: counts,
+		Seeded:         seeded,
+		ServiceName:    "farm-service",
+		RecordCounts:   counts,
+		LastSeededAt:   timestamppb.Now(), // Simplified for now
 	}, nil
 }
 
 func (h *SystemHandler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (*systemv1.SeedDataResponse, error) {
-	created, err := h.usecase.SeedData(ctx, req.Force, req.UsersMap)
+	created, err := h.usecase.SeedData(ctx, req.UsersMap)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to seed data: %v", err)
+		return &systemv1.SeedDataResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
 	}
 
 	return &systemv1.SeedDataResponse{

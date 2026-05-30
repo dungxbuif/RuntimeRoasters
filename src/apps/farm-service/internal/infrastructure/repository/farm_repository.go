@@ -164,3 +164,9 @@ func (r *farmRepository) Delete(ctx context.Context, id uint64) error {
 
 	return nil
 }
+
+func (r *farmRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&FarmModel{}).Count(&count).Error
+	return count, err
+}

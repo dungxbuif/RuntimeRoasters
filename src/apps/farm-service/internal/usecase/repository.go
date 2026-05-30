@@ -12,6 +12,7 @@ type FarmRepository interface {
 	List(ctx context.Context) ([]*domain.Farm, error)
 	Update(ctx context.Context, farm *domain.Farm) error
 	Delete(ctx context.Context, id uint64) error
+	Count(ctx context.Context) (int64, error)
 }
 
 type HarvestRepository interface {

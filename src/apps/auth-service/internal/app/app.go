@@ -12,6 +12,7 @@ import (
 	"RuntimeRoasters/pkg/base/auth/provider"
 	"RuntimeRoasters/pkg/logger"
 	authv1 "RuntimeRoasters/runtime/auth/v1"
+	systemv1 "RuntimeRoasters/runtime/system/v1"
 	"go.uber.org/zap"
 )
 
@@ -39,25 +40,23 @@ func (a *App) Run() {
 	log := logger.GetLogger().With(zap.String("service", a.Cfg.AppName))
 	// 0. Bootstrapping Sync (Kratos -> Casbin)
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-		defer cancel()
-
 		log.Info("starting bootstrap sync with Kratos")
 		ticker := time.NewTicker(3 * time.Second)
 		defer ticker.Stop()
 
 		for {
+			// Use a fresh context per attempt to avoid overall deadline issues
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			if err := a.UseCase.SyncCasbinWithKratos(ctx); err == nil {
 				log.Info("bootstrap sync completed")
+				cancel()
 				return
 			} else {
 				log.Warn("bootstrap sync attempt failed", zap.Error(err))
 			}
+			cancel()
 
 			select {
-			case <-ctx.Done():
-				log.Warn("bootstrap sync deadline exceeded", zap.Error(ctx.Err()))
-				return
 			case <-ticker.C:
 			}
 		}
@@ -65,9 +64,11 @@ func (a *App) Run() {
 
 	// Register gRPC
 	a.Base.RegisterGRPC(&authv1.AuthService_ServiceDesc, a.Handler)
+	a.Base.RegisterGRPC(&systemv1.SystemService_ServiceDesc, a.Handler)
 
 	// Register Gateway (REST -> gRPC Bridge)
 	a.Base.RegisterGateway(authv1.RegisterAuthServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
+	a.Base.RegisterGateway(systemv1.RegisterSystemServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
 
 	a.Base.FinalizeRoutes()
 

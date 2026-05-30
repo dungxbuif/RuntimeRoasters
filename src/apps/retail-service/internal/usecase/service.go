@@ -43,7 +43,7 @@ func (s *Service) SeedStores(ctx context.Context, stores []domain.Store) error {
 		return errors.New("retail store seed is empty")
 	}
 	for _, store := range stores {
-		if err := s.db.WithContext(ctx).Where("id = ?", store.ID).FirstOrCreate(&store).Error; err != nil {
+		if err := s.db.WithContext(ctx).Save(&store).Error; err != nil {
 			return err
 		}
 	}
@@ -65,7 +65,7 @@ func (s *Service) GetSystemStatus(ctx context.Context) (*domain.SystemStatus, er
 	}, nil
 }
 
-func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult, error) {
+func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]string) (*domain.SeedResult, error) {
 	status, err := s.GetSystemStatus(ctx)
 	if err != nil {
 		return nil, err
@@ -81,6 +81,17 @@ func (s *Service) SeedData(ctx context.Context, force bool) (*domain.SeedResult,
 	stores, err := retailseed.LoadStores()
 	if err != nil {
 		return nil, err
+	}
+
+	// Enrich stores with ManagerID from usersMap
+	for i := range stores {
+		if id, ok := usersMap[stores[i].ManagerEmail]; ok {
+			stores[i].ManagerID = id
+		} else {
+			logger.GetLogger().Warn("Manager email not found in users_map during seeding", 
+				zap.String("email", stores[i].ManagerEmail), 
+				zap.String("store", stores[i].Name))
+		}
 	}
 
 	if err := s.SeedStores(ctx, stores); err != nil {

@@ -1,55 +1,191 @@
 {
   "vehicles": [
     {
-      "id": "VEHICLE-DEMO-001",
-      "plate_number": "HN-51A-001",
+      "id": "VEHICLE-HN-V01",
+      "plate_number": "29C-888.01",
       "type": "TRUCK",
-      "capacity_kg": 5000,
+      "capacity_kg": 7000,
       "home_warehouse_id": "WAREHOUSE-HN-001",
       "status": "IDLE"
     },
     {
-      "id": "VEHICLE-DEMO-002",
-      "plate_number": "HN-51A-002",
+      "id": "VEHICLE-HN-V02",
+      "plate_number": "29C-888.02",
+      "type": "TRUCK",
+      "capacity_kg": 3500,
+      "home_warehouse_id": "WAREHOUSE-HN-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-HN-V03",
+      "plate_number": "29C-888.03",
       "type": "VAN",
-      "capacity_kg": 1000,
+      "capacity_kg": 1500,
       "home_warehouse_id": "WAREHOUSE-HN-001",
       "status": "IDLE"
     },
     {
-      "id": "VEHICLE-DEMO-003",
-      "plate_number": "HCM-51A-003",
+      "id": "VEHICLE-HN-V04",
+      "plate_number": "29C-888.04",
+      "type": "VAN",
+      "capacity_kg": 500,
+      "home_warehouse_id": "WAREHOUSE-HN-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-HCM-V01",
+      "plate_number": "51D-999.01",
       "type": "TRUCK",
-      "capacity_kg": 5000,
+      "capacity_kg": 7000,
       "home_warehouse_id": "WAREHOUSE-HCM-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-HCM-V02",
+      "plate_number": "51D-999.02",
+      "type": "TRUCK",
+      "capacity_kg": 3500,
+      "home_warehouse_id": "WAREHOUSE-HCM-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-HCM-V03",
+      "plate_number": "51D-999.03",
+      "type": "VAN",
+      "capacity_kg": 1500,
+      "home_warehouse_id": "WAREHOUSE-HCM-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-HCM-V04",
+      "plate_number": "51D-999.04",
+      "type": "VAN",
+      "capacity_kg": 500,
+      "home_warehouse_id": "WAREHOUSE-HCM-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-DN-V01",
+      "plate_number": "43C-777.01",
+      "type": "TRUCK",
+      "capacity_kg": 3500,
+      "home_warehouse_id": "WAREHOUSE-DN-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-DN-V02",
+      "plate_number": "43C-777.02",
+      "type": "VAN",
+      "capacity_kg": 1500,
+      "home_warehouse_id": "WAREHOUSE-DN-001",
+      "status": "IDLE"
+    },
+    {
+      "id": "VEHICLE-DN-V03",
+      "plate_number": "43C-777.03",
+      "type": "VAN",
+      "capacity_kg": 500,
+      "home_warehouse_id": "WAREHOUSE-DN-001",
       "status": "IDLE"
     }
   ],
   "drivers": [
     {
       "id": "22222222-2222-2222-2222-222222222201",
-      "user_id": "driver@runtimeroasters.com",
-      "name": "Driver Alpha",
-      "phone": "0901234567",
-      "vehicle_id": "VEHICLE-DEMO-001",
+      "user_id": "driver.hn.01@runtimeroasters.com",
+      "name": "HN Driver 01",
+      "phone": "0900000001",
+      "vehicle_id": "VEHICLE-HN-V01",
       "status": "IDLE",
       "is_available": true
     },
     {
       "id": "22222222-2222-2222-2222-222222222202",
-      "user_id": "driver.beta@runtimeroasters.com",
-      "name": "Driver Beta",
-      "phone": "0907654321",
-      "vehicle_id": "VEHICLE-DEMO-002",
+      "user_id": "driver.hn.02@runtimeroasters.com",
+      "name": "HN Driver 02",
+      "phone": "0900000002",
+      "vehicle_id": "VEHICLE-HN-V02",
       "status": "IDLE",
       "is_available": true
     },
     {
       "id": "22222222-2222-2222-2222-222222222203",
-      "user_id": "driver.hcm@runtimeroasters.com",
-      "name": "Driver Gamma",
-      "phone": "0900000000",
-      "vehicle_id": "VEHICLE-DEMO-003",
+      "user_id": "driver.hn.03@runtimeroasters.com",
+      "name": "HN Driver 03",
+      "phone": "0900000003",
+      "vehicle_id": "VEHICLE-HN-V03",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222204",
+      "user_id": "driver.hn.04@runtimeroasters.com",
+      "name": "HN Driver 04",
+      "phone": "0900000004",
+      "vehicle_id": "VEHICLE-HN-V04",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222205",
+      "user_id": "driver.hcm.01@runtimeroasters.com",
+      "name": "HCM Driver 01",
+      "phone": "0910000001",
+      "vehicle_id": "VEHICLE-HCM-V01",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222206",
+      "user_id": "driver.hcm.02@runtimeroasters.com",
+      "name": "HCM Driver 02",
+      "phone": "0910000002",
+      "vehicle_id": "VEHICLE-HCM-V02",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222207",
+      "user_id": "driver.hcm.03@runtimeroasters.com",
+      "name": "HCM Driver 03",
+      "phone": "0910000003",
+      "vehicle_id": "VEHICLE-HCM-V03",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222208",
+      "user_id": "driver.hcm.04@runtimeroasters.com",
+      "name": "HCM Driver 04",
+      "phone": "0910000004",
+      "vehicle_id": "VEHICLE-HCM-V04",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222209",
+      "user_id": "driver.dn.01@runtimeroasters.com",
+      "name": "DN Driver 01",
+      "phone": "0920000001",
+      "vehicle_id": "VEHICLE-DN-V01",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222210",
+      "user_id": "driver.dn.02@runtimeroasters.com",
+      "name": "DN Driver 02",
+      "phone": "0920000002",
+      "vehicle_id": "VEHICLE-DN-V02",
+      "status": "IDLE",
+      "is_available": true
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222211",
+      "user_id": "driver.dn.03@runtimeroasters.com",
+      "name": "DN Driver 03",
+      "phone": "0920000003",
+      "vehicle_id": "VEHICLE-DN-V03",
       "status": "IDLE",
       "is_available": true
     }
@@ -57,101 +193,101 @@
   "locations": [
     {
       "id": "FARM-CAUDAT-001",
-      "name": "Nông trại K'Ho (Đà Lạt)",
+      "name": "K'Ho Coffee Farm",
       "type": "FARM",
       "lat": 11.9404,
       "lng": 108.4442
     },
     {
       "id": "FARM-CAUDAT-002",
-      "name": "Nông trại Arabica Cầu Đất",
+      "name": "Cau Dat Arabica",
       "type": "FARM",
       "lat": 11.8950,
       "lng": 108.5380
     },
     {
       "id": "FARM-CAUDAT-003",
-      "name": "Nông trại Pacamara (Trạm Hành)",
+      "name": "Son Pacamara Farm",
       "type": "FARM",
       "lat": 11.8500,
       "lng": 108.5000
     },
     {
       "id": "FARM-BMT-001",
-      "name": "Nông trại Aeroco (Đắk Lắk)",
+      "name": "Aeroco Coffee",
       "type": "FARM",
       "lat": 12.6660,
       "lng": 108.0380
     },
     {
       "id": "FARM-BMT-002",
-      "name": "Làng cà phê Trung Nguyên",
+      "name": "Trung Nguyen Village",
       "type": "FARM",
       "lat": 12.7000,
       "lng": 108.0500
     },
     {
       "id": "FARM-PLEIKU-001",
-      "name": "Nông trại Chư Sê (Gia Lai)",
+      "name": "Chu Se Estate",
       "type": "FARM",
       "lat": 14.0100,
       "lng": 108.0400
     },
     {
       "id": "WAREHOUSE-HN-001",
-      "name": "Xưởng rang Hà Nội",
+      "name": "Hoa Lac Warehouse",
       "type": "WAREHOUSE",
       "lat": 21.010,
       "lng": 105.530
     },
     {
       "id": "WAREHOUSE-HCM-001",
-      "name": "Xưởng rang Sóng Thần",
+      "name": "Song Than Warehouse",
       "type": "WAREHOUSE",
       "lat": 10.880,
       "lng": 106.750
     },
     {
       "id": "WAREHOUSE-DN-001",
-      "name": "Xưởng rang Hòa Khánh",
+      "name": "Hoa Khanh Warehouse",
       "type": "WAREHOUSE",
       "lat": 16.080,
       "lng": 108.150
     },
     {
-      "id": "11111111-1111-1111-1111-111111111101",
-      "name": "Cửa hàng Hoàn Kiếm",
+      "id": "STORE-HN-01",
+      "name": "Hoan Kiem Store",
       "type": "RETAILER",
-      "lat": 21.028,
-      "lng": 105.852
+      "lat": 21.0285,
+      "lng": 105.8542
     },
     {
-      "id": "11111111-1111-1111-1111-111111111102",
-      "name": "Cửa hàng Cầu Giấy",
+      "id": "STORE-HN-02",
+      "name": "Cau Giay Store",
       "type": "RETAILER",
-      "lat": 21.036,
-      "lng": 105.783
+      "lat": 21.0360,
+      "lng": 105.7900
     },
     {
-      "id": "11111111-1111-1111-1111-111111111103",
-      "name": "Cửa hàng Quận 1",
+      "id": "STORE-HCM-01",
+      "name": "District 1 Store",
       "type": "RETAILER",
-      "lat": 10.776,
-      "lng": 106.700
+      "lat": 10.7769,
+      "lng": 106.7009
     },
     {
-      "id": "11111111-1111-1111-1111-111111111104",
-      "name": "Cửa hàng Quận 7",
+      "id": "STORE-HCM-02",
+      "name": "District 7 Store",
       "type": "RETAILER",
-      "lat": 10.729,
-      "lng": 106.721
+      "lat": 10.7289,
+      "lng": 106.7067
     },
     {
-      "id": "11111111-1111-1111-1111-111111111105",
-      "name": "Cửa hàng Hải Châu",
+      "id": "STORE-DN-01",
+      "name": "Hai Chau Store",
       "type": "RETAILER",
-      "lat": 16.066,
-      "lng": 108.216
+      "lat": 16.0678,
+      "lng": 108.2208
     }
   ]
 }

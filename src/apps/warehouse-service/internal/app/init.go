@@ -63,7 +63,8 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
-	systemHandler := usecase.NewSystemHandler(db)
+	systemUC := usecase.NewSystemUseCase(db.DB)
+	systemHandler := warehousegrpc.NewSystemHandler(systemUC)
 
 	baseApp := base.NewApp(base.Options{Name: cfg.AppName, Config: cfg.BaseConfig})
 	app := NewApp(baseApp, &cfg, db, pickupUseCase, aggregationUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)

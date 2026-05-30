@@ -25,6 +25,7 @@ import (
 
 type Handler struct {
 	authv1.UnimplementedAuthServiceServer
+	systemv1.UnimplementedSystemServiceServer
 	cfg      *config.Config
 	enforcer *casbin.Enforcer
 	usecase  usecase.UserUsecase
@@ -150,6 +151,97 @@ func (h *Handler) GetMe(ctx context.Context, _ *authv1.GetMeRequest) (*authv1.Ge
 	}, nil
 }
 
+func (h *Handler) SeedSystem(ctx context.Context, req *authv1.SeedSystemRequest) (*authv1.SeedSystemResponse, error) {
+	// Re-use the SeedData logic which is already implemented as a propagation orchestrator
+	res, err := h.SeedData(ctx, &systemv1.SeedDataRequest{
+		Force: req.Force,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &authv1.SeedSystemResponse{
+		Success: res.Success,
+		Message: res.Message,
+	}, nil
+}
+
+func (h *Handler) GetSystemStatus(ctx context.Context, req *authv1.GetSystemStatusRequest) (*authv1.GetSystemStatusResponse, error) {
+	log := logger.FromContext(ctx)
+
+	// 1. Define downstream services to check status
+	var targets map[string]string
+	if h.cfg != nil {
+		targets = make(map[string]string)
+		if h.cfg.FarmServiceURL != "" {
+			targets["farm"] = h.cfg.FarmServiceURL + "/v1/system/status"
+		}
+		if h.cfg.RetailServiceURL != "" {
+			targets["retail"] = h.cfg.RetailServiceURL + "/v1/system/status"
+		}
+		if h.cfg.LogisticsServiceURL != "" {
+			targets["logistics"] = h.cfg.LogisticsServiceURL + "/v1/system/status"
+		}
+		if h.cfg.WarehouseServiceURL != "" {
+			targets["warehouse"] = h.cfg.WarehouseServiceURL + "/v1/system/status"
+		}
+	}
+
+	// Fallback hardcoded if needed
+	if len(targets) == 0 {
+		targets = map[string]string{
+			"farm":      "http://localhost:8083/v1/system/status",
+			"retail":    "http://localhost:8084/v1/system/status",
+			"logistics": "http://localhost:8085/v1/system/status",
+			"warehouse": "http://localhost:8089/v1/system/status",
+		}
+	}
+
+	// 2. Query each service in parallel
+	httpClient := &http.Client{Timeout: 5 * time.Second}
+	var mu sync.Mutex
+	servicesStatus := make(map[string]bool)
+	allSeeded := true
+
+	var wg sync.WaitGroup
+	for name, url := range targets {
+		wg.Add(1)
+		go func(n, u string) {
+			defer wg.Done()
+			
+			status := false
+			resp, err := httpClient.Get(u)
+			if err == nil {
+				defer resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					var result struct {
+						Seeded bool `json:"seeded"`
+					}
+					if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+						status = result.Seeded
+					}
+				}
+			} else {
+				log.Warn("failed to check downstream status", zap.String("service", n), zap.Error(err))
+			}
+
+			mu.Lock()
+			servicesStatus[n] = status
+			if !status {
+				allSeeded = false
+			}
+			mu.Unlock()
+		}(name, url)
+	}
+
+	wg.Wait()
+
+	return &authv1.GetSystemStatusResponse{
+		AllSeeded:      allSeeded,
+		ServicesStatus: servicesStatus,
+	}, nil
+}
+
 func toProtoUser(user *domain.User) *authv1.User {
 	if user == nil {
 		return nil
@@ -163,14 +255,40 @@ func toProtoUser(user *domain.User) *authv1.User {
 	}
 }
 
+func (h *Handler) GetStatus(ctx context.Context, req *systemv1.GetStatusRequest) (*systemv1.GetStatusResponse, error) {
+	// For auth-service, we can check if any users exist in Kratos as a proxy for 'seeded'
+	users, err := h.usecase.ListUsers(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check Kratos status: %v", err)
+	}
+
+	return &systemv1.GetStatusResponse{
+		Seeded:      len(users) > 1, // ADMIN always exists, so > 1 means others were created
+		ServiceName: "auth-service",
+		RecordCounts: map[string]int64{
+			"users": int64(len(users)),
+		},
+	}, nil
+}
+
 func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (*systemv1.SeedDataResponse, error) {
 	log := logger.FromContext(ctx)
 	log.Info("Starting centralized system seeding from auth-service", zap.Bool("force", req.Force))
 
+	// Use a background context for the actual work to survive gateway timeouts
+	workCtx := context.Background()
+
+	// 0. Seed Master Identities in Kratos if they don't exist
+	if h.usecase != nil {
+		if err := h.usecase.SeedUsers(workCtx); err != nil {
+			log.Warn("Master user seeding encountered errors, proceeding anyway", zap.Error(err))
+		}
+	}
+
 	// 1. Fetch users from Kratos via ListUsers to construct the users map
 	usersMap := make(map[string]string)
 	if h.usecase != nil {
-		users, err := h.usecase.ListUsers(ctx)
+		users, err := h.usecase.ListUsers(workCtx)
 		if err != nil {
 			log.Error("failed to fetch users from Kratos for seeding", zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
@@ -246,7 +364,7 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		go func(url string) {
 			defer wg.Done()
 			log.Info("Propagating seed request to downstream", zap.String("url", url))
-			httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBytes))
+			httpReq, err := http.NewRequestWithContext(workCtx, "POST", url, bytes.NewBuffer(jsonBytes))
 			if err != nil {
 				errChan <- fmt.Errorf("failed to create request for %s: %w", url, err)
 				return
@@ -263,7 +381,7 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 			}
 			defer resp.Body.Close()
 
-			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 				errChan <- fmt.Errorf("calling %s returned status %d", url, resp.StatusCode)
 				return
 			}

@@ -2,7 +2,7 @@
   "version": 3,
   "name": "RuntimeRoasters Gateway",
   "port": 8081,
-  "timeout": "3000ms",
+  "timeout": "60000ms",
   "cache_ttl": "300s",
   "extra_config": {
     "security/cors": {
@@ -96,6 +96,68 @@
       "backend": [
         {
           "url_pattern": "/v1/auth/snapshot/{service_name}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/auth/seed",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/auth/seed",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/auth/system/status",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/auth/system/status",
           "encoding": "no-op",
           "sd": "static",
           "method": "GET",

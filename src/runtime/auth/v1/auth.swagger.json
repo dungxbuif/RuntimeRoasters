@@ -72,6 +72,39 @@
         ]
       }
     },
+    "/v1/auth/seed": {
+      "post": {
+        "summary": "System Bootstrap \u0026 Status",
+        "operationId": "AuthService_SeedSystem",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SeedSystemResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SeedSystemRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
     "/v1/auth/snapshot/{serviceName}": {
       "get": {
         "summary": "GetFullSnapshot returns all policies for a given service",
@@ -98,6 +131,28 @@
             "type": "string"
           }
         ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/v1/auth/system/status": {
+      "get": {
+        "operationId": "AuthService_GetSystemStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetSystemStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
         "tags": [
           "AuthService"
         ]
@@ -257,6 +312,20 @@
         }
       }
     },
+    "v1GetSystemStatusResponse": {
+      "type": "object",
+      "properties": {
+        "allSeeded": {
+          "type": "boolean"
+        },
+        "servicesStatus": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "v1ListUsersResponse": {
       "type": "object",
       "properties": {
@@ -266,6 +335,25 @@
             "type": "object",
             "$ref": "#/definitions/v1User"
           }
+        }
+      }
+    },
+    "v1SeedSystemRequest": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1SeedSystemResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
         }
       }
     },

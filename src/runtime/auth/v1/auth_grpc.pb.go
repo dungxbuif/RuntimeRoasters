@@ -24,6 +24,8 @@ const (
 	AuthService_CreateUser_FullMethodName      = "/runtime.auth.v1.AuthService/CreateUser"
 	AuthService_ListUsers_FullMethodName       = "/runtime.auth.v1.AuthService/ListUsers"
 	AuthService_GetMe_FullMethodName           = "/runtime.auth.v1.AuthService/GetMe"
+	AuthService_SeedSystem_FullMethodName      = "/runtime.auth.v1.AuthService/SeedSystem"
+	AuthService_GetSystemStatus_FullMethodName = "/runtime.auth.v1.AuthService/GetSystemStatus"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -39,6 +41,9 @@ type AuthServiceClient interface {
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	// Get current user info based on context token
 	GetMe(ctx context.Context, in *GetMeRequest, opts ...grpc.CallOption) (*GetMeResponse, error)
+	// System Bootstrap & Status
+	SeedSystem(ctx context.Context, in *SeedSystemRequest, opts ...grpc.CallOption) (*SeedSystemResponse, error)
+	GetSystemStatus(ctx context.Context, in *GetSystemStatusRequest, opts ...grpc.CallOption) (*GetSystemStatusResponse, error)
 }
 
 type authServiceClient struct {
@@ -99,6 +104,26 @@ func (c *authServiceClient) GetMe(ctx context.Context, in *GetMeRequest, opts ..
 	return out, nil
 }
 
+func (c *authServiceClient) SeedSystem(ctx context.Context, in *SeedSystemRequest, opts ...grpc.CallOption) (*SeedSystemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SeedSystemResponse)
+	err := c.cc.Invoke(ctx, AuthService_SeedSystem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetSystemStatus(ctx context.Context, in *GetSystemStatusRequest, opts ...grpc.CallOption) (*GetSystemStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSystemStatusResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetSystemStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -112,6 +137,9 @@ type AuthServiceServer interface {
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	// Get current user info based on context token
 	GetMe(context.Context, *GetMeRequest) (*GetMeResponse, error)
+	// System Bootstrap & Status
+	SeedSystem(context.Context, *SeedSystemRequest) (*SeedSystemResponse, error)
+	GetSystemStatus(context.Context, *GetSystemStatusRequest) (*GetSystemStatusResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -136,6 +164,12 @@ func (UnimplementedAuthServiceServer) ListUsers(context.Context, *ListUsersReque
 }
 func (UnimplementedAuthServiceServer) GetMe(context.Context, *GetMeRequest) (*GetMeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMe not implemented")
+}
+func (UnimplementedAuthServiceServer) SeedSystem(context.Context, *SeedSystemRequest) (*SeedSystemResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SeedSystem not implemented")
+}
+func (UnimplementedAuthServiceServer) GetSystemStatus(context.Context, *GetSystemStatusRequest) (*GetSystemStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSystemStatus not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -248,6 +282,42 @@ func _AuthService_GetMe_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_SeedSystem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SeedSystemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SeedSystem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SeedSystem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SeedSystem(ctx, req.(*SeedSystemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetSystemStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSystemStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetSystemStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetSystemStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetSystemStatus(ctx, req.(*GetSystemStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -274,6 +344,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMe",
 			Handler:    _AuthService_GetMe_Handler,
+		},
+		{
+			MethodName: "SeedSystem",
+			Handler:    _AuthService_SeedSystem_Handler,
+		},
+		{
+			MethodName: "GetSystemStatus",
+			Handler:    _AuthService_GetSystemStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

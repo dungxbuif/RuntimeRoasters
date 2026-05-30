@@ -87,7 +87,10 @@ func InitializeApp() (*App, func(), error) {
 	// 3. Server Options & Base App
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer),
+			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer, authgrpc.WithPublicRoutes(
+				"/runtime.system.v1.SystemService/GetStatus",
+				"/runtime.system.v1.SystemService/SeedData",
+			)),
 			casbingrpc.GRPCUnaryInterceptor(casbinEnforcer),
 		),
 	}
@@ -109,15 +112,17 @@ func InitializeApp() (*App, func(), error) {
 	publisher := event.NewKafkaPublisher(producer, cfg.KafkaHarvestTopic)
 	farmUC := usecase.NewFarmUsecase(farmRepo)
 	harvestUC := usecase.NewHarvestUsecase(db, harvestRepo, farmRepo, outboxRepo)
+	systemUC := usecase.NewSystemUsecase(farmRepo)
 
 	// 7. Workers
 	outboxRelay := event.NewOutboxRelay(outboxRepo, publisher, 5*time.Second)
 
 	// 8. Handlers & Server
 	farmHandler := farmgrpc.NewFarmHandler(farmUC, harvestUC)
+	systemHandler := farmgrpc.NewSystemHandler(systemUC)
 
 	// 5. Build App
-	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler, outboxRelay)
+	app := NewApp(baseApp, &cfg, db, vdb, keyProvider, casbinEnforcer, farmHandler, systemHandler, outboxRelay)
 
 	cleanup := func() {
 		_ = producer.Close()

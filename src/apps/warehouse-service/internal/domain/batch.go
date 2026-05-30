@@ -86,6 +86,22 @@ type RoastRun struct {
 	CreatedAt    time.Time
 }
 
+func (Intake) TableName() string {
+	return "intakes"
+}
+
+func (PickupRequest) TableName() string {
+	return "pick_up_requests"
+}
+
+func (ProductionBatch) TableName() string {
+	return "production_batches"
+}
+
+func (RoastRun) TableName() string {
+	return "roast_runs"
+}
+
 type InboxEvent struct {
 	ID          string `gorm:"type:varchar(64);primaryKey"`
 	MessageID   string `gorm:"uniqueIndex;not null"`

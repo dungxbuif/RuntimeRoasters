@@ -37,7 +37,7 @@ func (h *SystemHandler) GetStatus(ctx context.Context, req *systemv1.GetStatusRe
 }
 
 func (h *SystemHandler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (*systemv1.SeedDataResponse, error) {
-	result, err := h.service.SeedData(ctx, req.Force)
+	result, err := h.service.SeedData(ctx, req.Force, req.UsersMap)
 	if err != nil {
 		return nil, err
 	}

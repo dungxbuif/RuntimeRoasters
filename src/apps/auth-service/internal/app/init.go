@@ -59,7 +59,7 @@ func InitializeApp() (*App, func(), error) {
 
 	// 5. Handlers & Usecases
 	userUsecase := usecase.NewUserUsecase(&cfg, enforcer, producer)
-	handler := authgrpc.NewHandler(enforcer, userUsecase)
+	handler := authgrpc.NewHandler(&cfg, enforcer, userUsecase)
 
 	// 6. Build App
 	app := NewApp(baseApp, &cfg, enforcer, handler, userUsecase, keyProvider)

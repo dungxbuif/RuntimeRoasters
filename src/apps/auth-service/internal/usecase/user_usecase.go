@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"RuntimeRoasters/apps/auth-service/config"
@@ -21,6 +22,7 @@ type UserUsecase interface {
 	ListUsers(ctx context.Context) ([]*domain.User, error)
 	AcceptHydraLogin(ctx context.Context, req domain.AcceptLoginRequest) (*domain.AcceptLoginResponse, error)
 	SyncCasbinWithKratos(ctx context.Context) error
+	SeedUsers(ctx context.Context) error
 }
 
 type userUsecase struct {
@@ -131,7 +133,7 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 	log := logger.FromContext(ctx)
 	log.Debug("Listing users from Kratos")
 
-	identities, _, err := u.kratosClient.IdentityAPI.ListIdentities(ctx).Execute()
+	identities, _, err := u.kratosClient.IdentityAPI.ListIdentities(ctx).PerPage(250).Execute()
 	if err != nil {
 		log.Error("failed to list identities from kratos", zap.Error(err))
 		return nil, fmt.Errorf("failed to list identities from kratos: %w", err)
@@ -141,7 +143,13 @@ func (u *userUsecase) ListUsers(ctx context.Context) ([]*domain.User, error) {
 
 	users := make([]*domain.User, len(identities))
 	for i, id := range identities {
-		traits := id.Traits.(map[string]interface{})
+		var traits map[string]interface{}
+		if t, ok := id.Traits.(map[string]interface{}); ok {
+			traits = t
+		} else {
+			traits = make(map[string]interface{})
+		}
+
 		email, _ := traits["email"].(string)
 		name, _ := traits["name"].(string)
 		orgID, _ := traits["org_id"].(string)
@@ -261,11 +269,91 @@ func traitStringSlice(raw interface{}) []string {
 	}
 }
 
+func (u *userUsecase) SeedUsers(ctx context.Context) error {
+	log := logger.FromContext(ctx)
+	log.Info("Starting Master User seeding in Kratos")
+
+	// 1. Get existing users to avoid duplicates
+	existingUsers, err := u.ListUsers(ctx)
+	if err != nil {
+		log.Warn("Could not fetch existing users for duplicate check, proceeding with caution", zap.Error(err))
+	}
+	existingMap := make(map[string]bool)
+	for _, user := range existingUsers {
+		existingMap[user.Email] = true
+	}
+
+	// 2. Define master users
+	masterUsers := []domain.CreateUserRequest{
+		// Farm Managers
+		{Email: "mgr.farm.kho@runtimeroasters.com", Password: "Hello@123", Name: "K'Ho Farm Manager", Role: "FARM_MANAGER"},
+		{Email: "mgr.farm.caudat@runtimeroasters.com", Password: "Hello@123", Name: "Cau Dat Manager", Role: "FARM_MANAGER"},
+		{Email: "mgr.farm.sonpacamara@runtimeroasters.com", Password: "Hello@123", Name: "Son Pacamara Manager", Role: "FARM_MANAGER"},
+		{Email: "mgr.farm.aeroco@runtimeroasters.com", Password: "Hello@123", Name: "Aeroco Manager", Role: "FARM_MANAGER"},
+		{Email: "mgr.farm.trungnguyen@runtimeroasters.com", Password: "Hello@123", Name: "Trung Nguyen Manager", Role: "FARM_MANAGER"},
+		{Email: "mgr.farm.chuse@runtimeroasters.com", Password: "Hello@123", Name: "Chu Se Manager", Role: "FARM_MANAGER"},
+
+		// Store Managers
+		{Email: "mgr.hn.hoankiem@runtimeroasters.com", Password: "Hello@123", Name: "Hoan Kiem Manager", Role: "STORE_MGR"},
+		{Email: "mgr.hn.caugiay@runtimeroasters.com", Password: "Hello@123", Name: "Cau Giay Manager", Role: "STORE_MGR"},
+		{Email: "mgr.hcm.d1@runtimeroasters.com", Password: "Hello@123", Name: "District 1 Manager", Role: "STORE_MGR"},
+		{Email: "mgr.hcm.d7@runtimeroasters.com", Password: "Hello@123", Name: "District 7 Manager", Role: "STORE_MGR"},
+		{Email: "mgr.dn.haichau@runtimeroasters.com", Password: "Hello@123", Name: "Hai Chau Manager", Role: "STORE_MGR"},
+
+		// Warehouse Managers
+		{Email: "mgr.wh.hn@runtimeroasters.com", Password: "Hello@123", Name: "HN Warehouse Manager", Role: "WAREHOUSE_MGR"},
+		{Email: "mgr.wh.hcm@runtimeroasters.com", Password: "Hello@123", Name: "HCM Warehouse Manager", Role: "WAREHOUSE_MGR"},
+		{Email: "mgr.wh.dn@runtimeroasters.com", Password: "Hello@123", Name: "DN Warehouse Manager", Role: "WAREHOUSE_MGR"},
+
+		// Logistics Drivers (HN)
+		{Email: "driver.hn.01@runtimeroasters.com", Password: "Hello@123", Name: "HN Driver 01", Role: "DRIVER"},
+		{Email: "driver.hn.02@runtimeroasters.com", Password: "Hello@123", Name: "HN Driver 02", Role: "DRIVER"},
+		{Email: "driver.hn.03@runtimeroasters.com", Password: "Hello@123", Name: "HN Driver 03", Role: "DRIVER"},
+		{Email: "driver.hn.04@runtimeroasters.com", Password: "Hello@123", Name: "HN Driver 04", Role: "DRIVER"},
+		// Logistics Drivers (HCM)
+		{Email: "driver.hcm.01@runtimeroasters.com", Password: "Hello@123", Name: "HCM Driver 01", Role: "DRIVER"},
+		{Email: "driver.hcm.02@runtimeroasters.com", Password: "Hello@123", Name: "HCM Driver 02", Role: "DRIVER"},
+		{Email: "driver.hcm.03@runtimeroasters.com", Password: "Hello@123", Name: "HCM Driver 03", Role: "DRIVER"},
+		{Email: "driver.hcm.04@runtimeroasters.com", Password: "Hello@123", Name: "HCM Driver 04", Role: "DRIVER"},
+		// Logistics Drivers (DN)
+		{Email: "driver.dn.01@runtimeroasters.com", Password: "Hello@123", Name: "DN Driver 01", Role: "DRIVER"},
+		{Email: "driver.dn.02@runtimeroasters.com", Password: "Hello@123", Name: "DN Driver 02", Role: "DRIVER"},
+		{Email: "driver.dn.03@runtimeroasters.com", Password: "Hello@123", Name: "DN Driver 03", Role: "DRIVER"},
+	}
+
+	var wg sync.WaitGroup
+	for _, req := range masterUsers {
+		if existingMap[req.Email] {
+			log.Debug("User already exists, skipping", zap.String("email", req.Email))
+			continue
+		}
+
+		wg.Add(1)
+		go func(r domain.CreateUserRequest) {
+			defer wg.Done()
+			// Use a separate context with a longer timeout for each user creation
+			// to avoid parent context cancellation affecting individuals too early
+			createCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			_, err := u.CreateUser(createCtx, r)
+			if err != nil {
+				log.Error("Failed to create master user", zap.String("email", r.Email), zap.Error(err))
+			} else {
+				log.Info("Successfully seeded master user", zap.String("email", r.Email), zap.String("role", r.Role))
+			}
+		}(req)
+	}
+	wg.Wait()
+
+	return nil
+}
+
 func (u *userUsecase) SyncCasbinWithKratos(ctx context.Context) error {
 	log := logger.FromContext(ctx)
 	log.Info("Starting Casbin synchronization with Kratos identities")
 
-	identities, _, err := u.kratosClient.IdentityAPI.ListIdentities(ctx).Execute()
+	identities, _, err := u.kratosClient.IdentityAPI.ListIdentities(ctx).PerPage(250).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to list identities from kratos: %w", err)
 	}

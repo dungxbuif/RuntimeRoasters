@@ -129,6 +129,13 @@
       "properties": {
         "force": {
           "type": "boolean"
+        },
+        "usersMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "email -\u003e uuid"
         }
       }
     },

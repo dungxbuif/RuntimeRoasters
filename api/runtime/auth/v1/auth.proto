@@ -42,6 +42,20 @@ service AuthService {
       get: "/v1/auth/me"
     };
   }
+
+  // System Bootstrap & Status
+  rpc SeedSystem(SeedSystemRequest) returns (SeedSystemResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/seed"
+      body: "*"
+    };
+  }
+
+  rpc GetSystemStatus(GetSystemStatusRequest) returns (GetSystemStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/auth/system/status"
+    };
+  }
 }
 
 message GetFullSnapshotRequest {
@@ -91,4 +105,20 @@ message GetMeRequest {}
 
 message GetMeResponse {
   User user = 1;
+}
+
+message SeedSystemRequest {
+  bool force = 1;
+}
+
+message SeedSystemResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetSystemStatusRequest {}
+
+message GetSystemStatusResponse {
+  bool all_seeded = 1;
+  map<string, bool> services_status = 2;
 }

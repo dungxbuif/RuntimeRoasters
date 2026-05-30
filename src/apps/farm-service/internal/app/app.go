@@ -11,18 +11,20 @@ import (
 	rrcasbin "RuntimeRoasters/pkg/base/casbin"
 	"RuntimeRoasters/pkg/database"
 	farmv1 "RuntimeRoasters/runtime/farm/v1"
+	systemv1 "RuntimeRoasters/runtime/system/v1"
 	"github.com/redis/go-redis/v9"
 )
 
 type App struct {
-	Base        *base.App
-	Cfg         *svcconfig.Config
-	DB          *database.DB
-	VDB         *redis.Client
-	KeyProvider provider.KeyProvider
-	Enforcer    rrcasbin.Engine
-	FarmHandler *farmgrpc.FarmHandler
-	OutboxRelay *event.OutboxRelay
+	Base          *base.App
+	Cfg           *svcconfig.Config
+	DB            *database.DB
+	VDB           *redis.Client
+	KeyProvider   provider.KeyProvider
+	Enforcer      rrcasbin.Engine
+	FarmHandler   *farmgrpc.FarmHandler
+	SystemHandler *farmgrpc.SystemHandler
+	OutboxRelay   *event.OutboxRelay
 }
 
 func NewApp(
@@ -33,17 +35,19 @@ func NewApp(
 	keyProvider provider.KeyProvider,
 	enforcer rrcasbin.Engine,
 	farmHandler *farmgrpc.FarmHandler,
+	systemHandler *farmgrpc.SystemHandler,
 	outboxRelay *event.OutboxRelay,
 ) *App {
 	return &App{
-		Base:        baseApp,
-		Cfg:         cfg,
-		DB:          db,
-		VDB:         vdb,
-		KeyProvider: keyProvider,
-		Enforcer:    enforcer,
-		FarmHandler: farmHandler,
-		OutboxRelay: outboxRelay,
+		Base:          baseApp,
+		Cfg:           cfg,
+		DB:            db,
+		VDB:           vdb,
+		KeyProvider:   keyProvider,
+		Enforcer:      enforcer,
+		FarmHandler:   farmHandler,
+		SystemHandler: systemHandler,
+		OutboxRelay:   outboxRelay,
 	}
 }
 
@@ -56,9 +60,11 @@ func (a *App) Run() {
 
 	// Register gRPC
 	a.Base.RegisterGRPC(&farmv1.FarmService_ServiceDesc, a.FarmHandler)
+	a.Base.RegisterGRPC(&systemv1.SystemService_ServiceDesc, a.SystemHandler)
 
 	// Register Gateway (REST -> gRPC Bridge)
 	a.Base.RegisterGateway(farmv1.RegisterFarmServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
+	a.Base.RegisterGateway(systemv1.RegisterSystemServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
 
 	a.Base.FinalizeRoutes()
 

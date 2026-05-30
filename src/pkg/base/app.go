@@ -32,14 +32,15 @@ type Options struct {
 }
 
 type App struct {
-	Name         string
-	internalHost string
-	httpServer   *http.Server
-	grpcServer   *grpc.Server
-	logger       *zap.Logger
-	ginEngine    *gin.Engine
-	gwMux        *runtime.ServeMux
-	shutdownFn   func()
+	Name               string
+	internalHost       string
+	httpServer         *http.Server
+	grpcServer         *grpc.Server
+	logger             *zap.Logger
+	ginEngine          *gin.Engine
+	gwMux              *runtime.ServeMux
+	shutdownFn         func()
+	reflectionRegistry bool
 }
 
 func NewApp(opts Options) *App {
@@ -101,7 +102,10 @@ func (a *App) FinalizeRoutes() {
 
 func (a *App) RegisterGRPC(desc *grpc.ServiceDesc, impl interface{}) {
 	a.grpcServer.RegisterService(desc, impl)
-	reflection.Register(a.grpcServer)
+	if !a.reflectionRegistry {
+		reflection.Register(a.grpcServer)
+		a.reflectionRegistry = true
+	}
 }
 
 func (a *App) RegisterGateway(register func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error, grpcPort int) {
