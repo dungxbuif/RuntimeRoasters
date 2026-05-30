@@ -2,6 +2,8 @@
 
 This guide provides a comprehensive technical breakdown of the **Runtime Roasters** platform. It serves as the primary technical reference for developers, covering architectural patterns, coding standards, and operational details.
 
+> Current demo truth labels and simulation boundaries are tracked in [FB-20260528-08 Demo Flow Contract](../feedbacks/items/FB-20260528-08-demo-flow-contract/DEMO_FLOW_CONTRACT.md). Use that contract when deciding whether a demo flow is real runtime, backend-simulated, browser-simulated, UI mock-only, or planned.
+
 ---
 
 ## 🏗️ 1. Architectural Philosophy

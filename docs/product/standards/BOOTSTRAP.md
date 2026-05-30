@@ -2,6 +2,8 @@
 
 This document defines the process for initializing the Runtime Roasters environment with a consistent, demo-ready state.
 
+> For the distinction between deterministic seeding, backend-simulated history, browser-simulated GPS, and real runtime flows, see [FB-20260528-08 Demo Flow Contract](../../feedbacks/items/FB-20260528-08-demo-flow-contract/DEMO_FLOW_CONTRACT.md).
+
 ## 1. First-Run Experience (FRX)
 
 When the system is started with empty databases, the Admin Dashboard provides a guided bootstrap process.

@@ -3,6 +3,8 @@
 > BA-readable business contract: [**`domain/README.md`**](./domain/README.md).
 >
 > This `SPEC.md` remains the broader product/system specification. It may contain historical technical context, but the canonical BA-facing flow, role matrix, and business rules now live in [**`domain/README.md`**](./domain/README.md).
+>
+> Current demo truth labels and simulation boundaries live in [**FB-20260528-08 Demo Flow Contract**](../feedbacks/items/FB-20260528-08-demo-flow-contract/DEMO_FLOW_CONTRACT.md).
 
 This document defines the core business specifications of the **Runtime Roasters** platform, focusing on operational processes, control rules, and supply value within the coffee value chain. This serves as a guiding document for strategic project management and handover.
 
