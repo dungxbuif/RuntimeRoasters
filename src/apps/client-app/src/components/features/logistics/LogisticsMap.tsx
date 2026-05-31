@@ -29,9 +29,10 @@ interface LogisticsMapProps {
   shipments: Shipment[];
   routes: RouteData[];
   activeDriverLocations: Record<string, [number, number]>;
+  showRoutes?: boolean;
 }
 
-export default function LogisticsMap({ locations, shipments, routes, activeDriverLocations }: LogisticsMapProps) {
+export default function LogisticsMap({ locations, shipments, routes, activeDriverLocations, showRoutes = false }: LogisticsMapProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
     }
   }, [shipments, isMounted]);
 
-  if (!isMounted) return <div className="w-full h-full bg-slate-900 animate-pulse" />;
+  if (!isMounted) return <div className="w-full h-full bg-slate-100 animate-pulse" />;
 
   const center: [number, number] = [16.047079, 108.206230]; // Center of Vietnam (Da Nang approx)
 
@@ -58,19 +59,19 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
     let icon = 'inventory_2';
     
     if (type === 'FARM') {
-      color = '#22c55e'; // Green
+      color = '#16a34a'; // Green
       icon = 'potted_plant';
     } else if (type === 'ROASTERY') {
       color = '#f59e0b'; // Amber
       icon = 'factory';
     } else if (type === 'RETAILER') {
-      color = '#00daf3'; // Cyan
+      color = '#0ea5e9'; // Cyan
       icon = 'store';
     }
 
     return L.divIcon({
       html: `
-        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 border-2 border-[${color}] shadow-[0_0_10px_${color}]">
+        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-[${color}] shadow-lg">
           <span class="material-symbols-outlined text-[${color}] text-sm font-black">${icon}</span>
         </div>
       `,
@@ -83,8 +84,8 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
   const getDriverIcon = () => {
     return L.divIcon({
       html: `
-        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 border-2 border-primary shadow-[0_0_15px_#004ac6]">
-          <span class="material-symbols-outlined text-primary text-sm font-black">local_shipping</span>
+        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-primary border-2 border-white shadow-xl">
+          <span class="material-symbols-outlined text-white text-sm font-black">local_shipping</span>
           <div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-ping"></div>
         </div>
       `,
@@ -95,15 +96,15 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
   };
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl relative">
+    <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-200 shadow-xl relative bg-slate-50">
       <MapContainer 
         center={center} 
         zoom={6} 
-        style={{ height: '100%', width: '100%', background: '#0f172a' }}
+        style={{ height: '100%', width: '100%', background: '#f8fafc' }}
         zoomControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
@@ -114,24 +115,24 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
             position={[loc.lat, loc.lng]} 
             icon={getMarkerIcon(loc.type)}
           >
-            <Popup className="dark-popup">
-              <div className="bg-slate-900 text-white p-2 rounded">
-                <p className="font-bold text-xs uppercase tracking-wider">{loc.name}</p>
-                <p className="text-[10px] text-slate-400">{loc.type}</p>
+            <Popup className="light-popup">
+              <div className="bg-white p-2 rounded">
+                <p className="font-black text-xs uppercase tracking-wider text-slate-900">{loc.name}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{loc.type}</p>
               </div>
             </Popup>
           </Marker>
         ))}
 
-        {/* Routes */}
-        {routes.map((route) => (
+        {/* Routes - Only shown when explicit or when drivers are active and simulation is on */}
+        {showRoutes && routes.map((route) => (
           <Polyline 
             key={route.id}
             positions={route.coordinates}
             pathOptions={{ 
               color: '#3b82f6', 
               weight: 2, 
-              opacity: 0.3, 
+              opacity: 0.2, 
               dashArray: '5, 10' 
             }}
           />
@@ -145,9 +146,9 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
             icon={getDriverIcon()}
           >
             <Popup>
-              <div className="bg-slate-900 text-white p-2 rounded">
-                <p className="font-bold text-xs">DRIVER: {driverId}</p>
-                <p className="text-[10px] text-green-400">IN TRANSIT</p>
+              <div className="bg-white p-2 rounded">
+                <p className="font-black text-xs text-slate-900">DRIVER: {driverId}</p>
+                <p className="text-[10px] font-black text-primary uppercase italic">IN TRANSIT</p>
               </div>
             </Popup>
           </Marker>
@@ -155,24 +156,24 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
       </MapContainer>
 
       {/* Map Legend */}
-      <div className="absolute bottom-6 left-6 z-[1000] glass-card p-4 rounded-lg border border-slate-800 bg-slate-900/80 backdrop-blur-md text-white">
-        <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3 italic underline decoration-primary underline-offset-4">Fleet Map Legend</h4>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Coffee Farmers</span>
+      <div className="absolute bottom-6 left-6 z-[1000] p-5 rounded-[2rem] border border-slate-200 bg-white/90 backdrop-blur-xl text-slate-900 shadow-2xl">
+        <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 italic">Fleet Network</h4>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></div>
+            <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">Coffee Farmers</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_5px_#f59e0b]"></div>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Roasteries (KCN)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></div>
+            <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">Roasteries (KCN)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_5px_#00daf3]"></div>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Retail Outlets</span>
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-sm"></div>
+            <span className="text-[10px] font-black uppercase tracking-tight text-slate-700">Retail Outlets</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_5px_#3b82f6]"></div>
-            <span className="text-[10px] font-bold uppercase tracking-tighter italic">Active Driver</span>
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-sm"></div>
+            <span className="text-[10px] font-black uppercase tracking-tight text-primary italic">Active Driver</span>
           </div>
         </div>
       </div>

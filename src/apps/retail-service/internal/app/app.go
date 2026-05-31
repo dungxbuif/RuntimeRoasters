@@ -7,6 +7,7 @@ import (
 
 	svcconfig "RuntimeRoasters/apps/retail-service/config"
 	retailgrpc "RuntimeRoasters/apps/retail-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/retail-service/internal/domain"
 	"RuntimeRoasters/apps/retail-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
 	"RuntimeRoasters/pkg/base/security"
@@ -119,6 +120,20 @@ func (a *App) routes(r *gin.Engine) {
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{"stores": stores})
+		})
+
+		group.POST("/stores", func(c *gin.Context) {
+			var store domain.Store
+			if err := c.ShouldBindJSON(&store); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				return
+			}
+			created, err := a.Service.CreateStore(c.Request.Context(), store)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusCreated, gin.H{"store": created})
 		})
 
 		group.POST("/orders", func(c *gin.Context) {

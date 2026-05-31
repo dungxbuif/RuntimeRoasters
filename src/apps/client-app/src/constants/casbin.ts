@@ -18,5 +18,5 @@ p = sub, obj, act
 e = some(where (p.eft == allow))
 
 [matchers]
-m = (r.sub == 'ADMIN') || (r.sub == p.sub && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act))
+m = (r.sub == 'ADMIN') || (g(r.sub, p.sub) && (keyMatch(r.obj, p.obj) || regexMatch(r.obj, p.obj)) && regexMatch(r.act, p.act))
 `;

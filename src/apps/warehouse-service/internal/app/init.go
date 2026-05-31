@@ -5,6 +5,7 @@ import (
 
 	svcconfig "RuntimeRoasters/apps/warehouse-service/config"
 	warehousegrpc "RuntimeRoasters/apps/warehouse-service/internal/delivery/grpc"
+	"RuntimeRoasters/apps/warehouse-service/internal/domain"
 	"RuntimeRoasters/apps/warehouse-service/internal/usecase"
 	"RuntimeRoasters/apps/warehouse-service/internal/worker"
 	"RuntimeRoasters/pkg/base"
@@ -27,8 +28,22 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
+	// Auto-migrate tables
+	if err := db.AutoMigrate(
+		&domain.Warehouse{},
+		&domain.ProductionBatch{},
+		&domain.PickupRequest{},
+		&domain.Intake{},
+		&domain.Inventory{},
+		&domain.RoastRun{},
+		&domain.InboxEvent{},
+	); err != nil {
+		return nil, nil, err
+	}
+
 	producer := kafka.NewProducer(cfg.KafkaBrokers)
 	pickupUseCase := usecase.NewPickupUseCase(db.DB, producer, cfg.KafkaPickupTopic, cfg.KafkaNotificationTopic, cfg.KafkaIntakeCreatedTopic, cfg.DefaultWarehouseID)
+	warehouseUC := usecase.NewWarehouseUseCase(db.DB)
 	aggregationUC := usecase.NewAggregationUseCase(db.DB)
 	processingUC := usecase.NewProcessingUseCase(db.DB)
 	inventoryUC := usecase.NewInventoryUseCase(db.DB, producer, cfg.KafkaStockTopic)
@@ -67,7 +82,7 @@ func InitializeApp() (*App, func(), error) {
 	systemHandler := warehousegrpc.NewSystemHandler(systemUC)
 
 	baseApp := base.NewApp(base.Options{Name: cfg.AppName, Config: cfg.BaseConfig})
-	app := NewApp(baseApp, &cfg, db, pickupUseCase, aggregationUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)
+	app := NewApp(baseApp, &cfg, db, pickupUseCase, warehouseUC, aggregationUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)
 
 	cleanup := func() {
 		guards.Close()

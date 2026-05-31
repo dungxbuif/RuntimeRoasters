@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { adminService } from '@/services/admin.service';
-import { Warehouse, Store, Truck, Users, Plus, Settings, UserPlus } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminService, CreateWarehouseRequest, CreateStoreRequest } from '@/services/admin.service';
+import { Warehouse, Store, Truck, Users, Plus, Settings, UserPlus, X, Loader2 } from 'lucide-react';
 
 type TabKey = 'warehouses' | 'stores' | 'vehicles' | 'drivers';
 
@@ -12,30 +12,6 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'stores', label: 'Stores', icon: Store },
   { key: 'vehicles', label: 'Vehicles', icon: Truck },
   { key: 'drivers', label: 'Drivers', icon: Users },
-];
-
-// Demo data — replace with real API calls
-const DEMO_WAREHOUSES = [
-  { id: 'wh-hn-001', name: 'Warehouse Hanoi', code: 'HN-001', location: 'Hòa Lạc, Hanoi', manager: 'warehouse.hn@runtimeroasters.com', capacity: '5000 tons', status: 'ACTIVE' },
-  { id: 'wh-hcm-001', name: 'Warehouse HCM', code: 'HCM-001', location: 'Sóng Thần, HCM', manager: 'Unassigned', capacity: '8000 tons', status: 'PENDING' },
-  { id: 'wh-dn-001', name: 'Warehouse Da Nang', code: 'DN-001', location: 'Hòa Khánh, Đà Nẵng', manager: 'warehouse.dn@runtimeroasters.com', capacity: '3000 tons', status: 'ACTIVE' },
-];
-
-const DEMO_STORES = [
-  { id: 'st-01', name: 'Runtime Roasters Hoàn Kiếm', location: 'Hanoi', manager: 'mgr.hn.hoankiem@runtimeroasters.com', status: 'ACTIVE' },
-  { id: 'st-02', name: 'Runtime Roasters Quận 1', location: 'HCM', manager: 'mgr.hcm.q1@runtimeroasters.com', status: 'ACTIVE' },
-  { id: 'st-03', name: 'Runtime Roasters Hải Châu', location: 'Đà Nẵng', manager: 'mgr.dn.haichau@runtimeroasters.com', status: 'ACTIVE' },
-];
-
-const DEMO_VEHICLES = [
-  { id: 'v-01', plate: '30A-12345', type: 'Refrigerated Truck', capacity: '2 tons', status: 'IDLE' },
-  { id: 'v-02', plate: '51B-67890', type: 'Van', capacity: '500 kg', status: 'ASSIGNED' },
-  { id: 'v-03', plate: '43C-11111', type: 'Pickup', capacity: '1 ton', status: 'EN_ROUTE' },
-];
-
-const DEMO_DRIVERS = [
-  { id: 'd-01', name: 'Driver Alpha', email: 'driver@runtimeroasters.com', vehicle: '30A-12345', status: 'AVAILABLE' },
-  { id: 'd-02', name: 'Driver Beta', email: 'driver.beta@runtimeroasters.com', vehicle: 'Unassigned', status: 'DRIVING' },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -50,12 +26,49 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ResourceManagementPage() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>('warehouses');
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Queries
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => adminService.listUsers(),
+  });
+
+  const { data: warehouses = [], isLoading: isWHLoading } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => adminService.listWarehouses(),
+    enabled: activeTab === 'warehouses',
+  });
+
+  const { data: stores = [], isLoading: isStoresLoading } = useQuery({
+    queryKey: ['stores'],
+    queryFn: () => adminService.listStores(),
+    enabled: activeTab === 'stores',
+  });
+
+  const { data: managers = [] } = useQuery({
+    queryKey: ['managers'],
+    queryFn: () => adminService.listManagers(),
+  });
+
+  // Mutations
+  const createWHMutation = useMutation({
+    mutationFn: (data: CreateWarehouseRequest) => adminService.createWarehouse(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      setShowCreateModal(false);
+    }
+  });
+
+  const createStoreMutation = useMutation({
+    mutationFn: (data: CreateStoreRequest) => adminService.createStore(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+      setShowCreateModal(false);
+    }
   });
 
   const StatusBadge = ({ status }: { status: string }) => (
@@ -83,7 +96,10 @@ export default function ResourceManagementPage() {
             Warehouses, Stores, Vehicles & Drivers
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+        <button 
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+        >
           <Plus className="w-4 h-4" />
           Create {activeTab.slice(0, -1)}
         </button>
@@ -107,81 +123,71 @@ export default function ResourceManagementPage() {
       {/* Tab Content */}
       <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                {activeTab === 'warehouses' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Location</th><th className="px-6 py-3">Manager</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
-                {activeTab === 'stores' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Location</th><th className="px-6 py-3">Manager</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
-                {activeTab === 'vehicles' && (<><th className="px-6 py-3">Plate</th><th className="px-6 py-3">Type</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
-                {activeTab === 'drivers' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Vehicle</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {activeTab === 'warehouses' && DEMO_WAREHOUSES.map(wh => (
-                <tr key={wh.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4"><span className="text-xs font-black text-slate-900">{wh.name}</span><br/><span className="text-[9px] font-mono text-slate-400">{wh.code}</span></td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{wh.location}</td>
-                  <td className="px-6 py-4 text-[10px] font-bold text-slate-500">{wh.manager}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{wh.capacity}</td>
-                  <td className="px-6 py-4"><StatusBadge status={wh.status} /></td>
-                  <td className="px-6 py-4 text-right space-x-3">
-                    <ActionLink onClick={() => {}}>Edit</ActionLink>
-                    <ActionLink onClick={() => setShowAssignModal(wh.id)}>Assign</ActionLink>
-                  </td>
+          {isWHLoading || isStoresLoading ? (
+            <div className="h-full flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse italic">
+              Syncing Ledger...
+            </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                  {activeTab === 'warehouses' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Location</th><th className="px-6 py-3">Manager</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
+                  {activeTab === 'stores' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Location</th><th className="px-6 py-3">Manager</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
+                  {activeTab === 'vehicles' && (<><th className="px-6 py-3">Plate</th><th className="px-6 py-3">Type</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
+                  {activeTab === 'drivers' && (<><th className="px-6 py-3">Name</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Vehicle</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Actions</th></>)}
                 </tr>
-              ))}
-              {activeTab === 'stores' && DEMO_STORES.map(st => (
-                <tr key={st.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-black text-slate-900">{st.name}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{st.location}</td>
-                  <td className="px-6 py-4 text-[10px] font-bold text-slate-500">{st.manager}</td>
-                  <td className="px-6 py-4"><StatusBadge status={st.status} /></td>
-                  <td className="px-6 py-4 text-right space-x-3">
-                    <ActionLink onClick={() => {}}>Edit</ActionLink>
-                    <ActionLink onClick={() => setShowAssignModal(st.id)}>Assign</ActionLink>
-                  </td>
-                </tr>
-              ))}
-              {activeTab === 'vehicles' && DEMO_VEHICLES.map(v => (
-                <tr key={v.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-black font-mono text-slate-900">{v.plate}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{v.type}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{v.capacity}</td>
-                  <td className="px-6 py-4"><StatusBadge status={v.status} /></td>
-                  <td className="px-6 py-4 text-right"><ActionLink onClick={() => {}}>Edit</ActionLink></td>
-                </tr>
-              ))}
-              {activeTab === 'drivers' && DEMO_DRIVERS.map(d => (
-                <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-black text-slate-900">{d.name}</td>
-                  <td className="px-6 py-4 text-[10px] font-bold text-slate-500">{d.email}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">{d.vehicle}</td>
-                  <td className="px-6 py-4"><StatusBadge status={d.status} /></td>
-                  <td className="px-6 py-4 text-right"><ActionLink onClick={() => {}}>Edit</ActionLink></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {activeTab === 'warehouses' && warehouses.map(wh => (
+                  <tr key={wh.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4"><span className="text-xs font-black text-slate-900">{wh.name}</span><br/><span className="text-[9px] font-mono text-slate-400">{wh.code}</span></td>
+                    <td className="px-6 py-4 text-xs font-bold text-slate-600">{wh.location}</td>
+                    <td className="px-6 py-4 text-[10px] font-bold text-slate-500">{wh.manager_email || 'Unassigned'}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-slate-600">{wh.capacity}</td>
+                    <td className="px-6 py-4"><StatusBadge status={wh.status} /></td>
+                    <td className="px-6 py-4 text-right space-x-3">
+                      <ActionLink onClick={() => {}}>Edit</ActionLink>
+                      <ActionLink onClick={() => setShowAssignModal(wh.id)}>Assign</ActionLink>
+                    </td>
+                  </tr>
+                ))}
+                {activeTab === 'stores' && stores.map(st => (
+                  <tr key={st.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4"><span className="text-xs font-black text-slate-900">{st.name}</span><br/><span className="text-[9px] font-mono text-slate-400">{st.city}</span></td>
+                    <td className="px-6 py-4 text-xs font-bold text-slate-600">{st.address}</td>
+                    <td className="px-6 py-4 text-[10px] font-bold text-slate-500">{st.manager_email || 'Unassigned'}</td>
+                    <td className="px-6 py-4"><StatusBadge status={st.status} /></td>
+                    <td className="px-6 py-4 text-right space-x-3">
+                      <ActionLink onClick={() => {}}>Edit</ActionLink>
+                      <ActionLink onClick={() => setShowAssignModal(st.id)}>Assign</ActionLink>
+                    </td>
+                  </tr>
+                ))}
+                {activeTab === 'warehouses' && warehouses.length === 0 && (
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 italic">No warehouses registered.</td></tr>
+                )}
+                {activeTab === 'stores' && stores.length === 0 && (
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 italic">No stores registered.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
-      {/* Summary Strip */}
-      <div className="flex gap-6 px-6 py-3 bg-slate-50 rounded-xl border border-slate-100">
-        {[
-          { icon: Warehouse, label: 'Warehouses', count: DEMO_WAREHOUSES.length },
-          { icon: Store, label: 'Stores', count: DEMO_STORES.length },
-          { icon: Truck, label: 'Vehicles', count: DEMO_VEHICLES.length },
-          { icon: Users, label: 'Drivers', count: DEMO_DRIVERS.length },
-        ].map(s => (
-          <div key={s.label} className="flex items-center gap-2">
-            <s.icon className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black text-slate-900">{s.count}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase">{s.label}</span>
-          </div>
-        ))}
-      </div>
+      {/* Create Modal */}
+      {showCreateModal && (
+        <CreateResourceModal 
+          type={activeTab} 
+          onClose={() => setShowCreateModal(false)}
+          onWHSubmit={(data: any) => createWHMutation.mutate(data)}
+          onStoreSubmit={(data: any) => createStoreMutation.mutate(data)}
+          managers={managers}
+          isPending={createWHMutation.isPending || createStoreMutation.isPending}
+        />
+      )}
 
-      {/* Assign Modal */}
+      {/* Assign Modal (existing) */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowAssignModal(null)}>
           <div className="bg-white rounded-3xl p-8 w-[420px] shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -213,6 +219,138 @@ export default function ResourceManagementPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CreateResourceModal({ type, onClose, onWHSubmit, onStoreSubmit, managers, isPending }: any) {
+  const [formData, setFormData] = useState<any>({
+    name: '',
+    code: '',
+    location: '',
+    city: '',
+    address: '',
+    manager_id: '',
+    capacity: '5000 Tons',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const manager = managers.find((m: any) => m.id === formData.manager_id);
+    if (type === 'warehouses') {
+      onWHSubmit({
+        ...formData,
+        manager_email: manager?.email || '',
+      });
+    } else if (type === 'stores') {
+      onStoreSubmit({
+        name: formData.name,
+        city: formData.city,
+        address: formData.address,
+        manager_id: formData.manager_id,
+        manager_email: manager?.email || '',
+      });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-lg rounded-[2.5rem] border border-slate-200 shadow-2xl p-10 relative overflow-hidden">
+        <button onClick={onClose} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 transition-colors">
+          <X className="w-6 h-6" />
+        </button>
+
+        <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 mb-8">
+          Register <span className="text-primary">{type.slice(0, -1)}</span>
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Entity Name</label>
+            <input required type="text" placeholder="e.g. South Hub A" 
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none transition-all"
+              value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+
+          {type === 'warehouses' ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Code</label>
+                  <input required type="text" placeholder="WH-001" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none uppercase font-mono"
+                    value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Capacity</label>
+                  <input required type="text" placeholder="5000 Tons" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none"
+                    value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Address</label>
+                <input required type="text" placeholder="District 7, HCM City" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none"
+                  value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">City</label>
+                  <input required type="text" placeholder="Hanoi" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none"
+                    value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                   {/* Empty for spacing */}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Full Address</label>
+                <input required type="text" placeholder="123 Ly Thai To, Hoan Kiem" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none"
+                  value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})}
+                />
+              </div>
+            </>
+          )}
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Assigned Manager</label>
+            <select required 
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:border-primary outline-none appearance-none"
+              value={formData.manager_id} onChange={e => setFormData({...formData, manager_id: e.target.value})}
+            >
+              <option value="">Select personnel...</option>
+              {managers.map((m: any) => (
+                <option key={m.id} value={m.id}>{m.email} ({m.role})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="pt-6">
+            <button 
+              type="submit"
+              disabled={isPending}
+              className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary transition-all shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50"
+            >
+              {isPending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Provisioning...</>
+              ) : (
+                'Finalize Registration'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

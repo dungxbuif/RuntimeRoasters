@@ -3,17 +3,19 @@
 import { NotificationItem } from '@/components/common/NotificationFeed';
 import StatusPipeline from '@/components/common/StatusPipeline';
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
+import { logisticsService } from '@/services/logistics.service';
 import { warehouseService } from '@/services/warehouse.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, MapPin, Truck, Warehouse } from 'lucide-react';
+import { CheckCircle2, MapPin, Truck, Warehouse, UserPlus, X, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import { CasbinGuard } from '@/lib/auth';
-
-
 
 export default function WarehouseOperationsPage() {
   const queryClient = useQueryClient();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('wh-hn-001');
+  const [assignModal, setAssignModal] = useState<{ type: 'pickup' | 'delivery', id: string } | null>(null);
+  const [assignmentData, setAssignmentData] = useState({ driver_id: '', vehicle_id: '' });
 
   const { data: batches = [] } = useQuery({
     queryKey: ['warehouse', 'batches'],
@@ -39,13 +41,25 @@ export default function WarehouseOperationsPage() {
     refetchInterval: 5000,
   });
 
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['logistics', 'drivers'],
+    queryFn: () => logisticsService.listDrivers(),
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['logistics', 'vehicles'],
+    queryFn: () => logisticsService.listAvailableVehicles(),
+  });
+
   const dispatchMutation = useMutation({
-    mutationFn: (args: { type: 'pickup' | 'delivery', id: string }) => {
-      if (args.type === 'pickup') return warehouseService.dispatchPickupRequest(args.id);
+    mutationFn: (args: { type: 'pickup' | 'delivery', id: string, driver_id: string, vehicle_id: string }) => {
+      if (args.type === 'pickup') return warehouseService.dispatchPickupRequest(args.id, args.driver_id, args.vehicle_id);
       return warehouseService.dispatchRequest(args.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouse'] });
+      setAssignModal(null);
+      setAssignmentData({ driver_id: '', vehicle_id: '' });
     }
   });
 
@@ -65,8 +79,16 @@ export default function WarehouseOperationsPage() {
     { id: '4', icon: 'payments', message: `Aeroco Coffee • 1200kg Robusta • Store Hoan Kiem`, time: '08:09', color: 'green' },
   ], []);
 
-  const handleDispatch = (type: 'pickup' | 'delivery', id: string) => {
-    dispatchMutation.mutate({ type, id });
+  const handleDispatchClick = (type: 'pickup' | 'delivery', id: string) => {
+    setAssignModal({ type, id });
+  };
+
+  const handleFinalizeDispatch = () => {
+    if (!assignModal) return;
+    dispatchMutation.mutate({ 
+      ...assignModal, 
+      ...assignmentData 
+    });
   };
 
   const handleConfirmReceipt = (id: string) => {
@@ -115,7 +137,7 @@ export default function WarehouseOperationsPage() {
                  
                  {req.status === 'CREATED' && (
                    <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
-                    <button onClick={() => handleDispatch('pickup', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
+                    <button onClick={() => handleDispatchClick('pickup', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
                       <Truck className="w-4 h-4" /> Dispatch Pickup
                     </button>
                    </CasbinGuard>
@@ -229,7 +251,7 @@ export default function WarehouseOperationsPage() {
                  
                  {req.status === 'STOCK_RESERVED' && (
                    <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
-                    <button onClick={() => handleDispatch('delivery', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
+                    <button onClick={() => handleDispatchClick('delivery', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
                       <Truck className="w-4 h-4" /> Dispatch Delivery
                     </button>
                    </CasbinGuard>
@@ -262,6 +284,62 @@ export default function WarehouseOperationsPage() {
             ))}
          </div>
       </div>
+
+      {/* Assignment Modal */}
+      {assignModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-[2rem] border border-slate-200 shadow-2xl p-8 relative">
+            <button onClick={() => setAssignModal(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900">
+              <X className="w-6 h-6" />
+            </button>
+
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-6 flex items-center gap-2 italic">
+              <UserPlus className="w-6 h-6 text-primary" />
+              Assign <span className="text-primary">Fleet</span>
+            </h3>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Select Driver</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary appearance-none"
+                  value={assignmentData.driver_id}
+                  onChange={e => setAssignmentData({...assignmentData, driver_id: e.target.value})}
+                >
+                  <option value="">Choose a driver...</option>
+                  {drivers.map((d: any) => (
+                    <option key={d.id} value={d.id}>{d.name} ({d.status})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Select Vehicle</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary appearance-none"
+                  value={assignmentData.vehicle_id}
+                  onChange={e => setAssignmentData({...assignmentData, vehicle_id: e.target.value})}
+                >
+                  <option value="">Choose a vehicle...</option>
+                  {vehicles.map((v: any) => (
+                    <option key={v.id} value={v.id}>{v.plate_number} - {v.type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  onClick={handleFinalizeDispatch}
+                  disabled={!assignmentData.driver_id || !assignmentData.vehicle_id || dispatchMutation.isPending}
+                  className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {dispatchMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Dispatching...</> : 'Finalize Dispatch'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

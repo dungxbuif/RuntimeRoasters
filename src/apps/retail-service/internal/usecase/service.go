@@ -105,6 +105,18 @@ func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]
 	}, nil
 }
 
+func (s *Service) CreateStore(ctx context.Context, store domain.Store) (domain.Store, error) {
+	if store.ID == "" {
+		store.ID = uuid.NewString()
+	}
+	now := time.Now()
+	store.CreatedAt = now
+	store.UpdatedAt = now
+	
+	err := s.db.WithContext(ctx).Where("name = ? AND city = ?", store.Name, store.City).FirstOrCreate(&store).Error
+	return store, err
+}
+
 func (s *Service) ListStores(ctx context.Context) ([]domain.Store, error) {
 	var stores []domain.Store
 	_, storeIDs, allStores := identity.StoreScopeFromContext(ctx)

@@ -90,7 +90,7 @@ func (uc *PickupUseCase) ListPickupRequests(ctx context.Context) ([]domain.Picku
 	return pickups, err
 }
 
-func (uc *PickupUseCase) DispatchPickup(ctx context.Context, id string) (*domain.PickupRequest, error) {
+func (uc *PickupUseCase) DispatchPickup(ctx context.Context, id string, driverID, vehicleID string) (*domain.PickupRequest, error) {
 	var pickup domain.PickupRequest
 	now := time.Now()
 	err := uc.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -113,7 +113,7 @@ func (uc *PickupUseCase) DispatchPickup(ctx context.Context, id string) (*domain
 			pickup.Status = domain.PickupRequestStatusDispatched
 			pickup.DispatchedAt = &now
 		}
-		return uc.publishPickupRequested(ctx, pickup, pickup.HarvestID, "", "")
+		return uc.publishPickupRequested(ctx, pickup, pickup.HarvestID, driverID, vehicleID)
 	})
 	if err != nil {
 		return nil, err

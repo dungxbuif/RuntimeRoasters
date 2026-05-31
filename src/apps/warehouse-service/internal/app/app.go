@@ -25,6 +25,7 @@ type App struct {
 	Cfg           *svcconfig.Config
 	DB            *database.DB
 	PickupService *usecase.PickupUseCase
+	WarehouseUC   *usecase.WarehouseUseCase
 	Aggregation   *usecase.AggregationUseCase
 	Processing    *usecase.ProcessingUseCase
 	Inventory     *usecase.InventoryUseCase
@@ -35,12 +36,13 @@ type App struct {
 	Guards        *security.HTTPGuards
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, aggregation *usecase.AggregationUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, systemHandler *warehousegrpc.SystemHandler, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, warehouseUC *usecase.WarehouseUseCase, aggregation *usecase.AggregationUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, systemHandler *warehousegrpc.SystemHandler, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
 	return &App{
 		Base:          baseApp,
 		Cfg:           cfg,
 		DB:            db,
 		PickupService: pickupSvc,
+		WarehouseUC:   warehouseUC,
 		Aggregation:   aggregation,
 		Processing:    processing,
 		Inventory:     inventory,
@@ -118,6 +120,28 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, res)
 	})
 
+	v1.GET("/warehouses", func(c *gin.Context) {
+		warehouses, err := a.WarehouseUC.ListWarehouses(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"warehouses": warehouses})
+	})
+	v1.POST("/warehouses", func(c *gin.Context) {
+		var wh domain.Warehouse
+		if err := c.ShouldBindJSON(&wh); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		created, err := a.WarehouseUC.CreateWarehouse(c.Request.Context(), wh)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"warehouse": created})
+	})
+
 	v1.GET("/intakes", func(c *gin.Context) {
 		intakes, err := a.Aggregation.GetUnassignedIntakes(c.Request.Context())
 		if err != nil {
@@ -136,13 +160,19 @@ func (a *App) routes(r *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"pickup_requests": pickups})
 	})
 	v1.POST("/pickup-requests/:id/dispatch", func(c *gin.Context) {
-		pickup, err := a.PickupService.DispatchPickup(c.Request.Context(), c.Param("id"))
+		var req struct {
+			DriverID  string `json:"driver_id"`
+			VehicleID string `json:"vehicle_id"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		res, err := a.PickupService.DispatchPickup(c.Request.Context(), c.Param("id"), req.DriverID, req.VehicleID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"pickup_request": pickup})
+		c.JSON(http.StatusOK, gin.H{"pickup_request": res})
 	})
+
 	v1.POST("/pickup-requests/:id/receive", func(c *gin.Context) {
 		intake, err := a.PickupService.ReceivePickup(c.Request.Context(), c.Param("id"))
 		if err != nil {

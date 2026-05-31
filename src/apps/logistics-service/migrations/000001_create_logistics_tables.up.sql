@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS locations (
 CREATE TABLE IF NOT EXISTS shipments (
     id UUID PRIMARY KEY,
     type VARCHAR(32) NOT NULL DEFAULT 'RETAIL_DELIVERY',
-    order_id VARCHAR(64) NOT NULL,
+    order_id VARCHAR(64),
     driver_id UUID REFERENCES drivers(id),
     status VARCHAR(32) NOT NULL,
     current_leg VARCHAR(24),

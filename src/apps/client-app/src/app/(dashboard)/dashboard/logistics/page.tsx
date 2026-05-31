@@ -131,6 +131,7 @@ export default function LogisticsDashboard() {
             shipments={shipments}
             routes={routes}
             activeDriverLocations={activeDriverLocations}
+            showRoutes={simulationActive}
           />
         </div>
 
