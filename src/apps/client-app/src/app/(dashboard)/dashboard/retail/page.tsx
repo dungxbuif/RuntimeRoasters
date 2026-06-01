@@ -1,184 +1,216 @@
-import React from 'react';
+'use client';
 
-export default function RetailSagaOrchestratorPage() {
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { retailService, Order } from '@/services/retail.service';
+import { ShoppingBag, CreditCard, CheckCircle2, Truck, Package, AlertCircle, RefreshCw, Loader2, Search, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
+import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
+import { CasbinGuard } from '@/lib/auth';
+
+const SAGA_STEPS: PipelineStep[] = [
+  { key: 'PENDING', label: 'Created' },
+  { key: 'PAYMENT_PENDING', label: 'Payment' },
+  { key: 'PAYMENT_COMPLETED', label: 'Paid' },
+  { key: 'RESERVED', label: 'Reserved' },
+  { key: 'DISPATCH_REQUESTED', label: 'Awaiting' },
+  { key: 'SHIPPING', label: 'Shipping' },
+  { key: 'DELIVERED', label: 'Delivered' },
+  { key: 'COMPLETED', label: 'Completed' },
+];
+
+const STATUS_CONFIG: Record<string, { label: string, color: string, icon: LucideIcon }> = {
+  PENDING: { label: 'Awaiting Payment', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: CreditCard },
+  PAYMENT_PENDING: { label: 'Processing Payment', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: Loader2 },
+  PAYMENT_COMPLETED: { label: 'Payment Received', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle2 },
+  RESERVED: { label: 'Inventory Reserved', color: 'bg-purple-50 text-purple-700 border-purple-200', icon: Package },
+  DISPATCH_REQUESTED: { label: 'Awaiting Dispatch', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Truck },
+  SHIPPING: { label: 'In Transit', color: 'bg-primary/10 text-primary border-primary/20', icon: Truck },
+  DELIVERED: { label: 'Delivered', color: 'bg-teal-50 text-teal-700 border-teal-200', icon: CheckCircle2 },
+  COMPLETED: { label: 'Saga Completed', color: 'bg-slate-900 text-white border-slate-800', icon: CheckCircle2 },
+  REJECTED: { label: 'Rejected', color: 'bg-error-container text-on-error-container border-error/20', icon: X },
+  FAILED: { label: 'Saga Failed', color: 'bg-error text-white border-error', icon: AlertCircle },
+};
+
+export default function RetailOperationsPage() {
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState('');
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['retail', 'orders'],
+    queryFn: () => retailService.listOrders(),
+    refetchInterval: 5000,
+  });
+
+  const payMutation = useMutation({
+    mutationFn: (orderId: string) => retailService.simulatePayment(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['retail', 'orders'] });
+    }
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: (orderId: string) => retailService.confirmOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['retail', 'orders'] });
+    }
+  });
+
+  const filteredOrders = orders.filter(o =>
+    o.id.toLowerCase().includes(filter.toLowerCase()) ||
+    o.status.toLowerCase().includes(filter.toLowerCase())
+  );
+
   return (
-    <div className="min-h-full bg-surface text-on-surface p-8 md:p-12 lg:p-16 font-body selection:bg-primary-fixed selection:text-on-primary-fixed relative overflow-x-hidden">
-      {/* SVG Filters for Sketchy Effects */}
-      <svg className="absolute hidden" height="0" width="0">
-        <filter id="retail-rough-edge">
-          <feTurbulence baseFrequency="0.05" numOctaves="3" result="noise" type="fractalNoise"></feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="3"></feDisplacementMap>
-        </filter>
-      </svg>
+    <div className="h-full flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900 flex items-center gap-3 italic">
+            <ShoppingBag className="w-7 h-7 text-primary" />
+            Retail Operations
+          </h1>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
+            Distributed Order Saga Orchestrator
+          </p>
+        </div>
+        <div className="flex gap-4">
+           <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search orders..."
+                className="bg-white border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-xs font-bold focus:border-primary outline-none w-64 shadow-sm"
+                value={filter}
+                onChange={e => setFilter(e.target.value)}
+              />
+           </div>
+           <button
+             onClick={() => queryClient.invalidateQueries({ queryKey: ['retail', 'orders'] })}
+             className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+           >
+             <RefreshCw className={`w-4 h-4 text-slate-600 ${isLoading ? 'animate-spin' : ''}`} />
+           </button>
+        </div>
+      </div>
 
-      <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-        {/* Hero Section */}
-        <section className="flex justify-between items-end border-b border-outline-variant/30 pb-8">
-          <div>
-            <h1 className="text-4xl font-black font-headline tracking-tighter text-on-surface uppercase italic">Saga Orchestrator</h1>
-            <p className="text-on-surface-variant mt-2 font-medium tracking-widest text-xs uppercase">Distributed Transaction Monitor // Retail Core</p>
-          </div>
-          <div className="flex gap-4">
-            <span className="px-3 py-1 bg-error-container text-on-error-container rounded-full text-[10px] font-black flex items-center gap-1 border border-error/20 shadow-sm">
-              <span className="material-symbols-outlined !text-sm animate-pulse">warning</span> ROLLBACK_ACTIVE
-            </span>
-          </div>
-        </section>
-
-        {/* Hero Stats */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[
-            { label: 'Active Sagas', val: '1,284', trend: '+12%', trendColor: 'text-tertiary' },
-            { label: 'Failure Rate', val: '0.42%', trend: 'Stable', trendColor: 'text-on-surface-variant' },
-            { label: 'Avg. Latency', val: '342ms', trend: '+14ms', trendColor: 'text-error' },
-            { label: 'Rollback Count', val: '18', trend: 'Last 24h', trendColor: 'text-on-surface-variant' }
-          ].map((stat, i) => (
-            <div key={i} className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition-shadow">
-              <span className="text-on-surface-variant font-headline text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{stat.label}</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black tracking-tighter text-on-surface italic">{stat.val}</span>
-                <span className={`${stat.trendColor} text-[10px] font-black uppercase tracking-tighter italic`}>{stat.trend}</span>
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4 text-slate-400">
+               <Loader2 className="w-8 h-8 animate-spin" />
+               <span className="text-[10px] font-black uppercase tracking-widest italic">Synchronizing Transaction Ledger...</span>
             </div>
-          ))}
-        </section>
-
-        {/* The Saga Visualizer */}
-        <section className="bg-surface-container-lowest rounded-[2rem] p-12 border border-outline-variant/15 shadow-xl relative overflow-hidden">
-          <div className="flex justify-between items-start mb-16 relative z-10">
-            <div>
-              <h3 className="text-2xl font-black font-headline text-on-surface mb-2 tracking-tight uppercase italic">Order #RR-9942 Transaction Flow</h3>
-              <p className="text-on-surface-variant max-w-xl text-sm font-medium leading-relaxed">
-                Real-time trace of the distributed transaction. Visualizing the Choreography-based Saga with active compensation logic.
-              </p>
+          ) : filteredOrders.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4 text-slate-300">
+               <ShoppingBag className="w-16 h-16 opacity-20" />
+               <span className="text-[10px] font-black uppercase tracking-widest italic">No orders in current cycle.</span>
             </div>
-          </div>
-
-          {/* Diagram Canvas */}
-          <div className="relative min-h-[400px] w-full flex items-center justify-center">
-            {/* SVG Connector Lines */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30" xmlns="http://www.w3.org/2000/svg">
-              <path className="marker-path" d="M 220 180 L 380 180" fill="none" stroke="#004ac6" strokeWidth="2.5" strokeDasharray="5 3"></path>
-              <path className="marker-path" d="M 580 180 L 740 180" fill="none" stroke="#004ac6" strokeWidth="2.5" strokeDasharray="5 3"></path>
-              <path className="marker-path" d="M 840 220 Q 840 320 500 320" fill="none" stroke="#ba1a1a" strokeDasharray="6" strokeWidth="2" style={{ filter: 'url(#retail-rough-edge)' }}></path>
-              <path className="marker-path" d="M 400 320 L 120 320 Q 80 320 80 220" fill="none" stroke="#ba1a1a" strokeDasharray="6" strokeWidth="2" style={{ filter: 'url(#retail-rough-edge)' }}></path>
-            </svg>
-
-            {/* Service Nodes */}
-            <div className="flex justify-between w-full items-center gap-12 relative z-10 px-12">
-              {/* Node 1 */}
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-48 h-44 bg-surface-container-low rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-4 relative border-2 border-tertiary-fixed shadow-lg hover:scale-105 transition-transform cursor-pointer">
-                  <div className="w-14 h-14 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed shadow-inner">
-                    <span className="material-symbols-outlined !text-3xl">payments</span>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs text-on-surface uppercase tracking-tighter">Payment Service</h4>
-                    <p className="text-[9px] text-tertiary font-mono font-black mt-1 uppercase italic tracking-widest">STATUS: COMMITTED</p>
-                  </div>
-                  <div className="absolute -top-4 -right-4 w-10 h-10 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed border-4 border-surface shadow-lg">
-                    <span className="material-symbols-outlined !text-lg font-black">check</span>
-                  </div>
-                </div>
-              </div>
-              {/* Node 2 */}
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-48 h-44 bg-surface-container-low rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-4 relative border-2 border-tertiary-fixed shadow-lg hover:scale-105 transition-transform cursor-pointer">
-                  <div className="w-14 h-14 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed shadow-inner">
-                    <span className="material-symbols-outlined !text-3xl">inventory_2</span>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs text-on-surface uppercase tracking-tighter">Warehouse (WMS)</h4>
-                    <p className="text-[9px] text-tertiary font-mono font-black mt-1 uppercase italic tracking-widest">ALLOCATED_OK</p>
-                  </div>
-                  <div className="absolute -top-4 -right-4 w-10 h-10 bg-tertiary-fixed rounded-full flex items-center justify-center text-on-tertiary-fixed border-4 border-surface shadow-lg">
-                    <span className="material-symbols-outlined !text-lg font-black">check</span>
-                  </div>
-                </div>
-              </div>
-              {/* Node 3 */}
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-48 h-44 bg-error-container rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-4 relative border-2 border-error shadow-2xl hover:scale-105 transition-transform cursor-pointer">
-                  <div className="w-14 h-14 bg-error rounded-full flex items-center justify-center text-on-error shadow-xl animate-pulse">
-                    <span className="material-symbols-outlined !text-3xl">local_shipping</span>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs text-on-error-container uppercase tracking-tighter">Logistics API</h4>
-                    <p className="text-[9px] text-error font-mono font-black mt-1 uppercase tracking-tighter italic">FAILURE: 404_ADDR</p>
-                  </div>
-                  <div className="absolute -top-4 -right-4 w-10 h-10 bg-error rounded-full flex items-center justify-center text-on-error border-4 border-surface shadow-lg">
-                    <span className="material-symbols-outlined !text-lg font-black">close</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Marker Annotations */}
-            <div className="absolute top-0 left-1/4 transform -translate-x-1/2">
-              <div className="font-marker text-2xl text-primary rotate-[-4deg] max-w-[200px] drop-shadow-sm font-black">
-                Phase 1: Event-driven payment verification
-              </div>
-            </div>
-            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
-              <div className="bg-error-container border-2 border-error/20 p-6 rounded-2xl shadow-2xl scale-110">
-                <div className="font-marker text-3xl text-error font-black mb-1 tracking-tighter">Saga Rollback Triggered!</div>
-                <p className="font-marker text-lg text-on-error-container font-medium">Reversing locally committed transactions...</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
-        </section>
-
-        {/* Bottom Bento Logs */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-surface-container-lowest p-8 rounded-3xl border border-outline-variant/15 shadow-sm">
-            <h3 className="font-black font-headline text-sm uppercase tracking-[0.2em] text-on-surface-variant opacity-60 mb-8 flex items-center gap-2 italic">
-              <span className="material-symbols-outlined text-primary !text-xl">list_alt</span>
-              Live Compensation Log
-            </h3>
-            <div className="space-y-4">
-              {[
-                { type: 'REFUND_TX_INITIATED', id: '8829-PAY', time: '14:22:01.04', status: 'tertiary' },
-                { type: 'STOCK_RESTORE_COMPLETE', id: 'SKU: ETH-L-01', time: '14:21:58.22', status: 'tertiary' },
-                { type: 'SHIPMENT_REJECTED', id: 'INVALID_POSTAL', time: '14:21:55.10', status: 'error' }
-              ].map((log, i) => (
-                <div key={i} className={`flex items-center justify-between p-5 rounded-2xl border border-outline-variant/10 ${log.status === 'error' ? 'bg-error-container/30 border-error/10' : 'bg-surface-container-low/50'}`}>
-                  <div className="flex items-center gap-4">
-                    <span className={`w-2.5 h-2.5 rounded-full ${log.status === 'error' ? 'bg-error animate-pulse' : 'bg-tertiary-fixed-dim shadow-[0_0_8px_rgba(78,222,163,0.5)]'}`}></span>
-                    <span className={`text-[10px] font-mono font-black ${log.status === 'error' ? 'text-error' : 'text-on-surface'}`}>{log.type}</span>
-                    <span className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest opacity-40">{log.id}</span>
-                  </div>
-                  <span className="text-[10px] text-on-surface-variant font-mono tabular-nums opacity-60">{log.time}</span>
-                </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {filteredOrders.map(order => (
+                <OrderRow
+                  key={order.id}
+                  order={order}
+                  onPay={() => payMutation.mutate(order.id)}
+                  isPaying={payMutation.isPending && payMutation.variables === order.id}
+                  onConfirm={() => confirmMutation.mutate(order.id)}
+                  isConfirming={confirmMutation.isPending && confirmMutation.variables === order.id}
+                />
               ))}
             </div>
-          </div>
+          )}
+        </div>
+      </div>
 
-          <div className="bg-on-background text-white p-10 rounded-[2.5rem] relative overflow-hidden shadow-2xl border-t-8 border-primary">
-            <div className="relative z-10 h-full flex flex-col">
-              <h4 className="font-black font-headline text-xs uppercase tracking-[0.3em] text-slate-500 mb-10 italic">Orchestrator Config</h4>
-              <ul className="space-y-8 flex-1">
-                {[
-                  { label: 'Timeout Policy', val: '5000ms' },
-                  { label: 'Retry Strategy', val: 'Exp. Backoff' },
-                  { label: 'Max Retries', val: '3' },
-                  { label: 'Consistency', val: 'Eventual' }
-                ].map((conf, i) => (
-                  <li key={i} className="flex justify-between items-center border-b border-slate-800 pb-3 group">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-300 transition-colors">{conf.label}</span>
-                    <span className="font-mono text-[10px] font-black text-primary-fixed-dim skew-x-[-10deg]">{conf.val}</span>
-                  </li>
-                ))}
-              </ul>
-              <button className="mt-12 w-full py-4 bg-white text-on-background font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-primary-fixed hover:scale-95 transition-all shadow-xl flex items-center justify-center gap-3">
-                <span className="material-symbols-outlined !text-lg">settings_suggest</span>
-                Update Saga Logic
-              </button>
-            </div>
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-[100px]"></div>
+      {/* Quick Summary */}
+      <div className="flex gap-8 px-8 py-4 bg-slate-900 rounded-2xl shadow-xl">
+         <div className="flex flex-col">
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Volume</span>
+            <span className="text-xl font-black text-white italic tracking-tighter">${orders.reduce((acc, o) => acc + o.total_amount, 0).toLocaleString()}</span>
+         </div>
+         <div className="w-px h-10 bg-slate-800 my-auto"></div>
+         <div className="flex flex-col">
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Active Sagas</span>
+            <span className="text-xl font-black text-primary italic tracking-tighter">{orders.filter(o => !['COMPLETED', 'REJECTED', 'FAILED'].includes(o.status)).length}</span>
+         </div>
+         <div className="w-px h-10 bg-slate-800 my-auto"></div>
+         <div className="flex flex-col">
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Health Rate</span>
+            <span className="text-xl font-black text-green-400 italic tracking-tighter">99.8%</span>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderRow({ order, onPay, isPaying, onConfirm, isConfirming }: { order: Order, onPay: () => void, isPaying: boolean, onConfirm: () => void, isConfirming: boolean }) {
+  const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
+  const StatusIcon = config.icon;
+
+  return (
+    <div className="p-8 hover:bg-slate-50/50 transition-colors group">
+      <div className="flex justify-between items-start mb-8">
+        <div className="flex gap-6 items-center">
+          <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:shadow-md transition-all">
+            <ShoppingBag className="w-6 h-6 text-slate-400 group-hover:text-primary" />
           </div>
-        </section>
+          <div>
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Order #{order.id.slice(0, 8).toUpperCase()}</h3>
+              <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border flex items-center gap-1.5 ${config.color}`}>
+                <StatusIcon className={`w-3 h-3 ${order.status === 'PAYMENT_PENDING' ? 'animate-spin' : ''}`} />
+                {config.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 mt-1.5">
+               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                 <CreditCard className="w-3 h-3" /> ${order.total_amount.toLocaleString()}
+               </span>
+               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                 {new Date(order.created_at).toLocaleString()}
+               </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          {order.status === 'PENDING' && (
+            <CasbinGuard obj={AUTH_RESOURCES.ORDER} act={AUTH_ACTIONS.WRITE}>
+              <button
+                onClick={onPay}
+                disabled={isPaying}
+                className="bg-primary text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isPaying ? <Loader2 className="w-3 h-3 animate-spin" /> : <CreditCard className="w-3 h-3" />}
+                Pay via Stripe
+              </button>
+            </CasbinGuard>
+          )}
+          {order.status === 'DELIVERED' && (
+            <CasbinGuard obj={AUTH_RESOURCES.ORDER} act={AUTH_ACTIONS.WRITE}>
+              <button
+                onClick={onConfirm}
+                disabled={isConfirming}
+                className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isConfirming ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                Confirm Receipt
+              </button>
+            </CasbinGuard>
+          )}
+          {['COMPLETED'].includes(order.status) && (
+             <div className="bg-green-50 text-green-600 p-2.5 rounded-xl border border-green-100">
+               <CheckCircle2 className="w-5 h-5" />
+             </div>
+          )}
+        </div>
+      </div>
+
+      <div className="pl-20">
+        <StatusPipeline steps={SAGA_STEPS} currentStep={order.status} size="sm" />
       </div>
     </div>
   );

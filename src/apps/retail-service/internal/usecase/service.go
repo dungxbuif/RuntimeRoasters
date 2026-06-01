@@ -223,6 +223,35 @@ func (s *Service) GetOrder(ctx context.Context, id string) (*domain.Order, error
 	return &order, nil
 }
 
+func (s *Service) ConfirmOrderReceipt(ctx context.Context, id string) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var order domain.Order
+		if err := tx.Where("id = ?", id).Take(&order).Error; err != nil {
+			return err
+		}
+
+		if order.Status != domain.OrderStatusDelivered {
+			return fmt.Errorf("order %s cannot be confirmed from status %s", id, order.Status)
+		}
+
+		return tx.Model(&order).Update("status", domain.OrderStatusCompleted).Error
+	})
+}
+
+func (s *Service) ListOrders(ctx context.Context) ([]domain.Order, error) {
+	var orders []domain.Order
+	_, storeIDs, allStores := identity.StoreScopeFromContext(ctx)
+	query := s.db.WithContext(ctx).Order("created_at DESC")
+	if !allStores {
+		if len(storeIDs) == 0 {
+			return orders, nil
+		}
+		query = query.Where("store_id IN ?", storeIDs)
+	}
+	err := query.Find(&orders).Error
+	return orders, err
+}
+
 func (s *Service) ProcessOutbox(ctx context.Context, limit int) error {
 	var outbox []domain.OutboxEvent
 	if err := s.db.WithContext(ctx).Where("status = ?", domain.OutboxStatusPending).Order("created_at ASC").Limit(limit).Find(&outbox).Error; err != nil {
@@ -286,16 +315,6 @@ func (s *Service) HandleSagaEvent(ctx context.Context, msg kafkago.Message) erro
 
 func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, error) {
 	switch topic {
-	case events.TopicWarehouseStockReserved:
-		cloudEvent, err := events.ParseCloudEvent(payload)
-		if err != nil {
-			return "", "", err
-		}
-		event, err := events.DataAs[events.WarehouseStockReserved](cloudEvent)
-		if err != nil {
-			return "", "", err
-		}
-		return domain.OrderStatusPreparing, event.OrderID, nil
 	case events.TopicPaymentIntentCreated:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
@@ -305,7 +324,8 @@ func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, 
 		if err != nil {
 			return "", "", err
 		}
-		return domain.OrderStatusPending, event.OrderID, nil
+		return domain.OrderStatusPaymentPending, event.OrderID, nil
+
 	case events.TopicPaymentCompleted, events.TopicPaymentSimulatedCompleted:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
@@ -315,57 +335,57 @@ func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, 
 		if err != nil {
 			return "", "", err
 		}
-		return domain.OrderStatusPending, event.OrderID, nil
-	case events.TopicPaymentFailed:
+		return domain.OrderStatusPaymentCompleted, event.OrderID, nil
+
+	case events.TopicWarehouseStockReserved:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
 			return "", "", err
 		}
-		event, err := events.DataAs[events.PaymentFailed](cloudEvent)
+		event, err := events.DataAs[events.WarehouseStockReserved](cloudEvent)
 		if err != nil {
 			return "", "", err
 		}
-		return domain.OrderStatusRejected, event.OrderID, nil
-	case events.TopicPaymentRefunded:
+		return domain.OrderStatusReserved, event.OrderID, nil
+
+	case events.TopicWarehouseDispatchRequested:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
 			return "", "", err
 		}
-		event, err := events.DataAs[events.PaymentRefunded](cloudEvent)
+		event, err := events.DataAs[events.WarehouseDispatchRequested](cloudEvent)
 		if err != nil {
 			return "", "", err
 		}
-		return domain.OrderStatusRejected, event.OrderID, nil
-	case events.TopicWarehouseStockReservationFailed:
+		return domain.OrderStatusDispatchRequested, event.OrderID, nil
+
+	case events.TopicLogisticsDeliveryAssigned, events.TopicLogisticsDeliveryDeparted:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
 			return "", "", err
 		}
-		event, err := events.DataAs[events.WarehouseStockReservationFailed](cloudEvent)
-		if err != nil {
-			return "", "", err
+		// Try parsing as assigned first, then status changed
+		assigned, err := events.DataAs[events.LogisticsShipmentAssigned](cloudEvent)
+		if err == nil {
+			return domain.OrderStatusShipping, assigned.OrderID, nil
 		}
-		return domain.OrderStatusRejected, event.OrderID, nil
-	case events.TopicLogisticsDeliveryAssigned:
+		statusChanged, err := events.DataAs[events.LogisticsDeliveryStatusChanged](cloudEvent)
+		if err == nil {
+			return domain.OrderStatusShipping, statusChanged.OrderID, nil
+		}
+		return "", "", fmt.Errorf("failed to parse logistics event on topic %s", topic)
+
+	case events.TopicLogisticsDeliveryDriverConfirmed:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
 			return "", "", err
 		}
-		event, err := events.DataAs[events.LogisticsShipmentAssigned](cloudEvent)
+		event, err := events.DataAs[events.LogisticsDeliveryStatusChanged](cloudEvent)
 		if err != nil {
 			return "", "", err
 		}
-		return domain.OrderStatusShipping, event.OrderID, nil
-	case events.TopicLogisticsDeliveryCompleted:
-		cloudEvent, err := events.ParseCloudEvent(payload)
-		if err != nil {
-			return "", "", err
-		}
-		event, err := events.DataAs[events.LogisticsShipmentDelivered](cloudEvent)
-		if err != nil {
-			return "", "", err
-		}
-		return domain.OrderStatusCompleted, event.OrderID, nil
+		return domain.OrderStatusDelivered, event.OrderID, nil
+
 	case events.TopicLogisticsDriverReturnedToBase:
 		cloudEvent, err := events.ParseCloudEvent(payload)
 		if err != nil {
@@ -376,6 +396,29 @@ func orderTransition(topic string, payload []byte) (domain.OrderStatus, string, 
 			return "", "", err
 		}
 		return domain.OrderStatusCompleted, event.OrderID, nil
+
+	case events.TopicPaymentFailed, events.TopicPaymentRefunded:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.PaymentFailed](cloudEvent)
+		if err != nil {
+			return "", "", err
+		}
+		return domain.OrderStatusFailed, event.OrderID, nil
+
+	case events.TopicWarehouseStockReservationFailed:
+		cloudEvent, err := events.ParseCloudEvent(payload)
+		if err != nil {
+			return "", "", err
+		}
+		event, err := events.DataAs[events.WarehouseStockReservationFailed](cloudEvent)
+		if err != nil {
+			return "", "", err
+		}
+		return domain.OrderStatusRejected, event.OrderID, nil
+
 	default:
 		return "", "", nil
 	}

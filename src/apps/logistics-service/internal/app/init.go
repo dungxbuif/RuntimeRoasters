@@ -67,7 +67,7 @@ func InitializeApp() (*App, func(), error) {
 	systemHandler := logisticsgrpc.NewSystemHandler(service)
 
 	consumers := []kafka.Consumer{
-		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-reserved", cfg.StockReservedTopic),
+		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-delivery-assigned", events.TopicLogisticsDeliveryAssigned),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-updated", cfg.StockUpdatedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-pickup-requested", cfg.PickupRequestedTopic),
 	}

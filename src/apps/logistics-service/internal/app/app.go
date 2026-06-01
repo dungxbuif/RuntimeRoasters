@@ -186,21 +186,11 @@ func (a *App) routes(r *gin.Engine) {
 	})
 
 	v1.POST("/gps", func(c *gin.Context) {
-		var req struct {
-			DriverID   string  `json:"driver_id"`
-			ShipmentID string  `json:"shipment_id"`
-			Latitude   float64 `json:"latitude"`
-			Longitude  float64 `json:"longitude"`
-		}
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-		if err := a.Service.UpdateDriverLocation(c.Request.Context(), req.DriverID, req.ShipmentID, req.Latitude, req.Longitude); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "updated"})
+		a.handleGPSUpdate(c)
+	})
+
+	v1.POST("/drivers/location", func(c *gin.Context) {
+		a.handleGPSUpdate(c)
 	})
 
 	v1.GET("/drivers", func(c *gin.Context) {
@@ -230,4 +220,22 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"locations": locations})
 	})
+}
+
+func (a *App) handleGPSUpdate(c *gin.Context) {
+	var req struct {
+		DriverID   string  `json:"driver_id"`
+		ShipmentID string  `json:"shipment_id"`
+		Latitude   float64 `json:"latitude"`
+		Longitude  float64 `json:"longitude"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	if err := a.Service.UpdateDriverLocation(c.Request.Context(), req.DriverID, req.ShipmentID, req.Latitude, req.Longitude); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "updated"})
 }

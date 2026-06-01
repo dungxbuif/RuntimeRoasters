@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"RuntimeRoasters/apps/warehouse-service/internal/domain"
+	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
 	"RuntimeRoasters/pkg/logger"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -163,6 +165,114 @@ func TestHarvestCreatesPickupRequestIdempotently(t *testing.T) {
 	var intakes int64
 	db.Model(&domain.Intake{}).Count(&intakes)
 	assert.Equal(t, int64(0), intakes)
+}
+
+func TestPaymentCompletedReservesStockAndCreatesDispatchRequest(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:warehouse-order-reservation?mode=memory&cache=shared"), &gorm.Config{})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	require.NoError(t, db.AutoMigrate(&domain.Inventory{}, &domain.DispatchRequest{}, &domain.InboxEvent{}))
+
+	require.NoError(t, db.Create(&domain.Inventory{
+		ID:                "inv-1",
+		WarehouseID:       "WAREHOUSE-HN-001",
+		SKU:               "SKU-AR-001",
+		AvailableQuantity: 25,
+	}).Error)
+
+	producer := new(MockProducer)
+	producer.On("Publish", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	uc := NewOrderReservationUseCase(db, nil, producer, events.TopicWarehouseStockReserved, events.TopicWarehouseStockReservationFailed)
+	uc.locker = allowInventoryLocker{}
+	payment := events.PaymentCompleted{
+		EventID:    uuid.NewString(),
+		PaymentID:  "pay-1",
+		OrderID:    "order-1",
+		StoreID:    "store-1",
+		Provider:   "stripe",
+		Items:      []events.RetailOrderItem{{SKU: "SKU-AR-001", Quantity: 4}},
+		Amount:     100,
+		Currency:   "USD",
+		OccurredAt: time.Now(),
+	}
+	payload := mustCloudEvent(t, events.TopicPaymentCompleted, "orders/order-1", payment, events.Metadata{
+		EventID:       payment.EventID,
+		CorrelationID: payment.OrderID,
+		OrderID:       payment.OrderID,
+		StoreID:       payment.StoreID,
+		OccurredAt:    payment.OccurredAt,
+	})
+
+	require.NoError(t, uc.ProcessOrderCreated(context.Background(), kafkago.Message{
+		Topic: events.TopicPaymentCompleted,
+		Key:   []byte(payment.OrderID),
+		Value: payload,
+	}))
+
+	var inventory domain.Inventory
+	require.NoError(t, db.Where("sku = ? AND warehouse_id = ?", "SKU-AR-001", "WAREHOUSE-HN-001").Take(&inventory).Error)
+	assert.Equal(t, float64(21), inventory.AvailableQuantity)
+
+	var dispatch domain.DispatchRequest
+	require.NoError(t, db.Where("order_id = ?", payment.OrderID).Take(&dispatch).Error)
+	assert.Equal(t, domain.DispatchRequestStatusReserved, dispatch.Status)
+	assert.Equal(t, payment.StoreID, dispatch.StoreID)
+	assert.Equal(t, "WAREHOUSE-HN-001", dispatch.WarehouseID)
+
+	assert.Equal(t, 1, countPublishedTopic(producer, events.TopicWarehouseStockReserved))
+	assert.Equal(t, 1, countPublishedTopic(producer, events.TopicWarehouseDispatchRequested))
+	assert.Equal(t, 0, countPublishedTopic(producer, events.TopicWarehouseStockReservationFailed))
+}
+
+func TestDispatchDeliveryPublishesAssignedShipment(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:warehouse-dispatch?mode=memory&cache=shared"), &gorm.Config{})
+	require.NoError(t, err)
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+	require.NoError(t, db.AutoMigrate(&domain.DispatchRequest{}))
+	require.NoError(t, db.Create(&domain.DispatchRequest{
+		ID:          "dispatch-1",
+		OrderID:     "order-1",
+		StoreID:     "store-1",
+		WarehouseID: "WAREHOUSE-HN-001",
+		Status:      domain.DispatchRequestStatusReserved,
+	}).Error)
+
+	producer := new(MockProducer)
+	producer.On("Publish", mock.Anything, events.TopicLogisticsDeliveryAssigned, "order-1", mock.Anything).Return(nil)
+	uc := NewDispatchUseCase(db, producer, events.TopicWarehousePickupRequested)
+	ctx := identity.InjectContext(context.Background(), identity.Claims{
+		Role:         identity.RoleWarehouseMgr,
+		WarehouseIDs: []string{"WAREHOUSE-HN-001"},
+	})
+
+	dispatch, err := uc.DispatchDelivery(ctx, "dispatch-1", "driver-1", "vehicle-1")
+	require.NoError(t, err)
+	assert.Equal(t, domain.DispatchRequestStatusDispatched, dispatch.Status)
+	assert.Equal(t, 1, countPublishedTopic(producer, events.TopicLogisticsDeliveryAssigned))
+}
+
+func countPublishedTopic(producer *MockProducer, topic string) int {
+	count := 0
+	for _, call := range producer.Calls {
+		if len(call.Arguments) > 1 && call.Arguments.String(1) == topic {
+			count++
+		}
+	}
+	return count
+}
+
+type allowInventoryLocker struct{}
+
+func (allowInventoryLocker) Acquire(ctx context.Context, key string, value string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
+
+func (allowInventoryLocker) Release(ctx context.Context, key string) error {
+	return nil
 }
 
 func mustCloudEvent(t *testing.T, topic string, subject string, payload interface{}, metadata events.Metadata) []byte {

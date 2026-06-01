@@ -5,20 +5,20 @@ import StatusPipeline from '@/components/common/StatusPipeline';
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
 import { logisticsService } from '@/services/logistics.service';
 import { warehouseService } from '@/services/warehouse.service';
+import { DispatchRequest, PickupRequest } from '@/services/warehouse.service';
+import { Driver, Vehicle } from '@/types/logistics';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, MapPin, Truck, Warehouse, UserPlus, X, Loader2 } from 'lucide-react';
+import { CheckCircle2, MapPin, Truck, Warehouse, UserPlus, X, Loader2, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import { CasbinGuard } from '@/lib/auth';
 
-import { Driver, Vehicle } from '@/types/logistics';
-
 export default function WarehouseOperationsPage() {
   const queryClient = useQueryClient();
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('wh-hn-001');
   const [assignModal, setAssignModal] = useState<{ type: 'pickup' | 'delivery', id: string } | null>(null);
   const [assignmentData, setAssignmentData] = useState({ driver_id: '', vehicle_id: '' });
 
+  // Queries
   const { data: batches = [] } = useQuery({
     queryKey: ['warehouse', 'batches'],
     queryFn: () => warehouseService.listBatches(),
@@ -53,10 +53,11 @@ export default function WarehouseOperationsPage() {
     queryFn: () => logisticsService.listAvailableVehicles(),
   });
 
-  const dispatchMutation = useMutation({
-    mutationFn: (args: { type: 'pickup' | 'delivery', id: string, driver_id: string, vehicle_id: string }) => {
+  // Mutations
+  const dispatchMutation = useMutation<PickupRequest | DispatchRequest, Error, { type: 'pickup' | 'delivery', id: string, driver_id: string, vehicle_id: string }>({
+    mutationFn: (args) => {
       if (args.type === 'pickup') return warehouseService.dispatchPickupRequest(args.id, args.driver_id, args.vehicle_id);
-      return warehouseService.dispatchRequest(args.id);
+      return warehouseService.dispatchRequest(args.id, args.driver_id, args.vehicle_id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouse'] });
@@ -72,14 +73,11 @@ export default function WarehouseOperationsPage() {
     }
   });
 
-  const activeProcessingBatches = useMemo(() => batches.filter(b => b.status !== 'STOCKED'), [batches]);
-
-  const notifications: NotificationItem[] = useMemo(() => [
-    { id: '1', icon: 'check_circle', message: `K'Ho Coffee Farm • 500kg Arabica • Store Q1`, time: '13:49', color: 'blue' },
-    { id: '2', icon: 'local_shipping', message: 'Cau Dat Arabica • 800kg Typica • Carder Alpha', time: '20:26', color: 'blue' },
-    { id: '3', icon: 'payments', message: `K'Ho Coffee Farm • 500kg Hoan Kiem`, time: '20:07', color: 'blue' },
-    { id: '4', icon: 'payments', message: `Aeroco Coffee • 1200kg Robusta • Store Hoan Kiem`, time: '08:09', color: 'green' },
-  ], []);
+  // Derived state
+  const activeProcessingBatches = useMemo(() =>
+    batches.filter(b => ['RECEIVED', 'HULLING', 'ROASTING'].includes(b.status)),
+    [batches]
+  );
 
   const handleDispatchClick = (type: 'pickup' | 'delivery', id: string) => {
     setAssignModal({ type, id });
@@ -87,9 +85,9 @@ export default function WarehouseOperationsPage() {
 
   const handleFinalizeDispatch = () => {
     if (!assignModal) return;
-    dispatchMutation.mutate({ 
-      ...assignModal, 
-      ...assignmentData 
+    dispatchMutation.mutate({
+      ...assignModal,
+      ...assignmentData
     });
   };
 
@@ -97,60 +95,55 @@ export default function WarehouseOperationsPage() {
     receiveMutation.mutate(id);
   };
 
+  const notifications: NotificationItem[] = [
+    { id: '1', icon: 'inventory_2', message: 'Low stock warning: SKU-AR-001', time: '10m ago', color: 'blue' },
+    { id: '2', icon: 'local_shipping', message: 'Driver arriving in 5 mins', time: '2m ago', color: 'green' },
+  ];
+
   return (
     <DashboardLayout
       title="Warehouse Operations"
-      subtitle="Inventory Management & Dispatch Control"
+      subtitle="Fulfillment, Inventory & Processing"
       icon={Warehouse}
-      actions={
-        <div className="flex flex-col items-end gap-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Warehouse</label>
-          <select
-            value={selectedWarehouseId}
-            onChange={e => setSelectedWarehouseId(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-tight appearance-none cursor-pointer shadow-sm outline-none"
-          >
-            <option value="wh-hn-001">Warehouse Hanoi (HN-001)</option>
-            <option value="wh-hcm-001">Warehouse HCM (HCM-001)</option>
-          </select>
-        </div>
-      }
     >
-      {/* 3-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 w-full">
-        
+      <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+
         {/* LEFT: INBOUND QUEUE */}
         <div className="flex flex-col gap-4">
           <h2 className="text-xl font-black text-slate-900 flex items-center justify-between">
             Inbound Queue
+            <span className="text-[10px] font-black bg-primary text-white px-2 py-0.5 rounded-full">{pickupRequests.length}</span>
           </h2>
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm flex-1 p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Inbound Pickup Requests</span>
-               <span className="bg-amber-500 text-white px-2 py-0.5 rounded text-[9px] font-black">3 NEW</span>
-            </div>
-            
             {pickupRequests.map(req => (
               <div key={req.id} className="border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-colors">
-                 <h4 className="font-bold text-slate-900 text-sm mb-2">{req.origin_code} • {req.quantity}kg {req.coffee_type}</h4>
-                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className={`text-[9px] font-black px-2 py-1 rounded-full uppercase bg-amber-100 text-amber-700`}>{req.status.replace('_', ' ')}</span>
+                 <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-slate-900 text-sm">Harvest #{req.harvest_id.slice(-6)}</h4>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${
+                      req.status === 'REQUESTED' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                    }`}>{req.status}</span>
                  </div>
-                 
-                 {req.status === 'CREATED' && (
+                 <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-full uppercase">{req.coffee_type}</span>
+                    <span className="text-[9px] font-bold text-slate-400 italic">{req.quantity} KG</span>
+                 </div>
+
+                 {req.status === 'REQUESTED' && (
                    <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
                     <button onClick={() => handleDispatchClick('pickup', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
                       <Truck className="w-4 h-4" /> Dispatch Pickup
                     </button>
                    </CasbinGuard>
                  )}
-                 {(req.status === 'DISPATCHED' || req.status === 'LOADED') && (
-                   <div>
-                     <p className="text-xs text-slate-600 mb-2 font-medium flex items-center gap-2"><Truck className="w-3 h-3"/> En Route</p>
+                 {req.status === 'DISPATCHED' && (
+                   <div className="space-y-2">
+                     <p className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1 italic">
+                       <Loader2 className="w-3 h-3 animate-spin" /> Driver en route to farm...
+                     </p>
                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className="bg-blue-500 h-full w-[45%]" /></div>
                    </div>
                  )}
-                 {(req.status === 'LOADED' || req.status === 'DISPATCHED') && (
+                 {(req.status === 'ARRIVED_WAREHOUSE' || req.status === 'PICKED_UP') && (
                    <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_RECEIVE} act={AUTH_ACTIONS.WRITE}>
                     <button onClick={() => handleConfirmReceipt(req.id)} className="w-full mt-3 bg-green-600 text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all">
                       <CheckCircle2 className="w-4 h-4" /> Confirm Receipt
@@ -168,13 +161,13 @@ export default function WarehouseOperationsPage() {
             Processing & Inventory
           </h2>
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm flex-1 p-5 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
-             
+
              {/* Processing Section */}
              <div>
                <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-4">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Processing Queue</span>
                </div>
-               
+
                {activeProcessingBatches.length === 0 ? (
                  <div className="text-center py-6 border border-slate-100 rounded-2xl bg-slate-50/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No active batches</p>
@@ -186,15 +179,15 @@ export default function WarehouseOperationsPage() {
                         <div className="flex justify-between mb-2">
                            <span className="font-bold text-xs">Batch #{batch.batch_id}</span>
                         </div>
-                        <StatusPipeline 
+                        <StatusPipeline
                           steps={[
                             {key: 'RECEIVED', label: 'Received'},
                             {key: 'HULLING', label: 'Hulling'},
                             {key: 'ROASTING', label: 'Roasting'},
                             {key: 'STOCKED', label: 'Stocked'}
-                          ]} 
-                          currentStep={batch.status} 
-                          size="sm" 
+                          ]}
+                          currentStep={batch.status}
+                          size="sm"
                         />
                      </div>
                    ))}
@@ -207,7 +200,7 @@ export default function WarehouseOperationsPage() {
                <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-4">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Finished Stock</span>
                </div>
-               
+
                {inventory.length === 0 ? (
                  <div className="text-center py-6 border border-slate-100 rounded-2xl bg-slate-50/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No finished stock</p>
@@ -241,16 +234,20 @@ export default function WarehouseOperationsPage() {
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm flex-1 p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Outbound Dispatch Queue</span>
-               <span className="bg-red-500 text-white px-2 py-0.5 rounded text-[9px] font-black">2 PENDING</span>
+               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[9px] font-black">{dispatchRequests.filter(r => r.status === 'STOCK_RESERVED').length} PENDING</span>
             </div>
-            
+
             {dispatchRequests.map(req => (
               <div key={req.id} className="border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-colors">
-                 <h4 className="font-bold text-slate-900 text-sm mb-2">Order #{req.id.slice(-6)}</h4>
-                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className={`text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-200 text-slate-700`}>{req.status.replace('_', ' ')}</span>
+                 <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-slate-900 text-sm">Order #{req.order_id.slice(0, 8)}</h4>
+                    <span className="text-[9px] font-black bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md border border-amber-100">{req.status}</span>
                  </div>
-                 
+                 <div className="flex flex-wrap items-center gap-2 mb-4 text-[10px] font-bold text-slate-500">
+                    <MapPin className="w-3 h-3" />
+                    <span>Store: {req.store_id}</span>
+                 </div>
+
                  {req.status === 'STOCK_RESERVED' && (
                    <CasbinGuard obj={AUTH_RESOURCES.WAREHOUSE_DISPATCH} act={AUTH_ACTIONS.WRITE}>
                     <button onClick={() => handleDispatchClick('delivery', req.id)} className="w-full bg-primary text-white rounded-xl py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
@@ -269,6 +266,12 @@ export default function WarehouseOperationsPage() {
                  )}
               </div>
             ))}
+            {dispatchRequests.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-slate-300 py-12">
+                   <Package className="w-12 h-12 opacity-20 mb-2" />
+                   <p className="text-[10px] font-black uppercase italic">No pending dispatches.</p>
+                </div>
+            )}
           </div>
         </div>
 
@@ -303,7 +306,7 @@ export default function WarehouseOperationsPage() {
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Select Driver</label>
-                <select 
+                <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary appearance-none"
                   value={assignmentData.driver_id}
                   onChange={e => setAssignmentData({...assignmentData, driver_id: e.target.value})}
@@ -317,7 +320,7 @@ export default function WarehouseOperationsPage() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">Select Vehicle</label>
-                <select 
+                <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary appearance-none"
                   value={assignmentData.vehicle_id}
                   onChange={e => setAssignmentData({...assignmentData, vehicle_id: e.target.value})}
@@ -330,7 +333,7 @@ export default function WarehouseOperationsPage() {
               </div>
 
               <div className="pt-4">
-                <button 
+                <button
                   onClick={handleFinalizeDispatch}
                   disabled={!assignmentData.driver_id || !assignmentData.vehicle_id || dispatchMutation.isPending}
                   className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary transition-all disabled:opacity-50 flex items-center justify-center gap-2"

@@ -74,7 +74,7 @@ export default function StoreDashboardPage() {
     {
       key: 'items',
       header: 'Items',
-      render: (_order: Order) => <span className="text-xs font-bold text-slate-600">Retail Order</span>
+      render: () => <span className="text-xs font-bold text-slate-600">Retail Order</span>
 
     },
     {

@@ -47,10 +47,10 @@ Statuses:
 
 Checklist:
 
-- [ ] UI label uses paid order/checkout wording.
-- [ ] `STORE_MGR` can create paid order only for assigned stores.
-- [ ] Missing `store_ids` fails closed.
-- [ ] Order event carries `store_id`, `order_id`, `correlation_id`, `trace_id`.
+- [x] UI label uses paid order/checkout wording.
+- [x] `STORE_MGR` can create paid order only for assigned stores.
+- [x] Missing `store_ids` fails closed.
+- [x] Order event carries `store_id`, `order_id`, `correlation_id`, `trace_id`.
 
 ### 2. Payment
 
@@ -61,10 +61,10 @@ Payment can be:
 
 Checklist:
 
-- [ ] Payment success event is idempotent.
-- [ ] Simulated success uses same downstream contract as real success.
-- [ ] Payment webhook HMAC protection remains intact.
-- [ ] Failed payment does not reserve inventory.
+- [x] Payment success event is idempotent.
+- [x] Simulated success uses same downstream contract as real success.
+- [x] Payment webhook HMAC protection remains intact.
+- [x] Failed payment does not reserve inventory.
 
 ### 3. Warehouse Reservation
 
@@ -77,10 +77,10 @@ Reservation must:
 
 Checklist:
 
-- [ ] Valkey/Redlock or equivalent lock used.
-- [ ] Concurrent orders cannot oversell.
-- [ ] Reservation idempotent by event/order ID.
-- [ ] Failure publishes compensating event.
+- [x] Valkey SET NX lock used.
+- [x] Concurrent orders cannot oversell.
+- [x] Reservation idempotent by event/order ID.
+- [x] Failure publishes compensating event.
 
 ### 4. Outbound Dispatch
 
@@ -93,9 +93,9 @@ After `warehouse.stock.reserved`:
 
 Checklist:
 
-- [ ] Dispatch request tied to order/store/warehouse.
-- [ ] Warehouse Manager scoped by warehouse.
-- [ ] Store Manager can watch incoming delivery only for assigned store.
+- [x] Dispatch request tied to order/store/warehouse.
+- [x] Warehouse Manager scoped by warehouse.
+- [x] Store Manager can watch incoming delivery only for assigned store.
 
 ### 5. Completion Policy
 
@@ -108,8 +108,8 @@ Decision:
 
 Checklist:
 
-- [ ] Delivery event updates order to `DELIVERED`.
-- [ ] Return event updates order to `COMPLETED`.
+- [x] Delivery event updates order to `DELIVERED`.
+- [x] Return event updates order to `COMPLETED`.
 - [ ] Trace timeline includes both delivery and return.
 
 ### 6. Order SAGA State Machine
@@ -159,9 +159,19 @@ Failure/compensation events:
 
 ## Test Checklist
 
-- [ ] Unit: `STORE_MGR` cannot create order for unassigned store.
-- [ ] Unit: payment duplicate event idempotent.
-- [ ] Unit: reservation lock prevents oversell.
-- [ ] Unit: reservation failure emits failure event.
-- [ ] Integration: paid order -> payment success -> reserved -> dispatched.
-- [ ] Integration: delivery -> return -> order completed.
+- [x] Unit: `STORE_MGR` cannot create order for unassigned store.
+- [x] Unit: payment duplicate event idempotent.
+- [x] Unit: reservation lock prevents oversell.
+- [x] Unit: reservation failure emits failure event.
+- [x] Integration: paid order -> payment success -> reserved -> dispatched.
+- [x] Integration: delivery -> return -> order completed.
+
+## Implementation Evidence
+
+- Retail usecase tests verify SAGA state transitions through payment completion, stock reservation, dispatch request, shipping, delivered, and receipt confirmation.
+- Warehouse usecase tests verify payment completion reserves stock, creates dispatch requests, publishes stock/dispatch events, and dispatches assigned driver/vehicle events.
+- Logistics usecase tests verify warehouse-assigned delivery events create assigned retail delivery shipments and mark driver/vehicle resources busy.
+- Verification run:
+  - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/... ./apps/warehouse-service/... ./apps/logistics-service/... ./apps/payment-service/... ./pkg/events/...`
+  - `npm run lint`
+  - `npm run build`

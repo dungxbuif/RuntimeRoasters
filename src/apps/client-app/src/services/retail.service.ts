@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import { financeService } from "@/services/finance.service";
 
 export interface Store {
   id: string;
@@ -45,6 +46,18 @@ class RetailService {
   async listOrders(): Promise<Order[]> {
     const res = await api.get(`/v1/orders`);
     return res.data.orders || [];
+  }
+
+  async simulatePayment(orderId: string): Promise<void> {
+    const payment = await financeService.getPaymentByOrder(orderId);
+    if (!payment) {
+      throw new Error(`No payment intent found for order ${orderId}`);
+    }
+    await financeService.sendStripeWebhook(payment, "passed");
+  }
+
+  async confirmOrder(id: string): Promise<void> {
+    await api.post(`/v1/orders/${id}/confirm`);
   }
 }
 

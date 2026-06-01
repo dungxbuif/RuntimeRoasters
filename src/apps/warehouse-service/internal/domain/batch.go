@@ -27,6 +27,16 @@ const (
 	PickupRequestStatusCancelled        PickupRequestStatus = "CANCELLED"
 )
 
+type DispatchRequestStatus string
+
+const (
+	DispatchRequestStatusPending   DispatchRequestStatus = "PENDING"
+	DispatchRequestStatusReserved  DispatchRequestStatus = "STOCK_RESERVED"
+	DispatchRequestStatusDispatched DispatchRequestStatus = "DISPATCHED"
+	DispatchRequestStatusCompleted  DispatchRequestStatus = "COMPLETED"
+	DispatchRequestStatusCancelled  DispatchRequestStatus = "CANCELLED"
+)
+
 // Intake represents raw coffee received from a farm
 type Intake struct {
 	ID          string       `gorm:"type:varchar(64);primaryKey"`
@@ -86,6 +96,18 @@ type RoastRun struct {
 	CreatedAt    time.Time
 }
 
+type DispatchRequest struct {
+	ID          string                `gorm:"type:varchar(64);primaryKey" json:"id"`
+	OrderID     string                `gorm:"type:varchar(64);uniqueIndex;not null" json:"order_id"`
+	StoreID     string                `gorm:"type:varchar(80);index" json:"store_id"`
+	WarehouseID string                `gorm:"type:varchar(80);index;not null" json:"warehouse_id"`
+	Items       string                `gorm:"type:jsonb" json:"items"`
+	Status      DispatchRequestStatus `gorm:"size:32;not null;default:'PENDING';index" json:"status"`
+	ShipmentID  string                `gorm:"type:varchar(64);index" json:"shipment_id,omitempty"`
+	CreatedAt   time.Time             `json:"created_at"`
+	UpdatedAt   time.Time             `json:"updated_at"`
+}
+
 func (Intake) TableName() string {
 	return "intakes"
 }
@@ -100,6 +122,10 @@ func (ProductionBatch) TableName() string {
 
 func (RoastRun) TableName() string {
 	return "roast_runs"
+}
+
+func (DispatchRequest) TableName() string {
+	return "dispatch_requests"
 }
 
 type InboxEvent struct {

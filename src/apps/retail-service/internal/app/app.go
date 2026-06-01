@@ -142,13 +142,32 @@ func (a *App) routes(r *gin.Engine) {
 				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 				return
 			}
-			order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("X-Idempotency-Key"))
+			order, err := a.Service.CreateOrder(c.Request.Context(), req, c.GetHeader("Idempotency-Key"))
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return
 			}
 			c.JSON(http.StatusCreated, gin.H{"order": order})
 		})
+
+		group.POST("/orders/:id/confirm", func(c *gin.Context) {
+			err := a.Service.ConfirmOrderReceipt(c.Request.Context(), c.Param("id"))
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"status": "confirmed"})
+		})
+
+		group.GET("/orders", func(c *gin.Context) {
+			orders, err := a.Service.ListOrders(c.Request.Context())
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"orders": orders})
+		})
+
 
 		group.GET("/orders/:id", func(c *gin.Context) {
 			order, err := a.Service.GetOrder(c.Request.Context(), c.Param("id"))

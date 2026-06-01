@@ -2,14 +2,17 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"RuntimeRoasters/apps/logistics-service/internal/domain"
 	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
+	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -98,4 +101,63 @@ func TestDriverCannotUpdateAnotherShipmentLocation(t *testing.T) {
 
 	err := service.UpdateDriverLocation(ctx, "", other.ID, 21.01, 105.85)
 	assert.Error(t, err)
+}
+
+func TestWarehouseAssignedDeliveryCreatesAssignedShipmentAndMarksFleetBusy(t *testing.T) {
+	db, service, _ := setupServiceTest(t)
+	driver := domain.Driver{ID: "driver-1", UserID: "driver@runtimeroasters.com", Name: "Driver", Phone: "1", IsAvailable: true, Status: domain.DriverStatusIdle}
+	vehicle := domain.Vehicle{ID: "vehicle-1", PlateNumber: "HN-001", Type: "TRUCK", Status: domain.DriverStatusIdle}
+	require.NoError(t, db.Create(&driver).Error)
+	require.NoError(t, db.Create(&vehicle).Error)
+
+	event := events.LogisticsShipmentAssigned{
+		EventID:    "evt-1",
+		OrderID:    "order-1",
+		StoreID:    "store-1",
+		DriverID:   driver.ID,
+		VehicleID:  vehicle.ID,
+		OccurredAt: time.Now(),
+	}
+	payload := logisticsCloudEvent(t, events.TopicLogisticsDeliveryAssigned, event, events.Metadata{
+		EventID:       event.EventID,
+		CorrelationID: event.OrderID,
+		OrderID:       event.OrderID,
+		StoreID:       event.StoreID,
+		WarehouseID:   "WAREHOUSE-HN-001",
+		DriverID:      event.DriverID,
+		VehicleID:     event.VehicleID,
+		OccurredAt:    event.OccurredAt,
+	})
+
+	require.NoError(t, service.HandleWarehouseEvent(context.Background(), kafkaMessage(events.TopicLogisticsDeliveryAssigned, event.OrderID, payload)))
+
+	var shipment domain.Shipment
+	require.NoError(t, db.Where("order_id = ?", event.OrderID).Take(&shipment).Error)
+	assert.Equal(t, domain.ShipmentStatusAssigned, shipment.Status)
+	assert.Equal(t, domain.ShipmentTypeRetailDelivery, shipment.Type)
+	assert.Equal(t, event.DriverID, shipment.DriverID)
+	assert.Equal(t, event.VehicleID, shipment.VehicleID)
+
+	var updatedDriver domain.Driver
+	require.NoError(t, db.Where("id = ?", driver.ID).Take(&updatedDriver).Error)
+	assert.False(t, updatedDriver.IsAvailable)
+	assert.Equal(t, domain.DriverStatusBusy, updatedDriver.Status)
+	assert.Equal(t, shipment.ID, updatedDriver.CurrentShipmentID)
+
+	var updatedVehicle domain.Vehicle
+	require.NoError(t, db.Where("id = ?", vehicle.ID).Take(&updatedVehicle).Error)
+	assert.Equal(t, domain.DriverStatusBusy, updatedVehicle.Status)
+}
+
+func logisticsCloudEvent(t *testing.T, topic string, data interface{}, metadata events.Metadata) []byte {
+	t.Helper()
+	cloudEvent, err := events.NewCloudEvent(context.Background(), topic, "/tests/logistics-service", "orders/"+metadata.OrderID, data, metadata)
+	require.NoError(t, err)
+	payload, err := json.Marshal(cloudEvent)
+	require.NoError(t, err)
+	return payload
+}
+
+func kafkaMessage(topic string, key string, payload []byte) kafkago.Message {
+	return kafkago.Message{Topic: topic, Key: []byte(key), Value: payload}
 }

@@ -283,12 +283,3 @@ func (uc *PickupUseCase) publishIntakeCreated(ctx context.Context, pickup domain
 	}
 	return uc.producer.Publish(ctx, uc.intakeCreatedTopic, pickup.HarvestID, cloudEvent)
 }
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}

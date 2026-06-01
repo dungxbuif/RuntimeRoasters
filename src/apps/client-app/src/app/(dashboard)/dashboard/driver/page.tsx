@@ -72,6 +72,45 @@ export default function DriverClientPage() {
   const elapsed = totalWaypoints > 0 ? Math.round((waypointIndex / totalWaypoints) * simSpeed) : 0;
   const remaining = simSpeed - elapsed;
 
+  const isPickup = useMemo(() => {
+    if (!activeShipment) return true;
+    if (activeShipment.type === 'RETAIL_DELIVERY') return false;
+    if (activeShipment.type === 'FARM_PICKUP') return true;
+    return Boolean(activeShipment.harvest_id || activeShipment.farm_id || activeShipment.status.includes('FARM'));
+  }, [activeShipment]);
+
+  const handleMilestone = useCallback(async (milestone: string) => {
+    if (!activeShipment) return;
+
+    try {
+      switch (milestone) {
+        case 'DEPARTED_BASE':
+        case 'DEPARTED_WH':
+          await logisticsService.departShipment(activeShipment.id);
+          break;
+        case 'ARRIVED_FARM':
+        case 'ARRIVED_STORE':
+          await logisticsService.arriveShipment(activeShipment.id);
+          break;
+        case 'PICKUP_CONFIRMED':
+          await logisticsService.confirmLoad(activeShipment.id);
+          break;
+        case 'DELIVERED':
+          await logisticsService.confirmDelivery(activeShipment.id);
+          break;
+        case 'RETURN_STARTED':
+          break;
+        case 'ARRIVED_WAREHOUSE':
+        case 'RETURNED_BASE':
+          await logisticsService.returnShipment(activeShipment.id);
+          break;
+      }
+      setCurrentMilestone(milestone);
+    } catch (e) {
+      console.error('Failed to confirm milestone', e);
+    }
+  }, [activeShipment]);
+
   // Simulation engine
   useEffect(() => {
     if (!simActive || !activeRoute || !activeShipment) return;
@@ -79,6 +118,16 @@ export default function DriverClientPage() {
     tickRef.current = setInterval(() => {
       setWaypointIndex(prev => {
         const next = prev + 1;
+
+        // Auto-advance milestones
+        if (next === 1) {
+            handleMilestone(isPickup ? 'DEPARTED_BASE' : 'DEPARTED_WH');
+        } else if (next === Math.floor(totalWaypoints / 2)) {
+            handleMilestone(isPickup ? 'ARRIVED_FARM' : 'ARRIVED_STORE');
+        } else if (next === totalWaypoints - 1) {
+            handleMilestone(isPickup ? 'PICKUP_CONFIRMED' : 'DELIVERED');
+        }
+
         if (next >= totalWaypoints) {
           setSimActive(false);
           return prev;
@@ -104,7 +153,7 @@ export default function DriverClientPage() {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [simActive, activeRoute, activeShipment, tickInterval, totalWaypoints]);
+  }, [simActive, activeRoute, activeShipment, tickInterval, totalWaypoints, isPickup, handleMilestone]);
 
   const handleStart = useCallback(() => {
     if (!activeRoute || !activeShipment) return;
@@ -123,42 +172,6 @@ export default function DriverClientPage() {
     setDriverPos({});
   };
 
-  const handleMilestone = async (milestone: string) => {
-    if (!activeShipment) return;
-    
-    try {
-      switch (milestone) {
-        case 'DEPARTED_BASE':
-        case 'DEPARTED_WH':
-          await logisticsService.departShipment(activeShipment.id);
-          break;
-        case 'ARRIVED_FARM':
-        case 'ARRIVED_STORE':
-          await logisticsService.arriveShipment(activeShipment.id);
-          break;
-        case 'PICKUP_CONFIRMED':
-          await logisticsService.confirmLoad(activeShipment.id);
-          break;
-        case 'DELIVERED':
-          await logisticsService.confirmDelivery(activeShipment.id);
-          break;
-        case 'RETURN_STARTED':
-          // Currently no backend API specifically for 'start return' - it just transitions state
-          // Could be departShipment again, but backend handles this via the next state logic, or we just advance UI.
-          // Let's assume the driver just clicks it and UI updates, the real backend confirmation is 'RETURNED_BASE'
-          break;
-        case 'ARRIVED_WAREHOUSE':
-        case 'RETURNED_BASE':
-          await logisticsService.returnShipment(activeShipment.id);
-          break;
-      }
-      setCurrentMilestone(milestone);
-    } catch (e) {
-      console.error('Failed to confirm milestone', e);
-    }
-  };
-
-  const isPickup = activeShipment?.status?.includes('FARM') || activeShipment?.status?.includes('PICKUP') || true;
   const steps = isPickup ? PICKUP_STEPS : DELIVERY_STEPS;
   const milestoneList = isPickup
     ? ['ASSIGNED', 'DEPARTED_BASE', 'ARRIVED_FARM', 'PICKUP_CONFIRMED', 'RETURN_STARTED', 'ARRIVED_WAREHOUSE']

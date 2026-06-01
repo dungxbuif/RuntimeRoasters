@@ -27,6 +27,7 @@ type App struct {
 	PickupService *usecase.PickupUseCase
 	WarehouseUC   *usecase.WarehouseUseCase
 	Aggregation   *usecase.AggregationUseCase
+	DispatchUC    *usecase.DispatchUseCase
 	Processing    *usecase.ProcessingUseCase
 	Inventory     *usecase.InventoryUseCase
 	SystemHandler *warehousegrpc.SystemHandler
@@ -36,7 +37,7 @@ type App struct {
 	Guards        *security.HTTPGuards
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, warehouseUC *usecase.WarehouseUseCase, aggregation *usecase.AggregationUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, systemHandler *warehousegrpc.SystemHandler, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc *usecase.PickupUseCase, warehouseUC *usecase.WarehouseUseCase, aggregation *usecase.AggregationUseCase, dispatchUC *usecase.DispatchUseCase, processing *usecase.ProcessingUseCase, inventory *usecase.InventoryUseCase, systemHandler *warehousegrpc.SystemHandler, consumers []kafka.Consumer, harvestWorker *worker.HarvestWorker, orderWorker *worker.OrderWorker, guards *security.HTTPGuards) *App {
 	return &App{
 		Base:          baseApp,
 		Cfg:           cfg,
@@ -44,6 +45,7 @@ func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, pickupSvc
 		PickupService: pickupSvc,
 		WarehouseUC:   warehouseUC,
 		Aggregation:   aggregation,
+		DispatchUC:    dispatchUC,
 		Processing:    processing,
 		Inventory:     inventory,
 		SystemHandler: systemHandler,
@@ -140,6 +142,28 @@ func (a *App) routes(r *gin.Engine) {
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"warehouse": created})
+	})
+
+	v1.GET("/dispatch-requests", func(c *gin.Context) {
+		requests, err := a.DispatchUC.ListDispatchRequests(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"dispatch_requests": requests})
+	})
+	v1.POST("/dispatch-requests/:id/dispatch", func(c *gin.Context) {
+		var req struct {
+			DriverID  string `json:"driver_id"`
+			VehicleID string `json:"vehicle_id"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		res, err := a.DispatchUC.DispatchDelivery(c.Request.Context(), c.Param("id"), req.DriverID, req.VehicleID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"dispatch_request": res})
 	})
 
 	v1.GET("/intakes", func(c *gin.Context) {

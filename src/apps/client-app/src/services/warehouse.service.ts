@@ -77,7 +77,12 @@ export interface PickupRequest {
 
 export interface DispatchRequest {
   id: string;
+  order_id: string;
+  store_id: string;
+  warehouse_id: string;
+  items: string;
   status: string;
+  created_at: string;
 }
 
 class WarehouseService {
@@ -145,9 +150,12 @@ class WarehouseService {
     return res.data.dispatch_requests || [];
   }
 
-  async dispatchRequest(id: string): Promise<DispatchRequest> {
-    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.DISPATCH_REQUESTS}/${id}/dispatch`);
-    return res.data;
+  async dispatchRequest(id: string, driver_id: string, vehicle_id: string): Promise<DispatchRequest> {
+    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.DISPATCH_REQUESTS}/${id}/dispatch`, {
+      driver_id,
+      vehicle_id
+    });
+    return res.data.dispatch_request;
   }
 }
 

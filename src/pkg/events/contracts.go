@@ -145,20 +145,22 @@ type PaymentRefunded struct {
 }
 
 type WarehouseStockReserved struct {
-	EventID    string    `json:"event_id"`
-	OrderID    string    `json:"order_id"`
-	StoreID    string    `json:"store_id"`
-	SKU        string    `json:"sku"`
-	Quantity   float64   `json:"quantity"`
-	OccurredAt time.Time `json:"occurred_at"`
+	EventID     string    `json:"event_id"`
+	OrderID     string    `json:"order_id"`
+	StoreID     string    `json:"store_id"`
+	WarehouseID string    `json:"warehouse_id"`
+	SKU         string    `json:"sku"`
+	Quantity    float64   `json:"quantity"`
+	OccurredAt  time.Time `json:"occurred_at"`
 }
 
 type WarehouseStockReservationFailed struct {
-	EventID    string    `json:"event_id"`
-	OrderID    string    `json:"order_id"`
-	StoreID    string    `json:"store_id"`
-	Reason     string    `json:"reason"`
-	OccurredAt time.Time `json:"occurred_at"`
+	EventID     string    `json:"event_id"`
+	OrderID     string    `json:"order_id"`
+	StoreID     string    `json:"store_id"`
+	WarehouseID string    `json:"warehouse_id"`
+	Reason      string    `json:"reason"`
+	OccurredAt  time.Time `json:"occurred_at"`
 }
 
 type WarehouseStockUpdated struct {
@@ -218,6 +220,7 @@ type LogisticsShipmentAssigned struct {
 	OrderID    string    `json:"order_id"`
 	StoreID    string    `json:"store_id"`
 	DriverID   string    `json:"driver_id"`
+	VehicleID  string    `json:"vehicle_id,omitempty"`
 	OccurredAt time.Time `json:"occurred_at"`
 }
 

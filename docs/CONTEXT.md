@@ -2,6 +2,35 @@
 
 Last Updated: 2026-06-01
 
+## Current Git Snapshot
+**Checked:** 2026-06-01
+**Active branch:** `rr-urg-05-paid-order-fulfillment`
+
+### Active Dirty Changes
+- Frontend:
+  - `src/apps/client-app/src/app/(dashboard)/dashboard/retail/page.tsx`: replaced static saga mock page with live retail operations client using order list polling, status pipeline, payment simulation, and receipt confirmation.
+  - `src/apps/client-app/src/app/(dashboard)/dashboard/warehouse/page.tsx`: updated warehouse queues to show pickup and outbound dispatch requests, driver/vehicle assignment for delivery dispatch, and revised queue states.
+  - `src/apps/client-app/src/app/(dashboard)/dashboard/driver/page.tsx`: added automatic milestone advancement during route simulation.
+  - `src/apps/client-app/src/services/retail.service.ts`: added `simulatePayment` and `confirmOrder` API helpers.
+  - `src/apps/client-app/src/services/warehouse.service.ts`: expanded dispatch request fields and dispatch API payload with driver/vehicle IDs.
+- Backend:
+  - `src/apps/retail-service/internal/...`: added expanded order statuses, scoped order listing, receipt confirmation endpoint, and refined saga status transitions.
+  - `src/apps/warehouse-service/internal/...`: added `DispatchRequest` domain model, dispatch request REST endpoints, dispatch use case, common usecase helpers, Valkey-backed inventory reservation lock, dispatch request creation, and `warehouse.dispatch.requested` publication.
+  - `src/apps/logistics-service/internal/...`: changed delivery creation flow to consume `logistics.delivery.assigned` and create assigned retail delivery shipments with driver busy state.
+  - `src/pkg/events/contracts.go`: added `WarehouseID` to warehouse stock reservation success/failure events.
+
+### Outstanding Verification
+- Passed: `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/... ./apps/warehouse-service/... ./apps/logistics-service/... ./apps/payment-service/... ./pkg/events/...`
+- Passed: `npm run lint` in `src/apps/client-app`
+- Passed: `npm run build` in `src/apps/client-app`
+- Passed: KrakenD config JSON parse check.
+- Pending live manual verification: order creation -> signed Stripe demo webhook -> stock reservation -> dispatch request -> warehouse manager dispatch -> logistics assigned shipment -> driver delivery -> retail receipt confirmation.
+
+### Next Task
+- RR-URG-06: Realtime Notifications & Socket/SSE Broadcasts.
+- Create a clean task branch after committing RR-URG-05.
+- Keep streams as fanout/projection only; persisted service state remains source of truth.
+
 ## Phase 1: System Bootstrap & Seeding
 **Status:** `✅ COMPLETED`
 

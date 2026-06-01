@@ -132,7 +132,7 @@ func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]
 			seedData.Drivers[i].UserID = id
 		} else {
 			// Fallback or warning if email not found in Kratos
-			logger.GetLogger().Warn("Driver email not found in users_map during seeding", 
+			logger.GetLogger().Warn("Driver email not found in users_map during seeding",
 				zap.String("email", seedData.Drivers[i].UserID),
 				zap.String("driver", seedData.Drivers[i].Name))
 		}
@@ -475,18 +475,21 @@ func (s *Service) createShipmentFromEvent(ctx context.Context, tx *gorm.DB, topi
 			return nil, err
 		}
 		return s.assignNearestDriver(ctx, tx, shipment)
-	case events.TopicWarehouseStockReserved:
-		event, err := events.DataAs[events.WarehouseStockReserved](cloudEvent)
+	case events.TopicLogisticsDeliveryAssigned:
+		event, err := events.DataAs[events.LogisticsShipmentAssigned](cloudEvent)
 		if err != nil {
 			return nil, err
 		}
+		now := time.Now()
 		shipment := &domain.Shipment{
 			ID:                    uuid.NewString(),
 			Type:                  domain.ShipmentTypeRetailDelivery,
-			Status:                domain.ShipmentStatusPending,
+			Status:                domain.ShipmentStatusAssigned, // Already assigned by Warehouse
 			CurrentLeg:            domain.ShipmentLegOutbound,
 			RouteID:               "route-warehouse-store-demo",
 			OrderID:               event.OrderID,
+			DriverID:              event.DriverID,
+			VehicleID:             event.VehicleID,
 			WarehouseID:           firstNonEmpty(events.ExtensionString(cloudEvent, "warehouseid"), s.defaultWarehouseID),
 			OriginWarehouseID:     firstNonEmpty(events.ExtensionString(cloudEvent, "warehouseid"), s.defaultWarehouseID),
 			OriginLocationID:      firstNonEmpty(events.ExtensionString(cloudEvent, "warehouseid"), s.defaultWarehouseID),
@@ -494,8 +497,15 @@ func (s *Service) createShipmentFromEvent(ctx context.Context, tx *gorm.DB, topi
 			StoreID:               event.StoreID,
 			DestinationLocationID: event.StoreID,
 			DestinationAddress:    event.StoreID,
+			AssignedAt:            &now,
 		}
-		return shipment, tx.Create(shipment).Error
+		if err := tx.Create(shipment).Error; err != nil {
+			return nil, err
+		}
+		if err := markDriverBusy(tx, event.DriverID, event.VehicleID, shipment.ID); err != nil {
+			return nil, err
+		}
+		return shipment, nil
 	case events.TopicWarehouseInventoryUpdated:
 		event, err := events.DataAs[events.WarehouseStockUpdated](cloudEvent)
 		if err != nil {

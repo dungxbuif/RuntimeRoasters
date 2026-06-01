@@ -14,6 +14,7 @@ import (
 	"RuntimeRoasters/pkg/events"
 	"RuntimeRoasters/pkg/kafka"
 	"RuntimeRoasters/pkg/logger"
+	"RuntimeRoasters/pkg/valkey"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +29,8 @@ func InitializeApp() (*App, func(), error) {
 		return nil, nil, err
 	}
 
+	rdb := valkey.NewClient(valkey.Config{Addr: cfg.ValkeyAddr})
+
 	// Auto-migrate tables
 	if err := db.AutoMigrate(
 		&domain.Warehouse{},
@@ -36,6 +39,7 @@ func InitializeApp() (*App, func(), error) {
 		&domain.Intake{},
 		&domain.Inventory{},
 		&domain.RoastRun{},
+		&domain.DispatchRequest{},
 		&domain.InboxEvent{},
 	); err != nil {
 		return nil, nil, err
@@ -45,13 +49,14 @@ func InitializeApp() (*App, func(), error) {
 	pickupUseCase := usecase.NewPickupUseCase(db.DB, producer, cfg.KafkaPickupTopic, cfg.KafkaNotificationTopic, cfg.KafkaIntakeCreatedTopic, cfg.DefaultWarehouseID)
 	warehouseUC := usecase.NewWarehouseUseCase(db.DB)
 	aggregationUC := usecase.NewAggregationUseCase(db.DB)
+	dispatchUC := usecase.NewDispatchUseCase(db.DB, producer, cfg.KafkaPickupTopic)
 	processingUC := usecase.NewProcessingUseCase(db.DB)
 	inventoryUC := usecase.NewInventoryUseCase(db.DB, producer, cfg.KafkaStockTopic)
-	orderReservationUC := usecase.NewOrderReservationUseCase(db.DB, producer, cfg.KafkaStockReservedTopic, cfg.KafkaStockFailedTopic)
+	orderReservationUC := usecase.NewOrderReservationUseCase(db.DB, rdb, producer, cfg.KafkaStockReservedTopic, cfg.KafkaStockFailedTopic)
 	harvestConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-harvest", cfg.KafkaHarvestTopic)
 	pickupArrivedConsumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-pickup-arrived", cfg.KafkaPickupArrivedTopic)
-	orderConsumers := make([]kafka.Consumer, 0, 2)
-	for _, topic := range uniqueTopics(cfg.KafkaOrderTopic, events.TopicPaymentCompleted) {
+	orderConsumers := make([]kafka.Consumer, 0, 3)
+	for _, topic := range uniqueTopics(cfg.KafkaOrderTopic, events.TopicPaymentCompleted, events.TopicLogisticsDriverReturnedToBase) {
 		orderConsumers = append(orderConsumers, kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-orders-"+topic, topic))
 	}
 	harvestWorker := worker.NewHarvestWorker(harvestConsumer, pickupUseCase)
@@ -82,7 +87,7 @@ func InitializeApp() (*App, func(), error) {
 	systemHandler := warehousegrpc.NewSystemHandler(systemUC)
 
 	baseApp := base.NewApp(base.Options{Name: cfg.AppName, Config: cfg.BaseConfig})
-	app := NewApp(baseApp, &cfg, db, pickupUseCase, warehouseUC, aggregationUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)
+	app := NewApp(baseApp, &cfg, db, pickupUseCase, warehouseUC, aggregationUC, dispatchUC, processingUC, inventoryUC, systemHandler, consumers, harvestWorker, orderWorker, guards)
 
 	cleanup := func() {
 		guards.Close()
