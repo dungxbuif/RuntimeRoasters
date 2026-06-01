@@ -125,7 +125,7 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
         ))}
 
         {/* Routes - Only shown when explicit or when drivers are active and simulation is on */}
-        {showRoutes && routes.filter(r => shipments.some(s => s.route_id === r.id && (s.status === 'DISPATCHED' || s.status === 'EN_ROUTE'))).map((route) => (
+        {showRoutes && routes.filter(r => shipments.some(s => s.route_id === r.id && (s.status === 'ASSIGNED' || s.status === 'IN_TRANSIT' || s.status === 'IN_TRANSIT_TO_FARM' || s.status === 'IN_TRANSIT_TO_STORE'))).map((route) => (
           <Polyline 
             key={route.id}
             positions={route.coordinates}

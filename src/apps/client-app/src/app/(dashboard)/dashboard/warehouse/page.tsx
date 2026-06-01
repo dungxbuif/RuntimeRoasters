@@ -11,6 +11,8 @@ import { useMemo, useState } from 'react';
 import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import { CasbinGuard } from '@/lib/auth';
 
+import { Driver, Vehicle } from '@/types/logistics';
+
 export default function WarehouseOperationsPage() {
   const queryClient = useQueryClient();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('wh-hn-001');
@@ -307,7 +309,7 @@ export default function WarehouseOperationsPage() {
                   onChange={e => setAssignmentData({...assignmentData, driver_id: e.target.value})}
                 >
                   <option value="">Choose a driver...</option>
-                  {drivers.map((d: any) => (
+                  {drivers.map((d: Driver) => (
                     <option key={d.id} value={d.id}>{d.name} ({d.status})</option>
                   ))}
                 </select>
@@ -321,7 +323,7 @@ export default function WarehouseOperationsPage() {
                   onChange={e => setAssignmentData({...assignmentData, vehicle_id: e.target.value})}
                 >
                   <option value="">Choose a vehicle...</option>
-                  {vehicles.map((v: any) => (
+                  {vehicles.map((v: Vehicle) => (
                     <option key={v.id} value={v.id}>{v.plate_number} - {v.type}</option>
                   ))}
                 </select>

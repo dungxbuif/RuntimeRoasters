@@ -6,6 +6,7 @@ import { farmService, Farm } from '@/services/farm.service';
 import { testId, e2eSelectors } from '@/lib/utils/test-id';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth, CasbinGuard } from '@/lib/auth';
+import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import { FARM_LOCATIONS, COFFEE_TYPES } from '@/constants/domain';
 
 export default function AdminFarmsPage() {

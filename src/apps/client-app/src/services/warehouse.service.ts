@@ -91,8 +91,11 @@ class WarehouseService {
     return res.data.pickup_requests || [];
   }
 
-  async dispatchPickupRequest(id: string): Promise<PickupRequest> {
-    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.PICKUP_REQUESTS}/${id}/dispatch`);
+  async dispatchPickupRequest(id: string, driver_id: string, vehicle_id: string): Promise<PickupRequest> {
+    const res = await api.post(`${API_ENDPOINTS.WAREHOUSE.PICKUP_REQUESTS}/${id}/dispatch`, {
+      driver_id,
+      vehicle_id
+    });
     return res.data.pickup_request;
   }
 

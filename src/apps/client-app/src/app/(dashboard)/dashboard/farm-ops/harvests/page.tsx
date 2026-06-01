@@ -6,6 +6,7 @@ import { farmService, Harvest, CreateHarvestInput, CoffeeType } from '@/services
 import { COFFEE_TYPES, HARVEST_STATUSES } from '@/constants/domain';
 import { e2eSelectors, testId } from '@/lib/utils/test-id';
 import { CasbinGuard } from '@/lib/auth';
+import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import NotificationFeed from '@/components/common/NotificationFeed';
 

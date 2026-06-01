@@ -15,19 +15,23 @@ const getCasbinCore = (lib: any) => {
 interface CasbinContextType {
   enforcer: casbin.Enforcer | null;
   can: (action: string, resource: string) => boolean;
+  isLoading: boolean;
 }
 
 const CasbinContext = createContext<CasbinContextType>({
   enforcer: null,
   can: () => false,
+  isLoading: true,
 });
 
 export const CasbinProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
   const [enforcer, setEnforcer] = useState<casbin.Enforcer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initCasbin = async () => {
+      setIsLoading(true);
       if (isAuthenticated && user?.role) {
         try {
           const { policies } = await authService.getPolicies();
@@ -44,9 +48,12 @@ export const CasbinProvider = ({ children }: { children: ReactNode }) => {
           setEnforcer(e);
         } catch (error) {
           console.error('[Casbin] Failed to initialize Casbin policies:', error);
+        } finally {
+          setIsLoading(false);
         }
       } else {
         setEnforcer(null);
+        setIsLoading(false);
       }
     };
 
@@ -60,7 +67,7 @@ export const CasbinProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <CasbinContext.Provider value={{ enforcer, can }}>
+    <CasbinContext.Provider value={{ enforcer, can, isLoading }}>
       {children}
     </CasbinContext.Provider>
   );

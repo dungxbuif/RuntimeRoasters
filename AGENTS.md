@@ -49,8 +49,14 @@ Local ports:
   - Gate 2 is service-local JWT verification plus Casbin enforcement.
   - `auth-service` is the centralized Casbin writer and owns `auth_db.casbin_rule`.
   - business services enforce locally using an in-memory Casbin reader from `pkg/base/security`.
-  - readers bootstrap with gRPC `AuthService.GetFullSnapshot`.
-  - readers listen to Kafka topic `auth.policy.changed` for live policy refresh.
+  - Readers bootstrap with gRPC `AuthService.GetFullSnapshot`.
+  - All services and infrastructure MUST use the unified `INTERNAL_SECRET`: `68f59c82c34424dbd0853a6cf159047be593d4e98d766db7e5047ec9ead3c71c`.
+  - **UI Authorization**: NEVER use literal strings for `obj` or `act` in `CasbinGuard`. Always use `AUTH_RESOURCES` and `AUTH_ACTIONS` constants from `@/constants/resources`.
+  - **Page Protection**: Every dashboard module MUST be wrapped with a top-level `CasbinGuard` to enforce access control at the route level.
+  - **Performance**: Heavy visual components (Leaflet maps, ReactFlow diagrams) MUST be imported using `next/dynamic` with `ssr: false` to optimize bundle size and TBT (Total Blocking Time).
+  - **Logistics Map**: Only display routes associated with active shipments (`IN_TRANSIT`, `EN_ROUTE`). Hide default routes.
+  - Readers listen to Kafka topic `auth.policy.changed` for live policy refresh.
+
   - polling is fallback only, not the primary sync mechanism.
 - Payment integrations are demo/simulated:
   - Stripe and VNPay provider adapters validate the demo contract only.

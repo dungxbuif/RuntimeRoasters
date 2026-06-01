@@ -4,7 +4,7 @@ import { ArchitectureDiagramCanvas } from './ArchitectureTopology';
 
 // Mock dependencies
 vi.mock('reactflow', () => ({
-  default: ({ children }: any) => <div data-testid="react-flow">{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="react-flow">{children}</div>,
   Controls: () => <div data-testid="controls" />,
   Handle: () => <div />,
   Position: { Left: 'left', Right: 'right' },

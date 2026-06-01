@@ -36,6 +36,7 @@ export interface Shipment {
   vehicle_id?: string;
   driver_id: string | null;
   status: ShipmentStatus;
+  route_id?: string;
   current_leg?: 'OUTBOUND' | 'RETURN';
   destination_address: string;
   created_at: string;

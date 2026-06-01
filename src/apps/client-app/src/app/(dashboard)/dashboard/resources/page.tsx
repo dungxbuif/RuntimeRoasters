@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminService, CreateWarehouseRequest, CreateStoreRequest } from '@/services/admin.service';
+import { adminService, CreateWarehouseRequest, CreateStoreRequest, User } from '@/services/admin.service';
 import { Warehouse, Store, Truck, Users, Plus, Settings, UserPlus, X, Loader2 } from 'lucide-react';
 
 type TabKey = 'warehouses' | 'stores' | 'vehicles' | 'drivers';
@@ -180,8 +180,8 @@ export default function ResourceManagementPage() {
         <CreateResourceModal 
           type={activeTab} 
           onClose={() => setShowCreateModal(false)}
-          onWHSubmit={(data: any) => createWHMutation.mutate(data)}
-          onStoreSubmit={(data: any) => createStoreMutation.mutate(data)}
+          onWHSubmit={(data: CreateWarehouseRequest) => createWHMutation.mutate(data)}
+          onStoreSubmit={(data: CreateStoreRequest) => createStoreMutation.mutate(data)}
           managers={managers}
           isPending={createWHMutation.isPending || createStoreMutation.isPending}
         />
@@ -200,7 +200,7 @@ export default function ResourceManagementPage() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Select User</label>
                 <select className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold focus:border-primary outline-none">
                   <option value="">Select a manager...</option>
-                  {users.map((u: { id: string; email: string; role: string }) => (
+                  {users.map((u: User) => (
                     <option key={u.id} value={u.id}>{u.email} ({u.role})</option>
                   ))}
                 </select>
@@ -223,8 +223,17 @@ export default function ResourceManagementPage() {
   );
 }
 
-function CreateResourceModal({ type, onClose, onWHSubmit, onStoreSubmit, managers, isPending }: any) {
-  const [formData, setFormData] = useState<any>({
+interface CreateResourceModalProps {
+  type: TabKey;
+  onClose: () => void;
+  onWHSubmit: (data: CreateWarehouseRequest) => void;
+  onStoreSubmit: (data: CreateStoreRequest) => void;
+  managers: User[];
+  isPending: boolean;
+}
+
+function CreateResourceModal({ type, onClose, onWHSubmit, onStoreSubmit, managers, isPending }: CreateResourceModalProps) {
+  const [formData, setFormData] = useState({
     name: '',
     code: '',
     location: '',
@@ -236,11 +245,15 @@ function CreateResourceModal({ type, onClose, onWHSubmit, onStoreSubmit, manager
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const manager = managers.find((m: any) => m.id === formData.manager_id);
+    const manager = managers.find((m: User) => m.id === formData.manager_id);
     if (type === 'warehouses') {
       onWHSubmit({
-        ...formData,
+        name: formData.name,
+        code: formData.code,
+        location: formData.location,
+        manager_id: formData.manager_id,
         manager_email: manager?.email || '',
+        capacity: formData.capacity,
       });
     } else if (type === 'stores') {
       onStoreSubmit({
@@ -330,7 +343,7 @@ function CreateResourceModal({ type, onClose, onWHSubmit, onStoreSubmit, manager
               value={formData.manager_id} onChange={e => setFormData({...formData, manager_id: e.target.value})}
             >
               <option value="">Select personnel...</option>
-              {managers.map((m: any) => (
+              {managers.map((m: User) => (
                 <option key={m.id} value={m.id}>{m.email} ({m.role})</option>
               ))}
             </select>
