@@ -93,7 +93,8 @@ export default function HarvestsPage() {
   const isLoading = isHarvestsLoading || isFarmsLoading;
 
   return (
-    <div className="space-y-8">
+    <CasbinGuard obj={AUTH_RESOURCES.HARVEST} act={AUTH_ACTIONS.READ} fallback={<div className="p-12 text-center font-black uppercase italic text-slate-400">Access Denied: Farm personnel only.</div>}>
+      <div className="space-y-8">
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-black font-headline text-on-surface uppercase italic tracking-tighter">
@@ -288,5 +289,6 @@ export default function HarvestsPage() {
         </div>
       )}
     </div>
+    </CasbinGuard>
   );
 }

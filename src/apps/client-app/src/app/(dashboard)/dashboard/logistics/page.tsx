@@ -4,8 +4,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { logisticsService } from '@/services/logistics.service';
 import { Shipment } from '@/types/logistics';
-import LogisticsMap from '@/components/features/logistics/LogisticsMap';
+import dynamic from 'next/dynamic';
 import { Activity, Gauge, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+
+const LogisticsMap = dynamic(() => import('@/components/features/logistics/LogisticsMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center font-black text-slate-400 italic">Synchronizing Geospatial Node...</div>
+});
 
 export default function LogisticsDashboard() {
   const [activeDriverLocations, setActiveDriverLocations] = useState<Record<string, [number, number]>>({});

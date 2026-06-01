@@ -61,7 +61,8 @@ export default function CreateOrderPage() {
   };
 
   return (
-    <div className="h-full max-w-4xl mx-auto flex flex-col gap-8">
+    <CasbinGuard obj={AUTH_RESOURCES.ORDER} act={AUTH_ACTIONS.WRITE} fallback={<div className="p-12 text-center font-black uppercase italic text-slate-400">Access Denied: Retail Managers only.</div>}>
+      <div className="h-full max-w-4xl mx-auto flex flex-col gap-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 flex items-center gap-3 italic">
@@ -197,5 +198,6 @@ export default function CreateOrderPage() {
          </div>
       </div>
     </div>
+    </CasbinGuard>
   );
 }

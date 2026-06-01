@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { ArchitectureDiagramCanvas } from '@/components/features/architecture-topology/ArchitectureTopology';
+import dynamic from 'next/dynamic';
 import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAuth } from '@/lib/auth';
@@ -9,6 +9,14 @@ import { storageService } from '@/services/storage.service';
 import { Coffee, Key, LogOut, User, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { testId } from '@/lib/utils/test-id';
+
+const ArchitectureDiagramCanvas = dynamic(
+  () => import('@/components/features/architecture-topology/ArchitectureTopology').then(mod => mod.ArchitectureDiagramCanvas),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-slate-50 animate-pulse flex items-center justify-center font-black text-slate-400 italic">Initializing Topology Mesh...</div>
+  }
+);
 
 export default function DashboardPage() {
   const { isAuthenticated, login, logout, refreshSession } = useAuth();

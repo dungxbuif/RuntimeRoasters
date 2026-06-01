@@ -83,22 +83,26 @@ p, ADMIN, /v1/auth/.*, .*
 p, ADMIN, /v1/system/.*, .*
 p, ADMIN, /v1/.*/system/.*, .*
 p, ADMIN, /runtime.system.v1.SystemService/*, .*
-p, ADMIN, /v1/farms.*, .*
-p, ADMIN, /v1/stores.*, .*
-p, ADMIN, /v1/warehouse/.*, .*
-p, ADMIN, /v1/logistics/.*, .*
-p, ADMIN, /v1/orders.*, .*
-p, ADMIN, /v1/payments.*, .*
-p, ADMIN, /v1/trace/.*, .*
-p, ADMIN, /v1/audit/.*, .*
-p, ADMIN, /runtime.farm.v1.FarmService/.*, .*
-p, ADMIN, farm, .*
-p, ADMIN, harvest, .*
-p, ADMIN, /v1/warehouse/inventory, .*
-p, ADMIN, /v1/warehouse/receive, .*
-p, ADMIN, /v1/warehouse/dispatch, .*
-p, ADMIN, /v1/traces/topology/.*, .*
-p, ADMIN, /v1/realtime/.*, .*
+p, ADMIN, /v1/farms.*, read|write|delete
+p, ADMIN, /v1/stores.*, read|write|delete
+p, ADMIN, /v1/warehouse/.*, read
+p, ADMIN, /v1/logistics/.*, read|write|delete
+p, ADMIN, /v1/orders.*, read
+p, ADMIN, /v1/payments.*, read
+p, ADMIN, /v1/trace/.*, read
+p, ADMIN, /v1/audit/.*, read
+p, ADMIN, /runtime.farm.v1.FarmService/GetFarm, read
+p, ADMIN, /runtime.farm.v1.FarmService/ListFarms, read
+p, ADMIN, /runtime.farm.v1.FarmService/CreateFarm, write
+p, ADMIN, /runtime.farm.v1.FarmService/UpdateFarm, write
+p, ADMIN, /runtime.farm.v1.FarmService/DeleteFarm, delete
+p, ADMIN, farm, read|write
+p, ADMIN, harvest, read
+p, ADMIN, /v1/warehouse/inventory, read
+p, ADMIN, /v1/warehouse/receive, read
+p, ADMIN, /v1/warehouse/dispatch, read
+p, ADMIN, /v1/traces/topology/.*, read
+p, ADMIN, /v1/realtime/.*, read
 g, ADMIN, FARM_ADMIN
 g, ADMIN, WAREHOUSE_MGR
 g, ADMIN, STORE_MGR
