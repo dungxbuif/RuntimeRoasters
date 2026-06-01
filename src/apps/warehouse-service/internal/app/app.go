@@ -307,10 +307,4 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"inventory": inventory})
 	})
-	v1.GET("/dispatch-requests", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"dispatch_requests": []interface{}{}})
-	})
-	v1.POST("/dispatch-requests/:id/dispatch", func(c *gin.Context) {
-		c.JSON(http.StatusAccepted, gin.H{"id": c.Param("id"), "status": "ACCEPTED"})
-	})
 }

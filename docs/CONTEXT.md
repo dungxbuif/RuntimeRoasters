@@ -1,35 +1,53 @@
 # Session Context & Development State
 
-Last Updated: 2026-06-01
+Last Updated: 2026-06-05
 
 ## Current Git Snapshot
-**Checked:** 2026-06-01
-**Active branch:** `rr-urg-05-paid-order-fulfillment`
+**Checked:** 2026-06-05
+**Active branch:** `rr-urg-06-realtime-notifications`
+**HEAD:** `54faa90 RR-URG-06 realtime notifications`
 
 ### Active Dirty Changes
-- Frontend:
-  - `src/apps/client-app/src/app/(dashboard)/dashboard/retail/page.tsx`: replaced static saga mock page with live retail operations client using order list polling, status pipeline, payment simulation, and receipt confirmation.
-  - `src/apps/client-app/src/app/(dashboard)/dashboard/warehouse/page.tsx`: updated warehouse queues to show pickup and outbound dispatch requests, driver/vehicle assignment for delivery dispatch, and revised queue states.
-  - `src/apps/client-app/src/app/(dashboard)/dashboard/driver/page.tsx`: added automatic milestone advancement during route simulation.
-  - `src/apps/client-app/src/services/retail.service.ts`: added `simulatePayment` and `confirmOrder` API helpers.
-  - `src/apps/client-app/src/services/warehouse.service.ts`: expanded dispatch request fields and dispatch API payload with driver/vehicle IDs.
-- Backend:
-  - `src/apps/retail-service/internal/...`: added expanded order statuses, scoped order listing, receipt confirmation endpoint, and refined saga status transitions.
-  - `src/apps/warehouse-service/internal/...`: added `DispatchRequest` domain model, dispatch request REST endpoints, dispatch use case, common usecase helpers, Valkey-backed inventory reservation lock, dispatch request creation, and `warehouse.dispatch.requested` publication.
-  - `src/apps/logistics-service/internal/...`: changed delivery creation flow to consume `logistics.delivery.assigned` and create assigned retail delivery shipments with driver busy state.
-  - `src/pkg/events/contracts.go`: added `WarehouseID` to warehouse stock reservation success/failure events.
+- `src/apps/client-app/src/constants/casbin.ts`: frontend Casbin matcher now allows direct role policy matching (`r.sub == p.sub`) as well as inherited role matching (`g(r.sub, p.sub)`), fixing frontend unit failures where role policies such as `STORE_MGR` did not evaluate.
+- `src/apps/socket-service/internal/app/app_test.go`: added socket-service route integration coverage for private stream ticket requirement, public WebSocket access, ticketed private WebSocket access, and one-time ticket rejection.
+- `src/apps/client-app/e2e/operational_realtime_awareness.spec.ts`: added flow-oriented Playwright coverage for Warehouse/Store dashboard notification rendering and role-scope isolation with mocked gateway auth/API contracts; passed through production Next runtime.
+- `src/apps/client-app/package.json`: added `start:e2e` and `test:e2e:realtime-notifications` scripts.
+- `src/apps/client-app/playwright.config.ts`: added fail-fast E2E guardrails: production webServer, `127.0.0.1` baseURL, 30s test timeout, 10s navigation timeout, 5s action/expect timeout, line+HTML reporters.
+- `src/apps/socket-service/internal/platform/doc.go` and `src/apps/socket-service/internal/platform/platform_live_test.go`: added opt-in live platform test for Kafka -> socket-service -> Redis/Valkey notification persistence.
+- `src/apps/warehouse-service/internal/app/app.go`: removed duplicate stub registration for `/v1/warehouse/dispatch-requests` routes so warehouse-service can boot for platform verification.
+- `docs/stories/history/sprint-emergency-final-demo/RR-URG-06-realtime-notifications.md`: updated verification evidence and remaining manual visual demo gap.
+- `docs/CONTEXT.md`: updated with this RR-URG-06 verification context.
 
 ### Outstanding Verification
-- Passed: `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/... ./apps/warehouse-service/... ./apps/logistics-service/... ./apps/payment-service/... ./pkg/events/...`
-- Passed: `npm run lint` in `src/apps/client-app`
-- Passed: `npm run build` in `src/apps/client-app`
-- Passed: KrakenD config JSON parse check.
-- Pending live manual verification: order creation -> signed Stripe demo webhook -> stock reservation -> dispatch request -> warehouse manager dispatch -> logistics assigned shipment -> driver delivery -> retail receipt confirmation.
+- RR-URG-06 targeted backend passed:
+  - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/socket-service/... ./apps/auth-service/internal/infrastructure/casbin/...`
+- Frontend checks passed:
+  - `npm test`
+  - `npm run lint`
+  - `npm run build`
+- KrakenD config parse passed:
+  - `node -e "JSON.parse(require('fs').readFileSync('deployments/krakend/krakend.json','utf8')); console.log('krakend json ok')"`
+- Playwright browser dependency was installed:
+  - `npx playwright install chromium`
+- Operational realtime awareness E2E passed:
+  - `npm run test:e2e:realtime-notifications` passed 3 Playwright production-runtime flow tests in 9.2s when run with approved escalation to allow binding `127.0.0.1:3000`.
+  - Covered flows: warehouse outbound dispatch notification, store incoming delivery notification, and store-manager isolation from warehouse operations notifications.
+  - The non-escalated run failed fast at webServer readiness because sandbox blocked `next start -H 127.0.0.1 -p 3000` with `listen EPERM`.
+- Platform live test passed:
+  - Started required local infra/services, fixed warehouse duplicate route boot panic, and ran `RUN_PLATFORM_TESTS=1 VALKEY_ADDR=127.0.0.1:6379 KAFKA_BROKERS=127.0.0.1:9094 go test -tags=platform ./apps/socket-service/internal/platform -run TestWarehouseDispatchEventCreatesLiveNotification -count=1 -v`.
+  - Result: Kafka `warehouse.dispatch.requested` event was consumed by running socket-service and persisted as a role/warehouse-scoped Redis notification.
+- Harness matrix updated:
+  - RR-URG-06: unit yes, integration yes, e2e yes, platform yes.
+- Manual visual review still pending:
+  - Full two-browser role-session demo with real logged-in users has not been run.
+  - `npm run dev` is still not suitable for E2E evidence because it emitted repeated `Can't resolve 'tailwindcss' in '/Users/dungxbuif/workspace/RuntimeRoasters/src/apps'`; production `next start` via Playwright webServer is the current E2E route.
 
 ### Next Task
-- RR-URG-06: Realtime Notifications & Socket/SSE Broadcasts.
-- Create a clean task branch after committing RR-URG-05.
-- Keep streams as fanout/projection only; persisted service state remains source of truth.
+- RR-URG-06 verification is complete in Harness for unit, integration, E2E, and platform evidence.
+- Continue RR-URG-07 trace-service/public QR work after committing or carrying forward the RR-URG-06 verification/test updates.
+- Current recent commits:
+  - `54faa90 RR-URG-06 realtime notifications`
+  - `55700d5 RR-URG-05 paid order fulfillment`
 
 ## Phase 1: System Bootstrap & Seeding
 **Status:** `✅ COMPLETED`

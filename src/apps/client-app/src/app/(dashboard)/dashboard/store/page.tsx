@@ -5,6 +5,7 @@ import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
 import { DataGrid } from '@/components/ui/templates/DataGrid';
 import { APP_ROUTES } from '@/constants/routes';
+import { notificationService, RuntimeNotification } from '@/services/notification.service';
 import { Order, retailService } from '@/services/retail.service';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, MapPin, Plus, ShoppingBag, Store, Truck } from 'lucide-react';
@@ -56,11 +57,16 @@ export default function StoreDashboardPage() {
 
   const activeOrder = orders.find(o => o.status === 'IN_TRANSIT' || o.status === 'DISPATCH_REQUESTED');
 
-  const notifications: NotificationItem[] = useMemo(() => [
-    { id: '1', icon: 'check_circle', message: `Stock reserved for ${activeOrder?.id?.slice(0, 8).toUpperCase() || 'order'}`, time: '2min ago', color: 'green' },
-    { id: '2', icon: 'local_shipping', message: 'Driver dispatched for delivery', time: '5min ago', color: 'blue' },
-    { id: '3', icon: 'payments', message: 'Payment pending for ORD-8832', time: '12min ago', color: 'amber' },
-  ], [activeOrder]);
+  const { data: runtimeNotifications = [] } = useQuery({
+    queryKey: ['realtime', 'notifications'],
+    queryFn: () => notificationService.listNotifications(),
+    refetchInterval: 5000,
+  });
+
+  const notifications: NotificationItem[] = useMemo(
+    () => runtimeNotifications.map(toNotificationItem),
+    [runtimeNotifications]
+  );
 
   const formatVND = (amount: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -221,4 +227,14 @@ export default function StoreDashboardPage() {
       )}
     </DashboardLayout>
   );
+}
+
+function toNotificationItem(notification: RuntimeNotification): NotificationItem {
+  return {
+    id: notification.id,
+    icon: 'notifications',
+    message: notification.message || notification.title,
+    time: new Date(notification.created_at).toLocaleString(),
+    color: notification.severity === 'error' ? 'red' : notification.severity === 'warning' ? 'amber' : 'blue',
+  };
 }

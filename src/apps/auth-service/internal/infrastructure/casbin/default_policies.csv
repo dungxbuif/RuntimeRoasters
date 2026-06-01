@@ -27,6 +27,8 @@ p, STORE_MGR, /v1/traces/topology/config, read
 p, STORE_MGR, /v1/traces/topology/history, read
 p, STORE_MGR, /v1/realtime/tickets, write
 p, STORE_MGR, /v1/realtime/stream, read
+p, STORE_MGR, /v1/realtime/notifications, read
+p, STORE_MGR, /v1/realtime/notifications/.*, write
 p, STORE_MGR, /v1/shipments, read
 p, STORE_MGR, /v1/logistics/shipments, read
 p, STORE_MGR, /v1/logistics/shipments/:id, read
@@ -62,6 +64,8 @@ p, WAREHOUSE_MGR, /v1/traces/topology/config, read
 p, WAREHOUSE_MGR, /v1/traces/topology/history, read
 p, WAREHOUSE_MGR, /v1/realtime/tickets, write
 p, WAREHOUSE_MGR, /v1/realtime/stream, read
+p, WAREHOUSE_MGR, /v1/realtime/notifications, read
+p, WAREHOUSE_MGR, /v1/realtime/notifications/.*, write
 p, DRIVER, /v1/logistics/shipments, read
 p, DRIVER, /v1/logistics/shipments/:id, read
 p, DRIVER, /v1/logistics/shipments/:id/depart, write
@@ -78,6 +82,8 @@ p, DRIVER, /v1/traces/topology/config, read
 p, DRIVER, /v1/traces/topology/history, read
 p, DRIVER, /v1/realtime/tickets, write
 p, DRIVER, /v1/realtime/stream, read
+p, DRIVER, /v1/realtime/notifications, read
+p, DRIVER, /v1/realtime/notifications/.*, write
 p, ADMIN, /v1/users, .*
 p, ADMIN, /v1/auth/.*, .*
 p, ADMIN, /v1/system/.*, .*

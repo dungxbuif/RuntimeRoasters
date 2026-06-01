@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:e2e": "next start -H 127.0.0.1 -p 3000",
     "lint": "eslint",
     "test:e2e": "playwright test",
+    "test:e2e:realtime-notifications": "playwright test e2e/operational_realtime_awareness.spec.ts --project=chromium --reporter=line",
     "test": "vitest run src/"
   },
   "dependencies": {

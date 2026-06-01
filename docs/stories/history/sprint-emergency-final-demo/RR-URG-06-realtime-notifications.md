@@ -47,12 +47,12 @@ Endpoints:
 
 Checklist:
 
-- [ ] Notifications persisted.
-- [ ] Notifications scoped by role/entity.
-- [ ] Pickup request notification.
-- [ ] Outbound dispatch notification.
-- [ ] Driver assignment notification.
-- [ ] Delivery/return notification.
+- [x] Notifications persisted.
+- [x] Notifications scoped by role/entity.
+- [x] Pickup request notification.
+- [x] Outbound dispatch notification.
+- [x] Driver assignment notification.
+- [x] Delivery/return notification.
 
 ### 2. Socket/SSE Stream
 
@@ -74,11 +74,11 @@ Candidate endpoints:
 
 Checklist:
 
-- [ ] Private stream validates JWT.
-- [ ] Private stream scopes by role/entity.
-- [ ] Public stream sanitized.
-- [ ] Disconnects handled.
-- [ ] Backpressure simple but safe.
+- [x] Private stream validates JWT via one-time ticket exchange.
+- [x] Private stream scopes by role/entity.
+- [x] Public stream sanitized.
+- [x] Disconnects handled.
+- [x] Backpressure simple but safe.
 
 ### 3. Events To Broadcast
 
@@ -119,8 +119,32 @@ Checklist:
 
 ## Test Checklist
 
-- [ ] Unit: notification scoping.
-- [ ] Unit: socket event sanitizer.
-- [ ] Integration: authenticated stream receives assigned event.
-- [ ] Integration: unauthorized stream denied.
+- [x] Unit: notification scoping.
+- [x] Unit: socket event sanitizer.
+- [x] Integration: authenticated stream receives assigned event.
+- [x] Integration: unauthorized stream denied.
+- [x] E2E: Operational realtime awareness flows cover warehouse outbound notifications, store incoming delivery notifications, and role-scope isolation through the production Next runtime with mocked gateway contracts.
+- [x] Platform: Live Kafka `warehouse.dispatch.requested` event is consumed by running socket-service and persisted as a scoped Redis/Valkey notification.
 - [ ] Manual: two-browser demo updates in order.
+
+## Implementation Evidence
+
+- `socket-service` persists notifications in Valkey and exposes role/entity-scoped APIs under `/v1/realtime/notifications`.
+- Kafka events create notification records for pickup, dispatch, driver assignment, delivery/return, and fulfillment failure events.
+- Warehouse and Store dashboards now poll API-backed realtime notifications instead of static-only notification lists.
+- Verification run:
+  - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/socket-service/... ./apps/auth-service/internal/infrastructure/casbin/...`
+  - `npm test`
+  - `npm run lint`
+  - `npm run build`
+  - `npm run test:e2e:realtime-notifications`
+  - KrakenD JSON parse check.
+- Added fail-fast, flow-oriented E2E guardrails:
+  - `start:e2e` binds Next production runtime to `127.0.0.1:3000`.
+  - Playwright `webServer` builds/starts the app, waits for `http://127.0.0.1:3000/`, and times out instead of letting tests hang.
+  - Playwright default timeout is 30s, navigation timeout is 10s, action/expect timeout is 5s.
+  - Flow script: `npm run test:e2e:realtime-notifications` passed 3 Playwright tests.
+- Platform live flow:
+  - `RUN_PLATFORM_TESTS=1 VALKEY_ADDR=127.0.0.1:6379 KAFKA_BROKERS=127.0.0.1:9094 go test -tags=platform ./apps/socket-service/internal/platform -run TestWarehouseDispatchEventCreatesLiveNotification -count=1 -v` passed.
+  - This verifies Kafka -> running socket-service consumer -> Redis/Valkey notification persistence and warehouse index creation with a unique dispatch event.
+- Remaining manual demo gap: full two-browser visual review with real logged-in role sessions has not been run yet.

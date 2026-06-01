@@ -101,6 +101,48 @@ func (a *App) routes(r *gin.Engine) {
 			}
 			c.JSON(http.StatusOK, gin.H{"ticket": ticket})
 		})
+
+		private.GET("/notifications", a.Guards.Authn, a.Guards.Authz, func(c *gin.Context) {
+			claims, ok := identity.FromContext(c.Request.Context())
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+				return
+			}
+			notifications, err := a.Service.ListNotifications(c.Request.Context(), claims)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"notifications": notifications})
+		})
+
+		private.POST("/notifications/:id/ack", a.Guards.Authn, a.Guards.Authz, func(c *gin.Context) {
+			claims, ok := identity.FromContext(c.Request.Context())
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+				return
+			}
+			notification, err := a.Service.AcknowledgeNotification(c.Request.Context(), claims, c.Param("id"))
+			if err != nil {
+				c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"notification": notification})
+		})
+
+		private.POST("/notifications/:id/resolve", a.Guards.Authn, a.Guards.Authz, func(c *gin.Context) {
+			claims, ok := identity.FromContext(c.Request.Context())
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+				return
+			}
+			notification, err := a.Service.ResolveNotification(c.Request.Context(), claims, c.Param("id"))
+			if err != nil {
+				c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"notification": notification})
+		})
 	}
 
 	private.GET("/stream", func(c *gin.Context) {

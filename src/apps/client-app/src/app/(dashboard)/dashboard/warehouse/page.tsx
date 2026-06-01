@@ -4,6 +4,7 @@ import { NotificationItem } from '@/components/common/NotificationFeed';
 import StatusPipeline from '@/components/common/StatusPipeline';
 import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
 import { logisticsService } from '@/services/logistics.service';
+import { notificationService, RuntimeNotification } from '@/services/notification.service';
 import { warehouseService } from '@/services/warehouse.service';
 import { DispatchRequest, PickupRequest } from '@/services/warehouse.service';
 import { Driver, Vehicle } from '@/types/logistics';
@@ -95,10 +96,13 @@ export default function WarehouseOperationsPage() {
     receiveMutation.mutate(id);
   };
 
-  const notifications: NotificationItem[] = [
-    { id: '1', icon: 'inventory_2', message: 'Low stock warning: SKU-AR-001', time: '10m ago', color: 'blue' },
-    { id: '2', icon: 'local_shipping', message: 'Driver arriving in 5 mins', time: '2m ago', color: 'green' },
-  ];
+  const { data: runtimeNotifications = [] } = useQuery({
+    queryKey: ['realtime', 'notifications'],
+    queryFn: () => notificationService.listNotifications(),
+    refetchInterval: 5000,
+  });
+
+  const notifications: NotificationItem[] = runtimeNotifications.map(toNotificationItem);
 
   return (
     <DashboardLayout
@@ -347,4 +351,14 @@ export default function WarehouseOperationsPage() {
       )}
     </DashboardLayout>
   );
+}
+
+function toNotificationItem(notification: RuntimeNotification): NotificationItem {
+  return {
+    id: notification.id,
+    icon: 'notifications',
+    message: notification.message || notification.title,
+    time: new Date(notification.created_at).toLocaleString(),
+    color: notification.severity === 'error' ? 'red' : notification.severity === 'warning' ? 'amber' : 'blue',
+  };
 }

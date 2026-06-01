@@ -62,6 +62,31 @@ type Envelope struct {
 	Data interface{} `json:"data"`
 }
 
+type Notification struct {
+	ID             string     `json:"id"`
+	TargetRole     string     `json:"target_role,omitempty"`
+	TargetUserID   string     `json:"target_user_id,omitempty"`
+	FarmID         string     `json:"farm_id,omitempty"`
+	WarehouseID    string     `json:"warehouse_id,omitempty"`
+	StoreID        string     `json:"store_id,omitempty"`
+	ShipmentID     string     `json:"shipment_id,omitempty"`
+	EntityType     string     `json:"entity_type"`
+	EntityID       string     `json:"entity_id"`
+	Type           string     `json:"type"`
+	Title          string     `json:"title"`
+	Message        string     `json:"message"`
+	Severity       string     `json:"severity"`
+	Status         string     `json:"status"`
+	CreatedAt      time.Time  `json:"created_at"`
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
+}
+
+const (
+	NotificationStatusUnread   = "UNREAD"
+	NotificationStatusAcked    = "ACKED"
+	NotificationStatusResolved = "RESOLVED"
+)
+
 func NewService(rdb *redis.Client, producer kafka.Producer, broadcastTopic string, sessionTTL time.Duration, rawKeys string) *Service {
 	if sessionTTL <= 0 {
 		sessionTTL = 90 * time.Second
@@ -148,7 +173,117 @@ func (s *Service) HandleKafkaMessage(ctx context.Context, msg kafkago.Message) e
 	}
 	_ = s.rdb.Set(ctx, "socket:last-event:"+entry.FlowID, body, s.sessionTTL).Err()
 	s.broadcast(entry, body)
+	if notification, ok := notificationFromEvent(entry, cloudEvent); ok {
+		if err := s.CreateNotification(ctx, notification); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (s *Service) CreateNotification(ctx context.Context, notification Notification) error {
+	if notification.ID == "" {
+		notification.ID = uuid.NewString()
+	}
+	if notification.Status == "" {
+		notification.Status = NotificationStatusUnread
+	}
+	if notification.CreatedAt.IsZero() {
+		notification.CreatedAt = time.Now()
+	}
+	body, err := json.Marshal(notification)
+	if err != nil {
+		return err
+	}
+	key := "notification:" + notification.ID
+	if err := s.rdb.Set(ctx, key, body, 14*24*time.Hour).Err(); err != nil {
+		return err
+	}
+	for _, index := range notificationIndexes(notification) {
+		if err := s.rdb.LPush(ctx, index, notification.ID).Err(); err != nil {
+			return err
+		}
+		_ = s.rdb.LTrim(ctx, index, 0, 199).Err()
+		_ = s.rdb.Expire(ctx, index, 14*24*time.Hour).Err()
+	}
+	notificationBody, err := json.Marshal(Envelope{Type: "notification.created", Data: notification})
+	if err != nil {
+		return err
+	}
+	s.broadcastNotification(notification, notificationBody)
+	return nil
+}
+
+func (s *Service) ListNotifications(ctx context.Context, claims identity.Claims) ([]Notification, error) {
+	ids := make([]string, 0, 128)
+	seen := map[string]struct{}{}
+	for _, index := range notificationIndexesForClaims(claims) {
+		values, err := s.rdb.LRange(ctx, index, 0, 99).Result()
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range values {
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+	notifications := make([]Notification, 0, len(ids))
+	for _, id := range ids {
+		body, err := s.rdb.Get(ctx, "notification:"+id).Bytes()
+		if err == redis.Nil {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		var notification Notification
+		if err := json.Unmarshal(body, &notification); err != nil {
+			return nil, err
+		}
+		if canReceiveNotification(claims, notification) {
+			notifications = append(notifications, notification)
+		}
+	}
+	return notifications, nil
+}
+
+func (s *Service) AcknowledgeNotification(ctx context.Context, claims identity.Claims, id string) (*Notification, error) {
+	return s.updateNotificationStatus(ctx, claims, id, NotificationStatusAcked)
+}
+
+func (s *Service) ResolveNotification(ctx context.Context, claims identity.Claims, id string) (*Notification, error) {
+	return s.updateNotificationStatus(ctx, claims, id, NotificationStatusResolved)
+}
+
+func (s *Service) updateNotificationStatus(ctx context.Context, claims identity.Claims, id string, status string) (*Notification, error) {
+	key := "notification:" + id
+	body, err := s.rdb.Get(ctx, key).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	var notification Notification
+	if err := json.Unmarshal(body, &notification); err != nil {
+		return nil, err
+	}
+	if !canReceiveNotification(claims, notification) {
+		return nil, errors.New("notification access denied")
+	}
+	now := time.Now()
+	notification.Status = status
+	if status == NotificationStatusAcked {
+		notification.AcknowledgedAt = &now
+	}
+	updated, err := json.Marshal(notification)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.rdb.Set(ctx, key, updated, 14*24*time.Hour).Err(); err != nil {
+		return nil, err
+	}
+	return &notification, nil
 }
 
 func (s *Service) PublishInternalEvent(ctx context.Context, keyHeader string, event topology.BroadcastRequested) error {
@@ -226,6 +361,20 @@ func (s *Service) broadcast(entry topology.HistoryEntry, body []byte) {
 	defer s.mu.RUnlock()
 	for _, client := range s.clients {
 		if !canReceive(client.scope, entry) {
+			continue
+		}
+		select {
+		case client.send <- body:
+		default:
+		}
+	}
+}
+
+func (s *Service) broadcastNotification(notification Notification, body []byte) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, client := range s.clients {
+		if client.scope.Public || !canReceiveNotification(scopeToClaims(client.scope), notification) {
 			continue
 		}
 		select {
@@ -327,6 +476,140 @@ func canReceive(scope ClientScope, entry topology.HistoryEntry) bool {
 		return driverID == scope.Subject
 	}
 	return entry.Visibility == topology.VisibilityPublic
+}
+
+func notificationFromEvent(entry topology.HistoryEntry, event interface {
+	Extensions() map[string]interface{}
+}) (Notification, bool) {
+	notification := Notification{
+		ID:          "n-" + entry.EventID,
+		EntityType:  entityType(entry.Topic),
+		EntityID:    firstNonEmpty(extensionValue(event, "orderid"), extensionValue(event, "shipmentid"), extensionValue(event, "harvestid"), entry.EventID),
+		Type:        entry.Topic,
+		Severity:    "info",
+		Status:      NotificationStatusUnread,
+		CreatedAt:   entry.OccurredAt,
+		StoreID:     extensionValue(event, "storeid"),
+		WarehouseID: extensionValue(event, "warehouseid"),
+		FarmID:      extensionValue(event, "farmid"),
+		ShipmentID:  extensionValue(event, "shipmentid"),
+	}
+	switch entry.Topic {
+	case events.TopicFarmHarvestCreated, events.TopicWarehousePickupRequested:
+		notification.TargetRole = identity.RoleWarehouseMgr
+		notification.Title = "Pickup work available"
+		notification.Message = "A harvest is ready for warehouse pickup coordination."
+	case events.TopicWarehouseDispatchRequested:
+		notification.TargetRole = identity.RoleWarehouseMgr
+		notification.Title = "Outbound dispatch requested"
+		notification.Message = "A paid order has reserved stock and is ready for delivery dispatch."
+	case events.TopicLogisticsDeliveryAssigned:
+		notification.TargetRole = "DRIVER"
+		notification.TargetUserID = extensionValue(event, "driverid")
+		notification.Title = "Delivery assigned"
+		notification.Message = "A retail delivery has been assigned to a driver."
+	case events.TopicLogisticsDeliveryDriverConfirmed, events.TopicLogisticsDriverReturnedToBase:
+		notification.TargetRole = identity.RoleStoreMgr
+		notification.Title = "Delivery status updated"
+		notification.Message = "A retail delivery status changed."
+	case events.TopicWarehouseStockReservationFailed, events.TopicPaymentFailed:
+		notification.TargetRole = identity.RoleStoreMgr
+		notification.Severity = "error"
+		notification.Title = "Order fulfillment failed"
+		notification.Message = "A paid order could not continue through fulfillment."
+	default:
+		return Notification{}, false
+	}
+	if notification.CreatedAt.IsZero() {
+		notification.CreatedAt = time.Now()
+	}
+	return notification, true
+}
+
+func extensionValue(event interface {
+	Extensions() map[string]interface{}
+}, key string) string {
+	value, ok := event.Extensions()[key]
+	if !ok || value == nil {
+		return ""
+	}
+	return fmt.Sprint(value)
+}
+
+func notificationIndexes(notification Notification) []string {
+	indexes := []string{}
+	if notification.TargetRole != "" {
+		indexes = append(indexes, "notifications:role:"+notification.TargetRole)
+	}
+	if notification.TargetUserID != "" {
+		indexes = append(indexes, "notifications:user:"+notification.TargetUserID)
+	}
+	if notification.StoreID != "" {
+		indexes = append(indexes, "notifications:store:"+notification.StoreID)
+	}
+	if notification.WarehouseID != "" {
+		indexes = append(indexes, "notifications:warehouse:"+notification.WarehouseID)
+	}
+	return indexes
+}
+
+func notificationIndexesForClaims(claims identity.Claims) []string {
+	indexes := []string{"notifications:role:" + claims.Role, "notifications:user:" + claims.Subject}
+	for _, storeID := range claims.StoreIDs {
+		indexes = append(indexes, "notifications:store:"+storeID)
+	}
+	for _, warehouseID := range claims.WarehouseIDs {
+		indexes = append(indexes, "notifications:warehouse:"+warehouseID)
+	}
+	return indexes
+}
+
+func canReceiveNotification(claims identity.Claims, notification Notification) bool {
+	if claims.IsAdmin() {
+		return true
+	}
+	if notification.TargetUserID != "" && notification.TargetUserID != claims.Subject {
+		return false
+	}
+	if notification.TargetRole != "" && notification.TargetRole != claims.Role {
+		return false
+	}
+	if claims.Role == identity.RoleStoreMgr && notification.StoreID != "" && !claims.CanAccessStore(notification.StoreID) {
+		return false
+	}
+	if claims.Role == identity.RoleWarehouseMgr && notification.WarehouseID != "" && !claims.CanAccessWarehouse(notification.WarehouseID) {
+		return false
+	}
+	return notification.TargetRole != "" || notification.TargetUserID != "" || notification.StoreID != "" || notification.WarehouseID != ""
+}
+
+func scopeToClaims(scope ClientScope) identity.Claims {
+	return identity.Claims{
+		Subject:      scope.Subject,
+		Role:         scope.Role,
+		StoreIDs:     scope.StoreIDs,
+		WarehouseIDs: scope.WarehouseIDs,
+	}
+}
+
+func entityType(topic string) string {
+	switch {
+	case strings.Contains(topic, "order"), strings.Contains(topic, "payment"), strings.Contains(topic, "delivery"):
+		return "order"
+	case strings.Contains(topic, "pickup"), strings.Contains(topic, "harvest"):
+		return "harvest"
+	default:
+		return "event"
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func contains(values []string, needle string) bool {

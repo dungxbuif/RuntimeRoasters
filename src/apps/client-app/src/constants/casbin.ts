@@ -4,7 +4,7 @@
  * 
  * Matcher Logic:
  * - ADMIN role has full access to everything.
- * - Other roles must match the subject in the policy.
+ * - Other roles must match the subject in the policy directly or through inheritance.
  * - Resources match using keyMatch (RESTful paths with *) and regexMatch.
  */
 export const CASBIN_MODEL = `
@@ -18,5 +18,5 @@ p = sub, obj, act
 e = some(where (p.eft == allow))
 
 [matchers]
-m = (r.sub == 'ADMIN') || (g(r.sub, p.sub) && (keyMatch(r.obj, p.obj) || regexMatch(r.obj, p.obj)) && regexMatch(r.act, p.act))
+m = (r.sub == 'ADMIN') || ((r.sub == p.sub || g(r.sub, p.sub)) && (keyMatch(r.obj, p.obj) || regexMatch(r.obj, p.obj)) && regexMatch(r.act, p.act))
 `;

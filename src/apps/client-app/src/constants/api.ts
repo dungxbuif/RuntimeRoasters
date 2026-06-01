@@ -46,5 +46,6 @@ export const API_ENDPOINTS = {
   },
   REALTIME: {
     TICKETS: '/v1/realtime/tickets',
+    NOTIFICATIONS: '/v1/realtime/notifications',
   },
 } as const;
