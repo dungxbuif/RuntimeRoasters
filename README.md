@@ -102,14 +102,14 @@ Infrastructure UIs and endpoints:
 | **Hydra Public** | 4444 | OAuth2/OIDC public endpoint |
 
 ### 📖 Detailed Guides
-- 📘 **[Developer Guide](./docs/product/GUIDE.md)**: Deep dive into patterns, coding standards, and service interactions.
+- 📘 **[Developer Guide](docs/engineering/GUIDE.md)**: Deep dive into patterns, coding standards, and service interactions.
 - ▶️ **[Demo Setup Runbook](./docs/product/DEMO_SETUP_RUNBOOK.md)**: Install, start order, seed/reset data, ports, and playground entrypoints.
-- 🛠️ **[Technical Specification](./docs/product/TECH.md)**: Architecture, contracts, storage, messaging, and infrastructure.
-- 📜 **[Business Specification](./docs/product/domain/README.md)**: BA-facing flow, roles, UI actions, and business rules.
-- 🌊 **[Product/System Specification](./docs/product/SPEC.md)**: Product scope, business context, and reference requirements.
+- 🛠️ **[Technical Specification](docs/architecture/ARCHITECTURE.md)**: Architecture, contracts, storage, messaging, and infrastructure.
+- 📜 **[Business Specification](docs/requirements/domain/README.md)**: BA-facing flow, roles, UI actions, and business rules.
+- 🌊 **[Product/System Specification](docs/requirements/SPEC.md)**: Product scope, business context, and reference requirements.
 - 🎨 **[UI/UX Design Notes](./docs/product/ui-ux/DESIGN.md)**: Next.js dashboard visual language and UX standards.
-- 📅 **[Sprint Roadmap](./docs/stories/ROADMAP.md)**: Development phases and execution history.
-- 📜 **[Architecture Decisions (ADRs)](./docs/decisions/)**: History of critical technical choices.
+- 📅 **[Sprint Roadmap](docs/work/ROADMAP.md)**: Development phases and execution history.
+- 📜 **[Architecture Decisions (ADRs)](docs/decisions/)**: History of critical technical choices.
 
 ---
 *Developed by [Dung Bui](https://github.com/dungxbuif) for Engineering Showcase.*

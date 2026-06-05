@@ -1,0 +1,9 @@
+[
+  {"id": "task1", "title": "Create Directory Structure", "status": "todo"},
+  {"id": "task2", "title": "Create Core Policy Files", "status": "todo"},
+  {"id": "task3", "title": "Create Templates", "status": "todo"},
+  {"id": "task4", "title": "Synthesize Project Roadmap & Backlog", "status": "todo"},
+  {"id": "task5", "title": "Migrate Master Documentation", "status": "todo"},
+  {"id": "task6", "title": "Migrate Work Tickets (Stories)", "status": "todo"},
+  {"id": "task7", "title": "Final Switchover", "status": "todo"}
+]
