@@ -1,11 +1,17 @@
+---
+artifact_type: context
+id: CONTEXT
+status: active
+owner: shared
+---
 # Session Context & Development State
 
 Last Updated: 2026-06-05
 
 ## Current Git Snapshot
 **Checked:** 2026-06-05
-**Active branch:** `rr-urg-06-realtime-notifications`
-**HEAD:** `54faa90 RR-URG-06 realtime notifications`
+**Active branch:** `rr-urg-07-trace-public-qr`
+**HEAD:** `7663268 RR-URG-07 start trace public QR`
 
 ### Active Dirty Changes
 - `src/apps/client-app/src/constants/casbin.ts`: frontend Casbin matcher now allows direct role policy matching (`r.sub == p.sub`) as well as inherited role matching (`g(r.sub, p.sub)`), fixing frontend unit failures where role policies such as `STORE_MGR` did not evaluate.
@@ -15,39 +21,58 @@ Last Updated: 2026-06-05
 - `src/apps/client-app/playwright.config.ts`: added fail-fast E2E guardrails: production webServer, `127.0.0.1` baseURL, 30s test timeout, 10s navigation timeout, 5s action/expect timeout, line+HTML reporters.
 - `src/apps/socket-service/internal/platform/doc.go` and `src/apps/socket-service/internal/platform/platform_live_test.go`: added opt-in live platform test for Kafka -> socket-service -> Redis/Valkey notification persistence.
 - `src/apps/warehouse-service/internal/app/app.go`: removed duplicate stub registration for `/v1/warehouse/dispatch-requests` routes so warehouse-service can boot for platform verification.
-- `docs/stories/history/sprint-emergency-final-demo/RR-URG-06-realtime-notifications.md`: updated verification evidence and remaining manual visual demo gap.
-- `docs/CONTEXT.md`: updated with this RR-URG-06 verification context.
+- `docs/work/tickets/sprint10/RR-URG-06/ticket.md`: updated verification evidence and remaining manual visual demo gap.
+- Harness v1 docs reconciliation:
+  - Audited new Harness reference repo at `/private/tmp/harness-new`.
+  - Exported old docs from `4404600^` into `/private/tmp/runtime-roasters-old-docs`.
+  - Added reviewed RuntimeRoasters-specific Harness core files instead of copying raw templates: `docs/work/FEEDBACK_LOG.md`, `docs/work/TRACEABILITY.md`, `docs/requirements/REQUIREMENTS.md`, `docs/requirements/USER_STORIES.md`, engineering setup/local/troubleshooting docs, work/ticket/bug/phase indexes/templates, `docs/templates/FEEDBACK.md`, `docs/templates/SDD.md`, and `docs/releases/RELEASE_NOTES_TEMPLATE.md`.
+  - Updated stale migration paths from pre-Harness product/story/feedback locations to Harness v1 locations.
+  - Split RR-URG-07 into 07A-07E with Harness frontmatter and trace metadata.
+  - Consolidated legacy non-template docs into Harness targets: requirements, master data, UI design, operations, canonical standards, roadmap, and validation matrix; removed duplicate legacy files after review.
 
 ### Outstanding Verification
 - RR-URG-06 targeted backend passed:
   - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/socket-service/... ./apps/auth-service/internal/infrastructure/casbin/...`
 - Frontend checks passed:
-  - `npm test`
-  - `npm run lint`
-  - `npm run build`
+  - `npm test`, `npm run lint`, `npm run build`
 - KrakenD config parse passed:
   - `node -e "JSON.parse(require('fs').readFileSync('deployments/krakend/krakend.json','utf8')); console.log('krakend json ok')"`
 - Playwright browser dependency was installed:
   - `npx playwright install chromium`
 - Operational realtime awareness E2E passed:
-  - `npm run test:e2e:realtime-notifications` passed 3 Playwright production-runtime flow tests in 9.2s when run with approved escalation to allow binding `127.0.0.1:3000`.
-  - Covered flows: warehouse outbound dispatch notification, store incoming delivery notification, and store-manager isolation from warehouse operations notifications.
-  - The non-escalated run failed fast at webServer readiness because sandbox blocked `next start -H 127.0.0.1 -p 3000` with `listen EPERM`.
+  - `npm run test:e2e:realtime-notifications` passed 3 Playwright production-runtime flow tests in 9.2s.
+  - Covered flows: warehouse outbound dispatch notification, store incoming delivery notification, and store-manager isolation.
 - Platform live test passed:
-  - Started required local infra/services, fixed warehouse duplicate route boot panic, and ran `RUN_PLATFORM_TESTS=1 VALKEY_ADDR=127.0.0.1:6379 KAFKA_BROKERS=127.0.0.1:9094 go test -tags=platform ./apps/socket-service/internal/platform -run TestWarehouseDispatchEventCreatesLiveNotification -count=1 -v`.
-  - Result: Kafka `warehouse.dispatch.requested` event was consumed by running socket-service and persisted as a role/warehouse-scoped Redis notification.
+  - Kafka `warehouse.dispatch.requested` event was consumed by running socket-service and persisted as a role/warehouse-scoped Redis notification.
 - Harness matrix updated:
   - RR-URG-06: unit yes, integration yes, e2e yes, platform yes.
+- Harness docs structure audit passed:
+  - No required docs from the cloned Harness reference are missing.
+  - Stale path scan for pre-Harness product/story/feedback locations returned no active matches.
 - Manual visual review still pending:
   - Full two-browser role-session demo with real logged-in users has not been run.
-  - `npm run dev` is still not suitable for E2E evidence because it emitted repeated `Can't resolve 'tailwindcss' in '/Users/dungxbuif/workspace/RuntimeRoasters/src/apps'`; production `next start` via Playwright webServer is the current E2E route.
 
 ### Next Task
-- RR-URG-06 verification is complete in Harness for unit, integration, E2E, and platform evidence.
-- Continue RR-URG-07 trace-service/public QR work after committing or carrying forward the RR-URG-06 verification/test updates.
-- Current recent commits:
-  - `54faa90 RR-URG-06 realtime notifications`
-  - `55700d5 RR-URG-05 paid order fulfillment`
+- Next ticket family is RR-URG-07: Public Sold-Cup QR Trace.
+- RR-URG-07 was split into:
+  - `RR-URG-07A`: retail sale schema and seed data.
+  - `RR-URG-07B`: retail demo sale APIs.
+  - `RR-URG-07C`: trace-service public sold-cup query.
+  - `RR-URG-07D`: client sale and QR UI.
+  - `RR-URG-07E`: evidence and platform verification.
+- Current discussion corrected RR-URG-07 demo seed/QR model: QR semantics should represent a UI-issued `product_id` for a retail sold cup/item.
+- Identifier vocabulary: `menu_item_id` identifies a chain-wide menu entry; `product_id` identifies one sold cup/item and is the public trace token.
+- Current code/system drift identified before implementation:
+  - `src/apps/client-app/src/app/trace/[code]/page.tsx` is still static/mock (`DEMO_JOURNEY`).
+  - trace-service `TraceDocument` and Elasticsearch read model do not yet model `trace_code` or public sold-unit lookup.
+  - trace-service public routes currently expose public topology only.
+- Needed RR-URG-07 implementation direction:
+  - Keep cup purchase simple: no payment and no live delivery workflow in the buy-click.
+  - UI creates `product_id`; backend validates/persists it and never derives origin from the QR token alone.
+  - Add chain-wide retail menu items, retail inventory lots, retail sales/invoices, sale items, and stock movements.
+  - Seed store inventory lots with upstream farm/batch/warehouse lineage.
+  - Add trace-service hybrid lookup by `product_id`/`trace_code`, combining retail sold-cup details with upstream trace data.
+  - Replace static public trace UI with API-backed fetch/rendering and add sold-items UI.
 
 ## Phase 1: System Bootstrap & Seeding
 **Status:** `✅ COMPLETED`
@@ -56,29 +81,9 @@ Last Updated: 2026-06-05
 **Status:** `✅ COMPLETED`
 
 ### Technical Achievements:
-1.  **Identity & RBAC (Admin & Policy Gaps)**:
-    *   **Unified `INTERNAL_SECRET`**: Standardized the internal shared secret across all 10+ microservices and infrastructure (Hydra, Identity Proxy). Fixed the `401 Unauthorized` issues during inter-service seeding propagation.
-    *   **Strict RBAC**: Restricted `ADMIN` to read-only access for domain write actions (Harvests, Orders) while maintaining full system management.
-    *   **Regex Matcher**: Upgraded frontend Casbin matcher to support `regexMatch`, enabling complex path policies (e.g., `/v1/warehouse/.*`).
-    *   **Page-Level Protection**: Wrapped `Harvests` and `Create Order` pages with `CasbinGuard` to prevent unauthorized direct URL access.
-
-2.  **Resource Management & Fleet Assignment**:
-    *   **Admin UI for Infrastructure**: Implemented a **Resource Management** page for Administrators to register new Warehouses and Retail Stores with real API integration.
-    *   **Fleet Assignment Modal**: Added a modal in **Warehouse Ops** for Warehouse Managers to explicitly assign Drivers and Vehicles during the dispatch flow.
-    *   **Logistics Map Audit**: Converted the map to **Light Mode** (Voyager tiles) and implemented route filtering (only show routes with active shipments).
-
-3.  **Performance & Technical Stability**:
-    *   **Performance Optimization**: Implemented `next/dynamic` for heavy visual components (`LogisticsMap`, `ArchitectureDiagramCanvas`) to reduce initial bundle size.
-    *   **Migration Robustness**: Fixed Gorm `AutoMigrate` failures related to constraint naming and foreign key dependency order in `warehouse-service` and `retail-service`.
-    *   **Idempotent Seeding**: Upgraded seeder script to handle nullable `order_id` in shipments and implemented `FirstOrCreate` for resource creation to avoid 500 errors on retries.
-    *   **Gateway (KrakenD)**: Added missing endpoints for listing orders, creating stores, and managing warehouses. Fixed CORS and allowed methods configuration.
-
-### Verification & Testing:
-- **E2E Tests**:
-    - `admin_restrictions.spec.ts`: `PASSING` (Verified Admin restricted from domain writes).
-    - `warehouse_ops.spec.ts`: `PASSING` (Verified Warehouse Manager fleet assignment modal).
-    - `logistics.spec.ts`: `PASSING` (Verified map light mode and route visibility).
-- **Technical Documentation**: Detailed system flows for Logistics, Traceability (CQRS), and Order SAGA documented in `docs/TECH.md`.
+1.  **Identity & RBAC**: Unified `INTERNAL_SECRET`, strict `ADMIN` read-only domain access, upgraded frontend Casbin matcher.
+2.  **Resource Management**: Admin UI for registering Warehouses and Retail Stores, Fleet Assignment Modal in Warehouse Ops.
+3.  **Performance & Stability**: `next/dynamic` for heavy visual components, Gorm `AutoMigrate` fixes, idempotent seeding.
 
 ## Current Context & System Shape
 - **Client App Port**: `http://localhost:3000`
@@ -90,7 +95,8 @@ Last Updated: 2026-06-05
 - [ ] Enhance Saga Monitor with real-time SSE updates.
 - [ ] Move to Phase 3: System Reliability & Chaos Testing.
 
-## Agent Constraints
-- Always export the current session/task context, active changes, and outstanding tasks to `docs/CONTEXT.md` before concluding.
-- Follow Clean Architecture patterns and central authorization designs.
-- Strictly adhere to specified user/manager role behaviors.
+## Active Work (Harness v1)
+- **Harness Migration:** Upgrading to Harness v1 (Pure Markdown) - structure reconciled against cloned Harness reference; content was rewritten/merged from RuntimeRoasters docs rather than blindly copied.
+- **Next Up:** RR-URG-07A (Retail Sale Schema And Seed Data).
+- RR-URG-07A detail design drafted at `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md`; implementation awaits human approval because it changes database schema and seed behavior.
+- `docs/requirements/MASTER_DATA.md` is now the canonical contract for all seed data and domain enums. It defines separate migration/Admin seed flows, deterministic SHA-256-based scenario variation, RR-URG-07A menu/lot/sale data, integrity rules, and current implementation drift.
