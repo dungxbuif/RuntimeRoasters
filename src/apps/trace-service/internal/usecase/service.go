@@ -25,6 +25,7 @@ import (
 type Service struct {
 	db     *gorm.DB
 	search *search.ElasticsearchClient
+	retail RetailClient
 }
 
 type TraceReadModel struct {

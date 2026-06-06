@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:realtime-notifications": "playwright test e2e/operational_realtime_awareness.spec.ts --project=chromium --reporter=line",
+    "test:e2e:rr-urg-07": "playwright test e2e/rr_urg_07_sold_cup_trace.spec.ts --project=chromium --reporter=line",
     "test": "vitest run src/"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "lucide-react": "^1.16.0",
     "next": "16.2.4",
     "pg": "^8.20.0",
+    "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",

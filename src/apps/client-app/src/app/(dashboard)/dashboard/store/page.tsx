@@ -6,9 +6,9 @@ import { DashboardLayout } from '@/components/ui/templates/DashboardLayout';
 import { DataGrid } from '@/components/ui/templates/DataGrid';
 import { APP_ROUTES } from '@/constants/routes';
 import { notificationService, RuntimeNotification } from '@/services/notification.service';
-import { Order, retailService } from '@/services/retail.service';
+import { Order, retailService, SaleItem } from '@/services/retail.service';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, MapPin, Plus, ShoppingBag, Store, Truck } from 'lucide-react';
+import { Clock, ExternalLink, MapPin, Plus, QrCode, ShoppingBag, Store, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
@@ -56,6 +56,13 @@ export default function StoreDashboardPage() {
   }, [allOrders, effectiveStoreId]);
 
   const activeOrder = orders.find(o => o.status === 'IN_TRANSIT' || o.status === 'DISPATCH_REQUESTED');
+
+  const { data: soldItems = [] } = useQuery({
+    queryKey: ['retail-sold-items', effectiveStoreId],
+    queryFn: () => retailService.listSoldItems(effectiveStoreId),
+    enabled: Boolean(effectiveStoreId),
+    refetchInterval: 5000,
+  });
 
   const { data: runtimeNotifications = [] } = useQuery({
     queryKey: ['realtime', 'notifications'],
@@ -106,6 +113,14 @@ export default function StoreDashboardPage() {
         </span>
       )
     }
+  ];
+
+  const soldItemColumns = [
+    { key: 'sold_at', header: 'Sold', render: (item: SaleItem) => <span className="text-[10px] font-bold text-slate-500">{new Date(item.sold_at).toLocaleString('vi-VN')}</span> },
+    { key: 'invoice', header: 'Invoice', render: (item: SaleItem) => <span className="font-mono text-[10px] font-black text-slate-700">{item.invoice_no}</span> },
+    { key: 'product', header: 'Product', render: (item: SaleItem) => <div><div className="text-xs font-black text-slate-900">{item.product_name}</div><div className="text-[9px] font-bold uppercase text-slate-400">Size {item.size}</div></div> },
+    { key: 'product_id', header: 'Product ID', render: (item: SaleItem) => <span className="font-mono text-[9px] font-bold text-primary">{item.product_id}</span> },
+    { key: 'trace', header: 'Trace', render: (item: SaleItem) => <Link href={`/trace/${encodeURIComponent(item.trace_code)}`} className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white"><ExternalLink className="h-3 w-3" />Open</Link> },
   ];
 
   return (
@@ -167,6 +182,17 @@ export default function StoreDashboardPage() {
                 data={orders}
                 columns={orderColumns}
                 keyExtractor={(o) => o.id}
+              />
+            </div>
+
+            <div className="min-h-80 overflow-hidden flex flex-col">
+              <DataGrid
+                title="Sold Cups"
+                icon={QrCode}
+                badge={`${soldItems.length} CUPS`}
+                data={soldItems}
+                columns={soldItemColumns}
+                keyExtractor={(item) => item.id}
               />
             </div>
           </div>

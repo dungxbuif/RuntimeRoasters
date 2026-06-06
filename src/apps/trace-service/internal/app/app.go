@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -68,6 +69,25 @@ func (a *App) Shutdown() error {
 }
 
 func (a *App) routes(r *gin.Engine) {
+	publicTrace := r.Group("/v1/public")
+	publicTrace.GET("/trace-items", func(c *gin.Context) {
+		limit, _ := strconv.Atoi(c.Query("limit"))
+		items, err := a.Service.ListPublicTraceItems(c.Request.Context(), limit)
+		if err != nil {
+			publicTraceError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"trace_items": items})
+	})
+	publicTrace.GET("/trace/:trace_code", func(c *gin.Context) {
+		doc, err := a.Service.GetPublicTrace(c.Request.Context(), c.Param("trace_code"))
+		if err != nil {
+			publicTraceError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"trace": doc})
+	})
+
 	public := r.Group("/v1/traces/public")
 	public.GET("/topology/config", func(c *gin.Context) {
 		cfg, err := a.Service.GetTopologyConfig(c.Request.Context(), true)
@@ -159,4 +179,14 @@ func (a *App) routes(r *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{"events": history})
 	})
+}
+
+func publicTraceError(c *gin.Context, err error) {
+	status := http.StatusInternalServerError
+	if errors.Is(err, usecase.ErrSoldItemNotFound) {
+		status = http.StatusNotFound
+	} else if errors.Is(err, usecase.ErrRetailUnavailable) {
+		status = http.StatusBadGateway
+	}
+	c.JSON(status, gin.H{"message": err.Error()})
 }

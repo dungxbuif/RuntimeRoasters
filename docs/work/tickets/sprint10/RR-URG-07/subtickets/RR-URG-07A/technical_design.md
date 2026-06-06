@@ -1,7 +1,7 @@
 ---
 artifact_type: detail_design
 id: DESIGN-RR-URG-07A
-status: in_review
+status: done
 owner: ai
 approval: approved
 human_fields:
@@ -42,7 +42,7 @@ trace:
 ## Status
 
 - ID: `DESIGN-RR-URG-07A`
-- Status: `in_review`
+- Status: `done`
 - Ticket: `RR-URG-07A`
 - Approval: `approved` in chat on 2026-06-06
 - Author: AI
@@ -118,7 +118,8 @@ API in this ticket.
    - keep upstream lineage IDs as indexed string/UUID-compatible values without cross-database foreign keys.
    - add unique indexes for menu item `product_code`, `sku`, `invoice_no`, `idempotency_key`, sold-item `product_id`, and `trace_code`.
    - add store/SKU/lot/sold-time query indexes needed by later APIs.
-3. Include the models in startup `AutoMigrate` only as a development compatibility layer. The SQL migration remains the reviewed schema contract.
+3. Do not run GORM `AutoMigrate` in Retail startup. The reviewed SQL
+   migration is the only runtime schema creation path.
 4. Seed 42 sellable drink-size menu items derived from `SAMPLE_MENU.md`, plus
    deterministic runtime lots, 25 sold cups, stock movements, and materialized
    availability.
@@ -177,7 +178,7 @@ available_quantity = sum(all quantity_delta)
 - Data/schema: five new retail tables and indexes.
 - Security/auth: no change; seed remains internal/admin-orchestrated.
 - Deployment/runtime: Retail development `000001` is rewritten; startup
-  auto-migration includes the complete model set.
+  requires migrations and does not mutate schema automatically.
 - Docs: ERD, master data, ticket, validation matrix, context, changelog.
 
 ## Test Plan

@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07
-status: ready
+status: done
 owner: shared
 priority: high
 lane: high-risk
@@ -57,3 +57,9 @@ No payment, payment simulation, or delivery workflow is required inside the cup 
 - Manager UI can show sold cups/items for a selected store.
 - Public QR page resolves a `product_id` to a real sold-cup trace.
 - Seed data includes several already-sold cups/items for immediate demo scanning.
+
+## Completion
+
+RR-URG-07A through RR-URG-07E are implemented and verified. Final acceptance
+mapping and platform evidence are recorded in
+[RR-URG-07E/test_verification.md](./subtickets/RR-URG-07E/test_verification.md).

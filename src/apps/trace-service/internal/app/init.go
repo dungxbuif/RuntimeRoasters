@@ -24,6 +24,7 @@ func InitializeApp() (*App, func(), error) {
 	}
 	searchClient := initSearchClient(cfg)
 	service := usecase.NewService(db.DB, searchClient)
+	service.SetRetailClient(usecase.NewRetailHTTPClient(cfg.RetailServiceURL, cfg.InternalSecret))
 	consumers := make([]kafka.Consumer, 0, len(cfg.TraceTopics))
 	for _, topic := range cfg.TraceTopics {
 		consumers = append(consumers, kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-"+topic, topic))
@@ -82,6 +83,9 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 	}
 	if cfg.ElasticsearchIndex == "" {
 		cfg.ElasticsearchIndex = "coffee_traceability"
+	}
+	if cfg.RetailServiceURL == "" {
+		cfg.RetailServiceURL = "http://localhost:8084"
 	}
 	if len(cfg.TraceTopics) == 0 {
 		cfg.TraceTopics = events.TraceableTopics

@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07E
-status: ready
+status: done
 owner: shared
 priority: high
 lane: normal
@@ -10,6 +10,8 @@ trace:
   requirement: REQ-QR-001
   phase: PHASE-2
   detail_design: not_required
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07E/test_verification.md
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07E/docs_review.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
 ---
 
@@ -79,3 +81,8 @@ Platform:
 - Harness matrix marks RR-URG-07 split tickets with unit/integration/E2E/platform evidence as applicable.
 - Any skipped live/platform step has a concrete reason and next command.
 - Final report maps every acceptance criterion to evidence.
+
+## Completion
+
+- Final evidence: [test_verification.md](test_verification.md)
+- Docs review: [docs_review.md](docs_review.md)

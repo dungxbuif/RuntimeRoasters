@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07D
-status: ready
+status: done
 owner: shared
 priority: high
 lane: normal
@@ -9,7 +9,9 @@ trace:
   backlog_item: BL-001
   requirement: REQ-QR-001
   phase: PHASE-2
-  detail_design: required
+  detail_design: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07D/technical_design.md
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07D/test_verification.md
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07D/docs_review.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
 ---
 
@@ -83,3 +85,8 @@ Replace static/mock trace data with:
 - E2E: buy coffee -> invoice -> QR -> public trace.
 - E2E: sold-items view includes the newly sold cup.
 - E2E must use fail-fast timeouts and must not leave Playwright hanging.
+
+## Completion
+
+- Verification: [test_verification.md](test_verification.md)
+- Docs review: [docs_review.md](docs_review.md)

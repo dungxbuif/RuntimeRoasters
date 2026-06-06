@@ -53,7 +53,7 @@ Use this document to understand the whole system. Use the linked master document
 | Audit persistence in Cassandra with PostgreSQL fallback | implemented | `src/apps/audit-service/` |
 | Realtime WebSocket transport and Valkey notification hints | implemented | `docs/decisions/0007-socket-service-transport-only.md` |
 | Valkey GEO driver tracking | implemented; broader operational validation remains active | `src/apps/logistics-service/` |
-| Public sold-cup QR trace | in progress under RR-URG-07A to RR-URG-07E | `docs/work/tickets/sprint10/RR-URG-07/` |
+| Public sold-cup QR trace | implemented and verified under RR-URG-07A to RR-URG-07E | `docs/work/tickets/sprint10/RR-URG-07/` |
 
 ## 3. Design Drivers
 
@@ -143,7 +143,7 @@ Trust boundaries:
 | `auth-service` | User administration, Casbin policy authority, login/consent bridge, coordinated seeding | auth PostgreSQL schema |
 | `farm-service` | Farms, assignments, harvest declarations, origin events | `farm_db` |
 | `warehouse-service` | Pickup requests, intake, processing, inventory, reservations, dispatch | `warehouse_db` plus Valkey coordination |
-| `retail-service` | Stores, orders, order SAGA state, and planned sold-cup operational records | `retail_db` |
+| `retail-service` | Stores, menus, supply orders, order SAGA state, inventory lots/ledger, sales, sold cups, and materialized store-menu availability | `retail_db` |
 | `payment-service` | Payment intent/result simulation and compensation events | `payment_db` |
 | `logistics-service` | Shipments, assignments, route milestones, driver position | `logistics_db` plus Valkey GEO |
 | `trace-service` | Queryable supply-chain timeline and topology read models | trace PostgreSQL plus Elasticsearch |
@@ -259,17 +259,42 @@ Consumers must be idempotent. Failed prerequisites publish failure/compensation 
 4. `socket-service` consumes selected events and broadcasts sanitized public events or role/entity-scoped private events.
 5. The client combines pull-based query state with push-based updates; WebSocket state is never the durable source of truth.
 
-### 8.5 Public Sold-Cup QR Trace
+### 8.5 Public Retail Sale
 
-Target design under RR-URG-07:
+1. Public menu reads use `store_menu_inventories`; they do not aggregate the
+   stock ledger with `SUM/FLOOR` at request time.
+2. The browser submits one `menu_item_id` and one unique `product_id` per
+   physical cup with an `Idempotency-Key`.
+3. Retail locks eligible lots in deterministic FIFO order and writes the sale,
+   sold cups, negative stock movements, lot balances, affected availability,
+   and outbox event in one PostgreSQL transaction.
+4. Each cup keeps one lot lineage. Availability floors each lot independently,
+   so a cup is never assembled from partial quantities with different origins.
+5. `retail.sale.completed` is emitted through the transactional outbox. Later
+   trace projection resolves the QR token from the persisted sold cup.
 
-1. Retail UI issues a unique `product_id` for one sold cup/item.
-2. `retail-service` validates and persists sale, sale item, inventory lot, and stock movement data.
-3. `trace-service` resolves the public token through persisted sale lineage and upstream trace data.
-4. The unauthenticated trace endpoint returns a sanitized document.
-5. `/trace/{product_id}` renders the API-backed journey.
+Performance decision: the write path rebuilds only menu rows sharing an
+affected stock SKU. The movement ledger remains authoritative and integration
+tests reconcile it against lot balances and the materialized read model.
 
-The QR token is an identifier, not an encoded provenance document. `menu_item_id` identifies a chain-wide menu entry; `product_id` identifies one sold item.
+### 8.6 Public Sold-Cup QR Trace
+
+1. The `/coffee` UI issues one unique `product_id` for each selected cup and
+   sends one sale item per identity.
+2. `retail-service` persists the sale, lot lineage, movement, materialized
+   availability, and outbox event atomically.
+3. `trace-service` resolves `trace_code == product_id` through the
+   secret-protected Retail internal API, then combines that lineage with its
+   PostgreSQL/Elasticsearch upstream projections.
+4. Public list/detail endpoints return whitelist DTOs. Raw events, identities,
+   authorization state, payment data, and secrets are excluded.
+5. `/trace/{product_id}` renders business milestones, while service and trace
+   metadata remain secondary.
+
+Retail lineage and trace PostgreSQL provide fallback when Elasticsearch or an
+asynchronous projection is unavailable. The QR token is an identifier, not an
+encoded provenance document. `menu_item_id` identifies a chain-wide menu
+entry; `product_id` identifies one sold item.
 
 ## 9. Data Design
 
@@ -291,8 +316,8 @@ The QR token is an identifier, not an encoded provenance document. `menu_item_id
 - Workflow-critical fields such as status, owner/entity scope, and identifiers use typed/indexed columns rather than opaque JSON only.
 - Migrations are reviewed schema contracts. During development, an approved
   ticket may rewrite a service's initial migration and require a fresh reset.
-  GORM `AutoMigrate` remains a compatibility mechanism, not the production
-  schema contract.
+  Retail does not run GORM `AutoMigrate` at startup; its reviewed SQL
+  migration is the only schema creation path.
 
 ### Consistency And Idempotency
 

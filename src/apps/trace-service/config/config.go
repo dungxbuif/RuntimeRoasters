@@ -10,6 +10,7 @@ type Config struct {
 	ElasticsearchEnabled bool     `mapstructure:"ELASTICSEARCH_ENABLED"`
 	ElasticsearchURL     string   `mapstructure:"ELASTICSEARCH_URL"`
 	ElasticsearchIndex   string   `mapstructure:"ELASTICSEARCH_INDEX"`
+	RetailServiceURL     string   `mapstructure:"RETAIL_SERVICE_URL"`
 	InternalSecret       string   `mapstructure:"INTERNAL_SECRET"`
 	JWKSURL              string   `mapstructure:"JWKS_URL"`
 	JWKSCacheTTL         string   `mapstructure:"JWKS_CACHE_TTL"`

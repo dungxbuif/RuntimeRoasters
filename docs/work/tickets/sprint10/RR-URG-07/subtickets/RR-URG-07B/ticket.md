@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07B
-status: ready
+status: done
 owner: shared
 priority: high
 lane: high-risk
@@ -9,8 +9,12 @@ trace:
   backlog_item: BL-001
   requirement: REQ-QR-001
   phase: PHASE-2
-  detail_design: required
+  detail_design: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07B/technical_design.md
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07B/test_verification.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07B/docs_review.md
+  adrs:
+    - docs/decisions/0010-retail-sales-and-availability.md
 ---
 
 # RR-URG-07B: Retail Demo Sale APIs
@@ -54,10 +58,10 @@ Internal support for trace-service:
 - `store_id`
 - `items[]`
   - `menu_item_id`
-  - `quantity`
   - `product_id`
 
-The UI creates `product_id`; backend must not generate it.
+Each item is one physical sold cup. The UI creates `product_id`; backend must
+not generate it or aggregate multiple cups behind one identity.
 
 ## Sale Transaction
 
@@ -67,8 +71,8 @@ In one DB transaction:
 2. Validate each `product_id` is non-empty and unique.
 3. Resolve `menu_item_id` to SKU and menu metadata.
 4. Select one retail inventory lot for the store/SKU.
-   - Demo selection may be random.
-   - Production replacement is FIFO/FEFO.
+   - Selection is deterministic FIFO by `received_at, id` from a non-expired
+     eligible lot and is protected by a PostgreSQL row lock.
 5. Create `sales`.
 6. Create `sale_items`.
 7. Set `trace_code = product_id`.
@@ -120,3 +124,13 @@ Payload:
 - Integration: `POST /v1/public/retail/sales` creates invoice and sale items.
 - Integration: outbox contains `retail.sale.completed`.
 - Auth integration: manager sold-items endpoint is store-scoped.
+
+## Completion
+
+- Detail design approved in chat on 2026-06-06.
+- Implementation and verification evidence:
+  [test_verification.md](test_verification.md).
+- Documentation reconciliation:
+  [docs_review.md](docs_review.md).
+- API-level UAT is covered by route integration tests. Browser QR UAT remains
+  intentionally assigned to RR-URG-07D/07E.

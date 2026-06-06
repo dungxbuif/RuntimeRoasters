@@ -14,6 +14,21 @@ Last Updated: 2026-06-06
 **HEAD:** `7663268 RR-URG-07 start trace public QR`
 
 ### Active Dirty Changes
+- RR-URG-07C through RR-URG-07E completed:
+  - trace-service public sold-cup list/detail composed from Retail lineage and
+    sanitized trace projections.
+  - public `/coffee` kiosk, per-cup invoice QR, API-backed `/trace/[code]`, and
+    store-manager sold-cup table.
+  - Trace now consumes `retail.sale.completed`; public routes are exposed by
+    KrakenD while Retail internal lineage routes remain private.
+  - ADR-0011 and full unit/integration/E2E/platform evidence added.
+- RR-URG-07B Retail demo sale APIs:
+  - added anonymous chain/store menu reads and no-payment sale creation.
+  - each request item creates one unique sold cup with FIFO lot lineage.
+  - sale, movement, lot balance, affected-SKU availability, and
+    `retail.sale.completed` outbox event commit atomically.
+  - added store-scoped manager reads and internal-secret sold-item lookup.
+  - added public/protected KrakenD routes; the internal route is not exposed.
 - RR-URG-07A Retail schema and seed implementation:
   - rewrote the development `000001_init.up.sql` without business inserts.
   - added `menus`, 42 `menu_items` from `SAMPLE_MENU.md`, inventory lots,
@@ -42,11 +57,27 @@ Last Updated: 2026-06-06
   - Consolidated legacy non-template docs into Harness targets: requirements, master data, UI design, operations, canonical standards, roadmap, and validation matrix; removed duplicate legacy files after review.
 
 ### Outstanding Verification
+- RR-URG-07 final verification passed:
+  - backend Retail/Trace/events tests and `go vet`.
+  - frontend 11/11 tests, lint, and production build.
+  - Playwright RR-URG-07 flow: 2/2 pass with kiosk/invoice/trace screenshots.
+  - fresh PostgreSQL Retail/Trace migrations and seed.
+  - real sale `RR-CUP-PLATFORM-070E-2` produced movement/outbox, crossed Kafka,
+    persisted `retail.sale.completed`, and resolved through public Trace HTTP.
+- RR-URG-07B targeted tests passed:
+  - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/... ./pkg/events/...`
+  - public/internal Gin route integration passed.
+  - KrakenD JSON parse and `git diff --check` passed.
+- RR-URG-07B live PostgreSQL test passed on fresh `rr_urg_07b_test`:
+  migration, seed twice, and concurrent one-cup sale produced exactly one
+  success, one conflict, and zero final lot balance.
 - RR-URG-07A targeted Retail tests passed:
   - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/...`
 - RR-URG-07A fresh PostgreSQL migration passed on `retail_07a_test`.
-- Opt-in live PostgreSQL service seed test remains pending because localhost
-  network access was denied by the execution sandbox.
+- RR-URG-07A live PostgreSQL service seed test passed in a Go 1.26.2 container
+  on the same Docker network as PostgreSQL 16.
+- Retail startup no longer runs GORM `AutoMigrate`; migrations own schema and
+  Admin Initialize Data owns business-data seed.
 - RR-URG-06 targeted backend passed:
   - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/socket-service/... ./apps/auth-service/internal/infrastructure/casbin/...`
 - Frontend checks passed:
@@ -68,21 +99,16 @@ Last Updated: 2026-06-06
 - Manual visual review still pending:
   - Full two-browser role-session demo with real logged-in users has not been run.
 
-### Next Task
-- Next ticket family is RR-URG-07: Public Sold-Cup QR Trace.
-- RR-URG-07 was split into:
-  - `RR-URG-07A`: retail sale schema and seed data.
-  - `RR-URG-07B`: retail demo sale APIs.
-  - `RR-URG-07C`: trace-service public sold-cup query.
-  - `RR-URG-07D`: client sale and QR UI.
-  - `RR-URG-07E`: evidence and platform verification.
-- Current discussion corrected RR-URG-07 demo seed/QR model: QR semantics should represent a UI-issued `product_id` for a retail sold cup/item.
+### Completed RR-URG-07 Design Context
+- RR-URG-07 Public Sold-Cup QR Trace is complete and was split into:
+  - `RR-URG-07A`: retail sale schema and seed data (done).
+  - `RR-URG-07B`: retail demo sale APIs (done).
+  - `RR-URG-07C`: trace-service public sold-cup query (done).
+  - `RR-URG-07D`: client sale and QR UI (done).
+  - `RR-URG-07E`: evidence and platform verification (done).
+- The approved demo seed/QR model uses a UI-issued `product_id` for each retail sold cup/item.
 - Identifier vocabulary: `menu_item_id` identifies a chain-wide menu entry; `product_id` identifies one sold cup/item and is the public trace token.
-- Current code/system drift identified before implementation:
-  - `src/apps/client-app/src/app/trace/[code]/page.tsx` is still static/mock (`DEMO_JOURNEY`).
-  - trace-service `TraceDocument` and Elasticsearch read model do not yet model `trace_code` or public sold-unit lookup.
-  - trace-service public routes currently expose public topology only.
-- Needed RR-URG-07 implementation direction:
+- Implemented RR-URG-07 direction:
   - Keep cup purchase simple: no payment and no live delivery workflow in the buy-click.
   - UI creates `product_id`; backend validates/persists it and never derives origin from the QR token alone.
   - Add chain-wide retail menu items, retail inventory lots, retail sales/invoices, sale items, and stock movements.
@@ -113,9 +139,13 @@ Last Updated: 2026-06-06
 
 ## Active Work (Harness v1)
 - **Harness Migration:** Upgrading to Harness v1 (Pure Markdown) - structure reconciled against cloned Harness reference; content was rewritten/merged from RuntimeRoasters docs rather than blindly copied.
-- **Next Up:** finish the live PostgreSQL seed check, then RR-URG-07B Retail Demo Sale APIs.
-- RR-URG-07A is in review at
+- **Next Up:** BL-002 Valkey Geo Tracking Implementation.
+- RR-URG-07A is done at
   `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md`.
+- RR-URG-07B is done at
+  `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07B/technical_design.md`.
+- RR-URG-07C through RR-URG-07E and the RR-URG-07 umbrella are done; final
+  evidence is in `RR-URG-07/subtickets/RR-URG-07E/test_verification.md`.
 - `docs/architecture/SDD/MASTER_DATA.md` is the canonical contract for seed
   data and domain enums; `docs/requirements/SAMPLE_MENU.md` owns menu content.
 - Farm role contract simplified by ADR-0009: `FARM_MANAGER` is the only farm operator role; the duplicate role was removed from Kratos, Casbin, farm-service, frontend types/options, tests, and docs.

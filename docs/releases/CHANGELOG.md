@@ -10,6 +10,15 @@ All notable changes to this project will be documented in this file.
 - RR-URG-07A Retail catalog, inventory lineage, sold-cup sales, stock ledger,
   and materialized store-menu availability schema and deterministic seed.
 - ADR-0010 for Retail naming and availability optimization.
+- RR-URG-07B public menu and no-payment sold-cup sale APIs, store-scoped
+  manager sale reads, internal lineage lookup, and `retail.sale.completed`.
+- RR-URG-07C public sold-cup trace list/detail with sanitized Retail lineage and
+  trace projection composition.
+- RR-URG-07D public coffee kiosk, per-cup invoice QR, real trace page, and
+  store-manager sold-cup table.
+- RR-URG-07E end-to-end evidence across PostgreSQL, Kafka, service HTTP,
+  Playwright, and visual screenshots.
+- ADR-0011 for the hybrid Retail/Trace public ownership boundary.
 
 ### Changed
 - Reconciled migrated docs with Harness v1 folder structure and replaced stale pre-Harness product/story/feedback references with current Harness paths.

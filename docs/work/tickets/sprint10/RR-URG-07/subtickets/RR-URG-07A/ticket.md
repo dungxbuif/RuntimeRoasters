@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07A
-status: in_review
+status: done
 owner: shared
 priority: high
 lane: high-risk

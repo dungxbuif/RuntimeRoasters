@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07C
-status: ready
+status: done
 owner: shared
 priority: high
 lane: high-risk
@@ -9,8 +9,12 @@ trace:
   backlog_item: BL-001
   requirement: REQ-QR-001
   phase: PHASE-2
-  detail_design: required
+  detail_design: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07C/technical_design.md
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07C/test_verification.md
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07C/docs_review.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
+  adrs:
+    - docs/decisions/0011-public-sold-cup-hybrid-trace.md
 ---
 
 # RR-URG-07C: Trace-Service Public Sold-Cup Query
@@ -99,3 +103,8 @@ Do not expose:
 - Integration: seeded `product_id` resolves to public trace document.
 - Integration: unknown `product_id` returns 404.
 - Integration: public list excludes unsold products.
+
+## Completion
+
+- Verification: [test_verification.md](test_verification.md)
+- Docs review: [docs_review.md](docs_review.md)

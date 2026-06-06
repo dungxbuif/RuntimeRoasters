@@ -2,11 +2,15 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"RuntimeRoasters/apps/retail-service/internal/domain"
 	"RuntimeRoasters/pkg/events"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
@@ -58,4 +62,50 @@ func TestRetailSeedPostgresIntegration(t *testing.T) {
 		Where("trace_code <> product_id OR inventory_lot_id = ''").
 		Count(&invalidTraceCodes).Error)
 	assert.Zero(t, invalidTraceCodes)
+
+	t.Run("concurrent sale does not oversell", func(t *testing.T) {
+		now := time.Now().UTC()
+		storeID := uuid.NewString()
+		menuID := "MENU-PG-" + uuid.NewString()
+		menuItemID := "MI-PG-" + uuid.NewString()
+		lotID := "LOT-PG-" + uuid.NewString()
+		sku := "SKU-PG-" + uuid.NewString()
+		require.NoError(t, db.Create(&domain.Store{ID: storeID, Code: "STORE-PG-" + uuid.NewString()[:8], Name: "Postgres Concurrency Store", City: "Test", Address: "Test", Status: domain.StoreStatusActive}).Error)
+		require.NoError(t, db.Create(&domain.Menu{ID: menuID, Code: menuID, Name: "Postgres Test Menu", Status: domain.MenuStatusActive}).Error)
+		require.NoError(t, db.Create(&domain.MenuItem{ID: menuItemID, MenuID: menuID, Code: menuItemID, ProductGroupCode: "PG-TEST", CategoryCode: "TEST", Size: "S", Name: "Concurrency Cup", StockSKU: sku, CoffeeType: "ARABICA", Price: 10, ConsumptionQuantity: 18, ConsumptionUnit: "GRAM", Active: true}).Error)
+		require.NoError(t, db.Create(&domain.InventoryLot{ID: lotID, StoreID: storeID, StockSKU: sku, SourceBatchID: "BATCH-PG", SourceHarvestID: "HARVEST-PG", SourceWarehouseID: "WAREHOUSE-PG", ReceivedQuantity: 18, AvailableQuantity: 18, Unit: "GRAM", Status: domain.InventoryLotStatusAvailable, ReceivedAt: now}).Error)
+		require.NoError(t, db.Create(&domain.StockMovement{ID: uuid.NewString(), StoreID: storeID, InventoryLotID: lotID, StockSKU: sku, MovementType: domain.StockMovementReceived, QuantityDelta: 18, Unit: "GRAM", ReferenceType: domain.StockReferenceDemo, ReferenceID: "PG-CONCURRENCY", OccurredAt: now}).Error)
+		require.NoError(t, db.Create(&domain.StoreMenuInventory{StoreID: storeID, MenuItemID: menuItemID, AvailableUnits: 1, ActiveLotCount: 1, Version: 1, UpdatedAt: now}).Error)
+
+		start := make(chan struct{})
+		errs := make(chan error, 2)
+		var wg sync.WaitGroup
+		for i := 0; i < 2; i++ {
+			wg.Add(1)
+			go func(index int) {
+				defer wg.Done()
+				<-start
+				_, err := service.CreateSale(context.Background(), CreateSaleRequest{StoreID: storeID, Items: []CreateSaleItemRequest{{MenuItemID: menuItemID, ProductID: uuid.NewString()}}}, fmt.Sprintf("pg-concurrent-%d-%s", index, uuid.NewString()))
+				errs <- err
+			}(i)
+		}
+		close(start)
+		wg.Wait()
+		close(errs)
+		var successes, conflicts int
+		for err := range errs {
+			if err == nil {
+				successes++
+			} else if ErrorKindOf(err) == ErrorConflict {
+				conflicts++
+			} else {
+				require.NoError(t, err)
+			}
+		}
+		assert.Equal(t, 1, successes)
+		assert.Equal(t, 1, conflicts)
+		var lot domain.InventoryLot
+		require.NoError(t, db.Where("id = ?", lotID).Take(&lot).Error)
+		assert.Zero(t, lot.AvailableQuantity)
+	})
 }

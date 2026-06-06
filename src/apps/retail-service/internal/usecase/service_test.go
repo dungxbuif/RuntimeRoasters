@@ -3,10 +3,12 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"RuntimeRoasters/apps/retail-service/internal/domain"
+	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
@@ -158,6 +160,117 @@ func TestSeedDataIsIdempotentAndRebuildsAvailability(t *testing.T) {
 	var afterReseed domain.InventoryLot
 	require.NoError(t, db.Where("id = ?", userMovement.InventoryLotID).Take(&afterReseed).Error)
 	assert.InDelta(t, beforeReseed.AvailableQuantity-18, afterReseed.AvailableQuantity, 0.001)
+}
+
+func TestCreateSaleIsAtomicAndIdempotent(t *testing.T) {
+	db := setupRetailDB(t)
+	service := NewService(db, nil, events.TopicRetailOrderCreated)
+	_, err := service.SeedData(context.Background(), false, map[string]string{})
+	require.NoError(t, err)
+
+	const (
+		storeID    = "11111111-1111-1111-1111-111111111101"
+		menuItemID = "MI-ESPRESSO-DOUBLE-S"
+		productID  = "RR-CUP-UNIT-SALE-001"
+	)
+	var before domain.StoreMenuInventory
+	require.NoError(t, db.Where("store_id = ? AND menu_item_id = ?", storeID, menuItemID).Take(&before).Error)
+
+	sale, err := service.CreateSale(context.Background(), CreateSaleRequest{
+		StoreID: storeID,
+		Items:   []CreateSaleItemRequest{{MenuItemID: menuItemID, ProductID: productID}},
+	}, "unit-sale-key-001")
+	require.NoError(t, err)
+	require.Len(t, sale.Items, 1)
+	assert.Equal(t, productID, sale.Items[0].TraceCode)
+	assert.Equal(t, "/trace/"+productID, sale.Items[0].PublicURL)
+	assert.NotEmpty(t, sale.Items[0].SourceBatchID)
+
+	var movementCount, outboxCount int64
+	require.NoError(t, db.Model(&domain.StockMovement{}).Where("reference_id = ?", sale.Items[0].ID).Count(&movementCount).Error)
+	require.NoError(t, db.Model(&domain.OutboxEvent{}).Where("event_type = ? AND key = ?", events.TopicRetailSaleCompleted, sale.ID).Count(&outboxCount).Error)
+	assert.Equal(t, int64(1), movementCount)
+	assert.Equal(t, int64(1), outboxCount)
+
+	var after domain.StoreMenuInventory
+	require.NoError(t, db.Where("store_id = ? AND menu_item_id = ?", storeID, menuItemID).Take(&after).Error)
+	assert.Equal(t, before.AvailableUnits-1, after.AvailableUnits)
+
+	replayed, err := service.CreateSale(context.Background(), CreateSaleRequest{
+		StoreID: storeID,
+		Items:   []CreateSaleItemRequest{{MenuItemID: menuItemID, ProductID: productID}},
+	}, "unit-sale-key-001")
+	require.NoError(t, err)
+	assert.Equal(t, sale.ID, replayed.ID)
+	require.NoError(t, db.Model(&domain.StockMovement{}).Where("reference_id = ?", sale.Items[0].ID).Count(&movementCount).Error)
+	require.NoError(t, db.Model(&domain.OutboxEvent{}).Where("event_type = ? AND key = ?", events.TopicRetailSaleCompleted, sale.ID).Count(&outboxCount).Error)
+	assert.Equal(t, int64(1), movementCount)
+	assert.Equal(t, int64(1), outboxCount)
+}
+
+func TestCreateSaleRejectsDuplicateProductsWithoutWrites(t *testing.T) {
+	db := setupRetailDB(t)
+	service := NewService(db, nil, events.TopicRetailOrderCreated)
+
+	_, err := service.CreateSale(context.Background(), CreateSaleRequest{
+		StoreID: "store-1",
+		Items: []CreateSaleItemRequest{
+			{MenuItemID: "item-1", ProductID: "cup-1"},
+			{MenuItemID: "item-2", ProductID: "cup-1"},
+		},
+	}, "duplicate-products")
+	require.Error(t, err)
+	assert.Equal(t, ErrorValidation, ErrorKindOf(err))
+	var sales int64
+	require.NoError(t, db.Model(&domain.Sale{}).Count(&sales).Error)
+	assert.Zero(t, sales)
+}
+
+func TestManagerSaleReadsAreStoreScoped(t *testing.T) {
+	db := setupRetailDB(t)
+	service := NewService(db, nil, events.TopicRetailOrderCreated)
+	now := time.Now()
+	require.NoError(t, db.Create(&domain.Sale{ID: uuid.NewString(), StoreID: "store-1", InvoiceNo: "INV-1", Status: domain.SaleStatusCompleted, IdempotencyKey: "scope-1", SoldAt: now}).Error)
+	require.NoError(t, db.Create(&domain.Sale{ID: uuid.NewString(), StoreID: "store-2", InvoiceNo: "INV-2", Status: domain.SaleStatusCompleted, IdempotencyKey: "scope-2", SoldAt: now}).Error)
+
+	ctx := identity.InjectContext(context.Background(), identity.Claims{Role: identity.RoleStoreMgr, StoreIDs: []string{"store-1"}})
+	sales, err := service.ListSales(ctx)
+	require.NoError(t, err)
+	require.Len(t, sales, 1)
+	assert.Equal(t, "store-1", sales[0].StoreID)
+}
+
+type retryProducer struct {
+	fail  bool
+	calls int
+}
+
+func (p *retryProducer) Publish(context.Context, string, string, interface{}) error {
+	p.calls++
+	if p.fail {
+		return errors.New("broker unavailable")
+	}
+	return nil
+}
+
+func (p *retryProducer) Close() error { return nil }
+
+func TestProcessOutboxRetriesFailedRows(t *testing.T) {
+	db := setupRetailDB(t)
+	producer := &retryProducer{fail: true}
+	service := NewService(db, producer, events.TopicRetailOrderCreated)
+	event := domain.OutboxEvent{ID: uuid.NewString(), EventType: events.TopicRetailSaleCompleted, Topic: events.TopicRetailSaleCompleted, Key: "sale-1", Payload: `{}`, Status: domain.OutboxStatusPending}
+	require.NoError(t, db.Create(&event).Error)
+
+	require.NoError(t, service.ProcessOutbox(context.Background(), 10))
+	require.NoError(t, db.Where("id = ?", event.ID).Take(&event).Error)
+	assert.Equal(t, domain.OutboxStatusFailed, event.Status)
+
+	producer.fail = false
+	require.NoError(t, service.ProcessOutbox(context.Background(), 10))
+	require.NoError(t, db.Where("id = ?", event.ID).Take(&event).Error)
+	assert.Equal(t, domain.OutboxStatusCompleted, event.Status)
+	assert.Equal(t, 2, producer.calls)
 }
 
 func setupRetailDB(t *testing.T) *gorm.DB {

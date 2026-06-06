@@ -5,6 +5,7 @@ import "time"
 const (
 	TopicFarmHarvestCreated                = "farm.harvest.created"
 	TopicRetailOrderCreated                = "retail.order.created"
+	TopicRetailSaleCompleted               = "retail.sale.completed"
 	TopicPaymentIntentCreated              = "payment.intent.created"
 	TopicPaymentCompleted                  = "payment.completed"
 	TopicPaymentSimulatedCompleted         = "payment.simulated_completed"
@@ -42,6 +43,7 @@ const (
 var TraceableTopics = []string{
 	TopicFarmHarvestCreated,
 	TopicRetailOrderCreated,
+	TopicRetailSaleCompleted,
 	TopicPaymentIntentCreated,
 	TopicPaymentCompleted,
 	TopicPaymentSimulatedCompleted,
@@ -89,6 +91,32 @@ type RetailOrderCreated struct {
 	TotalAmount   float64           `json:"total_amount"`
 	PaymentMethod string            `json:"payment_method,omitempty"`
 	OccurredAt    time.Time         `json:"occurred_at"`
+}
+
+type RetailSaleCompletedItem struct {
+	SaleItemID        string  `json:"sale_item_id"`
+	MenuItemID        string  `json:"menu_item_id"`
+	ProductID         string  `json:"product_id"`
+	SKU               string  `json:"sku"`
+	ProductName       string  `json:"product_name"`
+	UnitPrice         float64 `json:"unit_price"`
+	InventoryLotID    string  `json:"inventory_lot_id"`
+	TraceCode         string  `json:"trace_code"`
+	PublicURL         string  `json:"public_url"`
+	SourceBatchID     string  `json:"source_batch_id"`
+	SourceHarvestID   string  `json:"source_harvest_id"`
+	SourceWarehouseID string  `json:"source_warehouse_id"`
+}
+
+type RetailSaleCompleted struct {
+	EventID     string                    `json:"event_id"`
+	SaleID      string                    `json:"sale_id"`
+	InvoiceNo   string                    `json:"invoice_no"`
+	StoreID     string                    `json:"store_id"`
+	Items       []RetailSaleCompletedItem `json:"items"`
+	TotalAmount float64                   `json:"total_amount"`
+	SoldAt      time.Time                 `json:"sold_at"`
+	OccurredAt  time.Time                 `json:"occurred_at"`
 }
 
 type PaymentIntentCreated struct {

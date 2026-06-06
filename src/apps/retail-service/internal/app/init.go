@@ -3,7 +3,6 @@ package app
 import (
 	svcconfig "RuntimeRoasters/apps/retail-service/config"
 	retailgrpc "RuntimeRoasters/apps/retail-service/internal/delivery/grpc"
-	"RuntimeRoasters/apps/retail-service/internal/domain"
 	"RuntimeRoasters/apps/retail-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
 	"RuntimeRoasters/pkg/base/security"
@@ -19,16 +18,6 @@ func InitializeApp() (*App, func(), error) {
 
 	db, err := database.NewPostgres(database.PostgresConfig{URL: cfg.DatabaseURL, LogLevel: cfg.DBLogLevel})
 	if err != nil {
-		return nil, nil, err
-	}
-
-	// Auto-migrate tables
-	if err := db.AutoMigrate(
-		&domain.Store{}, &domain.Menu{}, &domain.MenuItem{}, &domain.Order{},
-		&domain.InventoryLot{}, &domain.Sale{}, &domain.SaleItem{},
-		&domain.StockMovement{}, &domain.StoreMenuInventory{},
-		&domain.OutboxEvent{}, &domain.InboxEvent{},
-	); err != nil {
 		return nil, nil, err
 	}
 

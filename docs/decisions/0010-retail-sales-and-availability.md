@@ -9,6 +9,7 @@ trace:
   phase: PHASE-2
   tickets_or_bugs:
     - RR-URG-07A
+    - RR-URG-07B
   detail_design: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md
   master_docs:
     - docs/architecture/SDD/README.md
@@ -44,6 +45,16 @@ explicit approval.
 - Materialize store availability and rebuild it on stock mutation/reconciliation.
 - Apply floor per lot so one cup cannot combine provenance across lots.
 - Rewrite Retail `000001_init.up.sql` during development.
+- Do not run GORM `AutoMigrate` in Retail startup; migrations create schema
+  and Admin seed creates business data.
+- Public sale requests represent one physical cup per item and require a
+  client-issued `product_id` plus request `Idempotency-Key`.
+- Select non-expired inventory lots by deterministic FIFO and lock them with
+  PostgreSQL `FOR UPDATE` inside the sale transaction.
+- Rebuild availability only for menu items sharing affected SKUs; public reads
+  use the projection and never run ledger aggregation.
+- Persist `retail.sale.completed` through the same transactional outbox as the
+  sale instead of publishing directly.
 
 ## Alternatives Considered
 

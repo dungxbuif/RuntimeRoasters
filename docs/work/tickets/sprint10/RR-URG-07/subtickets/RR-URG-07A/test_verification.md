@@ -1,7 +1,7 @@
 ---
 artifact_type: test_verification
 id: TEST-RR-URG-07A
-status: in_review
+status: complete
 owner: ai
 updated: 2026-06-06
 trace:
@@ -30,15 +30,19 @@ trace:
   `psql -v ON_ERROR_STOP=1` on PostgreSQL 16.
 - Result: all tables and indexes were created without SQL errors.
 
-## Remaining Verification
+## PostgreSQL Service Seed
 
-- Skipped: opt-in PostgreSQL service seed integration test.
-- Command:
-  `RETAIL_TEST_DATABASE_URL=... go test ./apps/retail-service/internal/usecase -run TestRetailSeedPostgresIntegration -count=1 -v`
-- Reason: localhost network access was denied by the execution sandbox and the
-  escalation session did not complete.
-- Residual risk: seed upserts passed on SQLite and schema passed on PostgreSQL
-  separately, but their combined live PostgreSQL path remains to be run.
+- Pass:
+  `RETAIL_TEST_DATABASE_URL=postgres://user:password@rr-postgres:5432/retail_07a_test?sslmode=disable go test ./apps/retail-service/internal/usecase -run TestRetailSeedPostgresIntegration -count=1 -v`
+- Runtime: Go 1.26.2 container on the same Docker network as PostgreSQL 16.
+- Result: migration-backed seed ran twice idempotently; counts, trace codes,
+  ledger balances, and 210 materialized availability rows passed.
+
+## Startup Schema Policy
+
+- Retail startup no longer runs GORM `AutoMigrate`.
+- Schema must be created by the reviewed SQL migration before service startup.
+- Admin seed creates/reconciles business data only; it does not create tables.
 
 ## UAT
 

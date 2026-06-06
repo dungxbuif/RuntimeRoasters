@@ -418,7 +418,7 @@ func (s *Service) ListOrders(ctx context.Context) ([]domain.Order, error) {
 
 func (s *Service) ProcessOutbox(ctx context.Context, limit int) error {
 	var outbox []domain.OutboxEvent
-	if err := s.db.WithContext(ctx).Where("status = ?", domain.OutboxStatusPending).Order("created_at ASC").Limit(limit).Find(&outbox).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("status IN ?", []domain.OutboxStatus{domain.OutboxStatusPending, domain.OutboxStatusFailed}).Order("created_at ASC").Limit(limit).Find(&outbox).Error; err != nil {
 		return err
 	}
 	for _, event := range outbox {

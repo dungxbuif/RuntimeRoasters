@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	svcconfig "RuntimeRoasters/apps/retail-service/config"
@@ -17,6 +19,7 @@ import (
 	systemv1 "RuntimeRoasters/runtime/system/v1"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type App struct {
@@ -83,10 +86,64 @@ func (a *App) Shutdown() error {
 }
 
 func (a *App) routes(r *gin.Engine) {
+	public := r.Group("/v1/public/retail")
+	public.GET("/stores", func(c *gin.Context) {
+		stores, err := a.Service.ListPublicStores(c.Request.Context())
+		respond(c, stores, "stores", err, http.StatusOK)
+	})
+	public.GET("/menu-items", func(c *gin.Context) {
+		menus, err := a.Service.ListPublicMenu(c.Request.Context())
+		respond(c, menus, "menus", err, http.StatusOK)
+	})
+	public.GET("/stores/:store_id/menu-items", func(c *gin.Context) {
+		menus, err := a.Service.ListPublicStoreMenu(c.Request.Context(), c.Param("store_id"))
+		respond(c, menus, "menus", err, http.StatusOK)
+	})
+	public.POST("/sales", func(c *gin.Context) {
+		var req usecase.CreateSaleRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+		sale, err := a.Service.CreateSale(c.Request.Context(), req, c.GetHeader("Idempotency-Key"))
+		respond(c, sale, "sale", err, http.StatusCreated)
+	})
+
+	internal := r.Group("/v1/internal/retail")
+	internal.Use(func(c *gin.Context) {
+		secret := c.GetHeader("X-Internal-Secret")
+		if secret == "" || secret != a.Cfg.InternalSecret {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid or missing internal secret"})
+			return
+		}
+		c.Next()
+	})
+	internal.GET("/sold-items/:product_id", func(c *gin.Context) {
+		item, err := a.Service.GetSoldItemByProductID(c.Request.Context(), c.Param("product_id"))
+		respond(c, item, "sold_item", err, http.StatusOK)
+	})
+	internal.GET("/sold-items", func(c *gin.Context) {
+		limit, _ := strconv.Atoi(c.Query("limit"))
+		items, err := a.Service.ListInternalSoldItems(c.Request.Context(), limit)
+		respond(c, items, "sold_items", err, http.StatusOK)
+	})
+
 	v1 := r.Group("/v1/retail")
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
 	}
+	v1.GET("/sales", func(c *gin.Context) {
+		sales, err := a.Service.ListSales(c.Request.Context())
+		respond(c, sales, "sales", err, http.StatusOK)
+	})
+	v1.GET("/sales/:sale_id", func(c *gin.Context) {
+		sale, err := a.Service.GetSale(c.Request.Context(), c.Param("sale_id"))
+		respond(c, sale, "sale", err, http.StatusOK)
+	})
+	v1.GET("/stores/:store_id/sold-items", func(c *gin.Context) {
+		items, err := a.Service.ListSoldItems(c.Request.Context(), c.Param("store_id"))
+		respond(c, items, "sold_items", err, http.StatusOK)
+	})
 
 	// Direct system routes in Gin to bypass gRPC Gateway for utility routes
 	sys := r.Group("/v1/system")
@@ -168,7 +225,6 @@ func (a *App) routes(r *gin.Engine) {
 			c.JSON(http.StatusOK, gin.H{"orders": orders})
 		})
 
-
 		group.GET("/orders/:id", func(c *gin.Context) {
 			order, err := a.Service.GetOrder(c.Request.Context(), c.Param("id"))
 			if err != nil {
@@ -186,4 +242,25 @@ func (a *App) routes(r *gin.Engine) {
 		legacy.Use(a.Guards.Authn, a.Guards.Authz)
 	}
 	registerBusinessRoutes(legacy)
+}
+
+func respond(c *gin.Context, value interface{}, key string, err error, successStatus int) {
+	if err != nil {
+		status := http.StatusInternalServerError
+		switch usecase.ErrorKindOf(err) {
+		case usecase.ErrorValidation:
+			status = http.StatusBadRequest
+		case usecase.ErrorNotFound:
+			status = http.StatusNotFound
+		case usecase.ErrorConflict:
+			status = http.StatusConflict
+		default:
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				status = http.StatusNotFound
+			}
+		}
+		c.JSON(status, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(successStatus, gin.H{key: value})
 }
