@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-09D
-status: open
+status: done
 owner: ai
 priority: medium
 trace:
@@ -19,6 +19,6 @@ Retail dashboard needs better store-scoping and real-time saga feedback.
 - Real-time: Ensure socket updates trigger UI refreshes across dashboards.
 
 ## Tasks
-- [ ] Implement store-scoping for `STORE_MGR`.
-- [ ] Update terminology and saga feedback in Retail UI.
-- [ ] Verify WebSocket connectivity and fanout.
+- [x] Implement store-scoping for `STORE_MGR`.
+- [x] Update terminology and saga feedback in Retail UI.
+- [x] Verify WebSocket connectivity and fanout.

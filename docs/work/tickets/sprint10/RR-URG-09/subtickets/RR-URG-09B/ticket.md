@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-09B
-status: open
+status: done
 owner: ai
 priority: medium
 trace:
@@ -19,6 +19,6 @@ Role-specific dashboards need more operational polish and status feedback.
 - Warehouse Dashboard: Scoped actions, improved dispatch/intake feedback.
 
 ## Tasks
-- [ ] Refine `Farm Dashboard` logic.
-- [ ] Refine `Warehouse Dashboard` logic.
-- [ ] Verify RBAC gating in UI.
+- [x] Refine `Farm Dashboard` logic.
+- [x] Refine `Warehouse Dashboard` logic.
+- [x] Verify RBAC gating in UI.

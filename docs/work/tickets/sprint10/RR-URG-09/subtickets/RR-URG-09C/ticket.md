@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-09C
-status: open
+status: done
 owner: ai
 priority: medium
 trace:
@@ -19,6 +19,6 @@ The driver simulation needs to cover the return-to-base leg and better telemetry
 - Logistics Dashboard: Add shipment detail drawer with telemetry.
 
 ## Tasks
-- [ ] Add return leg milestones to `Driver Client`.
-- [ ] Implement `Shipment Detail Drawer` in Logistics Dashboard.
-- [ ] Verify real-time GPS updates in Logistics view.
+- [x] Add return leg milestones to `Driver Client`.
+- [x] Implement `Shipment Detail Drawer` in Logistics Dashboard.
+- [x] Verify real-time GPS updates in Logistics view.
