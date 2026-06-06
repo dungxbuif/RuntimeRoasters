@@ -4,6 +4,7 @@ This folder contains master technical documentation.
 
 ## Files
 
+- `SDD/README.md`: system-level design baseline and cross-document navigation.
 - `ARCHITECTURE.md`: system structure and boundaries.
 - `API.md`: public endpoints, events, and contracts.
 - `ERD.md`: entities, tables, relationships, and migrations.

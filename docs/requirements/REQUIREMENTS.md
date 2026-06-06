@@ -26,6 +26,7 @@ This index summarizes current accepted requirements. Detailed behavior remains i
 | ID | Requirement | Priority | Source | Status |
 | --- | --- | --- | --- | --- |
 | REQ-AUTH-001 | Users authenticate through OIDC and protected APIs enforce JWT plus service-local Casbin. | high | Product/security docs | active |
+| REQ-AUTH-002 | `FARM_MANAGER` is the only farm-domain operator role; `ADMIN` uses explicit system/resource policies. | high | ADR-0009 | active |
 | REQ-FARM-001 | Farm Manager declares harvests for assigned farms. | high | Domain docs | active |
 | REQ-WH-001 | Warehouse Manager dispatches pickup/delivery work and manages warehouse inventory operations. | high | Domain docs, RR-URG sprint | active |
 | REQ-ORDER-001 | Store Manager creates paid retail orders that trigger payment, warehouse reservation, logistics delivery, and trace/audit events. | high | RR-URG-05 | active |

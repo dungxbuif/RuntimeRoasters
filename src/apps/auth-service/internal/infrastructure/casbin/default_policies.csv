@@ -1,10 +1,3 @@
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/GetFarm, read
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/ListFarms, read
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/CreateFarm, write
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/UpdateFarm, write
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/DeleteFarm, delete
-p, FARM_ADMIN, farm, read|write
-p, FARM_ADMIN, harvest, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/GetFarm, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/ListFarms, read
 p, FARM_MANAGER, /runtime.farm.v1.FarmService/CreateFarm, write
@@ -109,6 +102,5 @@ p, ADMIN, /v1/warehouse/receive, read
 p, ADMIN, /v1/warehouse/dispatch, read
 p, ADMIN, /v1/traces/topology/.*, read
 p, ADMIN, /v1/realtime/.*, read
-g, ADMIN, FARM_ADMIN
 g, ADMIN, WAREHOUSE_MGR
 g, ADMIN, STORE_MGR

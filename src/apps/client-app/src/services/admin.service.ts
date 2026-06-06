@@ -82,7 +82,7 @@ class AdminService {
 
   async listManagers(): Promise<User[]> {
     const users = await this.listUsers();
-    const managerRoles = ['FARM_MANAGER', 'FARM_ADMIN', 'ADMIN', 'WAREHOUSE_MGR', 'STORE_MGR'];
+    const managerRoles = ['FARM_MANAGER', 'ADMIN', 'WAREHOUSE_MGR', 'STORE_MGR'];
     return users.filter(u => managerRoles.includes(u.role.toUpperCase()));
   }
 

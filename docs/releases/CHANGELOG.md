@@ -13,3 +13,4 @@ All notable changes to this project will be documented in this file.
 - Updated RR-URG-07 scope to public sold-cup QR trace using UI-issued `product_id` values.
 - Consolidated reviewed legacy non-template docs into Harness target files and removed duplicate legacy docs.
 - Replaced legacy seed notes with a canonical master-data/enum contract covering migration flow, Admin seed flow, reproducible demo variation, and RR-URG-07A retail data.
+- Removed the duplicate farm administration role; `FARM_MANAGER` is now the only farm-domain operator role across identity, authorization, backend, frontend, seed data, and documentation.

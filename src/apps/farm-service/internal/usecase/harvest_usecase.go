@@ -63,7 +63,7 @@ func (u *harvestUsecase) CreateHarvest(ctx context.Context, harvest *domain.Harv
 	if !ok {
 		return nil, errs.ErrUnauthorized
 	}
-	if (user.Role == domain.RoleAdmin || user.Role == domain.RoleFarmAdmin) && harvest.OwnerID != "" {
+	if user.Role == domain.RoleAdmin && harvest.OwnerID != "" {
 		// Admin can specify owner
 	} else {
 		harvest.OwnerID = user.Subject

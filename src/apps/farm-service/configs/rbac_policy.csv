@@ -1,6 +1,3 @@
-p, FARM_ADMIN, /runtime.farm.v1.FarmService/*, .*
-p, FARM_ADMIN, farm, .*
-p, FARM_ADMIN, harvest, .*
 p, ADMIN, /runtime.farm.v1.FarmService/*, .*
 p, ADMIN, farm, .*
 p, ADMIN, harvest, .*

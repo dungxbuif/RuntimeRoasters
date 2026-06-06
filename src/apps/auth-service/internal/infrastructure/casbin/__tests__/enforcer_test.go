@@ -96,8 +96,6 @@ m = g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act)
 		obj string
 		act string
 	}{
-		{sub: "FARM_ADMIN", obj: "farm", act: "read"},
-		{sub: "FARM_ADMIN", obj: "harvest", act: "write"},
 		{sub: "FARM_MANAGER", obj: "farm", act: "read"},
 		{sub: "FARM_MANAGER", obj: "farm", act: "write"},
 		{sub: "FARM_MANAGER", obj: "farm", act: "delete"},
@@ -113,6 +111,6 @@ m = g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act)
 
 	ok, _ := e.Enforce("ADMIN", "farm", "read")
 	if !ok {
-		t.Fatal("expected ADMIN to inherit farm read through FARM_ADMIN")
+		t.Fatal("expected ADMIN to have explicit farm read access")
 	}
 }

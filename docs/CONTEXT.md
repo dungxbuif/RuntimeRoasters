@@ -6,14 +6,15 @@ owner: shared
 ---
 # Session Context & Development State
 
-Last Updated: 2026-06-05
+Last Updated: 2026-06-06
 
 ## Current Git Snapshot
-**Checked:** 2026-06-05
+**Checked:** 2026-06-06
 **Active branch:** `rr-urg-07-trace-public-qr`
 **HEAD:** `7663268 RR-URG-07 start trace public QR`
 
 ### Active Dirty Changes
+- `docs/architecture/SDD/README.md` and `docs/architecture/README.md`: added the missing system-level Software Design Document, consolidating system boundaries, service ownership, primary flows, data/security/runtime design, failure handling, verification, and links to canonical master docs.
 - `src/apps/client-app/src/constants/casbin.ts`: frontend Casbin matcher now allows direct role policy matching (`r.sub == p.sub`) as well as inherited role matching (`g(r.sub, p.sub)`), fixing frontend unit failures where role policies such as `STORE_MGR` did not evaluate.
 - `src/apps/socket-service/internal/app/app_test.go`: added socket-service route integration coverage for private stream ticket requirement, public WebSocket access, ticketed private WebSocket access, and one-time ticket rejection.
 - `src/apps/client-app/e2e/operational_realtime_awareness.spec.ts`: added flow-oriented Playwright coverage for Warehouse/Store dashboard notification rendering and role-scope isolation with mocked gateway auth/API contracts; passed through production Next runtime.
@@ -100,3 +101,12 @@ Last Updated: 2026-06-05
 - **Next Up:** RR-URG-07A (Retail Sale Schema And Seed Data).
 - RR-URG-07A detail design drafted at `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md`; implementation awaits human approval because it changes database schema and seed behavior.
 - `docs/requirements/MASTER_DATA.md` is now the canonical contract for all seed data and domain enums. It defines separate migration/Admin seed flows, deterministic SHA-256-based scenario variation, RR-URG-07A menu/lot/sale data, integrity rules, and current implementation drift.
+- Farm role contract simplified by ADR-0009: `FARM_MANAGER` is the only farm operator role; the duplicate role was removed from Kratos, Casbin, farm-service, frontend types/options, tests, and docs.
+- FARM_MANAGER-only verification:
+  - repository-wide removed-role scan returned no matches.
+  - Kratos identity schema JSON parsed successfully.
+  - targeted Casbin/shared-scoper/farm repository tests passed.
+  - frontend unit tests passed 9/9 and lint passed.
+  - full farm-service test command remains blocked by an existing test mock missing `FarmRepository.Count`; unrelated to the role removal.
+  - frontend production build could not be re-run because PID `37366` was already running `next build` and held `.next/lock` for more than 60 seconds; the process was not killed.
+  - existing external/Kratos identities carrying the removed role value must be migrated to `FARM_MANAGER` before token issuance.

@@ -33,7 +33,7 @@ func (u *farmUsecase) CreateFarm(ctx context.Context, farm *domain.Farm) (*domai
 		return nil, errs.ErrUnauthorized
 	}
 
-	if (user.Role == domain.RoleAdmin || user.Role == domain.RoleFarmAdmin) && farm.OwnerID != "" {
+	if user.Role == domain.RoleAdmin && farm.OwnerID != "" {
 		// Admin can specify owner
 	} else {
 		farm.OwnerID = user.Subject
@@ -83,7 +83,7 @@ func (u *farmUsecase) UpdateFarm(ctx context.Context, farm *domain.Farm) (*domai
 		farm.CoffeeType = current.CoffeeType
 	}
 
-	if (user.Role == domain.RoleAdmin || user.Role == domain.RoleFarmAdmin) && farm.OwnerID != "" {
+	if user.Role == domain.RoleAdmin && farm.OwnerID != "" {
 		// Admin can specify owner
 	} else {
 		farm.OwnerID = current.OwnerID

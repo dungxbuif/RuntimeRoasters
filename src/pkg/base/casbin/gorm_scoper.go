@@ -28,7 +28,7 @@ func NewGormScoper(e PolicyEnforcer) *GormScoper {
 func (s *GormScoper) ApplyScope(subject, role, object, action string, ownerField string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		normalizedRole := strings.ToUpper(role)
-		if normalizedRole == "ADMIN" || normalizedRole == "FARM_ADMIN" {
+		if normalizedRole == "ADMIN" {
 			return db
 		}
 

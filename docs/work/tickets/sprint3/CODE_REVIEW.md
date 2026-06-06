@@ -30,7 +30,7 @@ Mã nguồn hiện tại của **Farm Service** đang vi phạm nghiêm trọng 
 - **Vị trí:** `src/apps/farm-service/internal/infrastructure/repository/farm_repository.go`
 - **Chi tiết:** Các hàm `GetByID`, `List`, `Update`, `Delete` đang sử dụng logic thủ công:
   ```go
-  if userId.Role != "ADMIN" && userId.Role != "FARM_ADMIN" {
+  if userId.Role != "ADMIN" && userId.Role != "FARM_MANAGER" {
       query = query.Where("owner_id = ?", userId.Subject)
   }
   ```
