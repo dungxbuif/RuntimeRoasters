@@ -69,10 +69,10 @@ export default function RetailOperationsPage() {
         <div>
           <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900 flex items-center gap-3 italic">
             <ShoppingBag className="w-7 h-7 text-primary" />
-            Retail Operations
+            Retail Paid Orders
           </h1>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
-            Distributed Order Saga Orchestrator
+            Fulfillment Saga Orchestrator & Live Status
           </p>
         </div>
         <div className="flex gap-4">
