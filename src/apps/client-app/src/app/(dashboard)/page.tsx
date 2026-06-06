@@ -6,7 +6,7 @@ import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAuth } from '@/lib/auth';
 import { storageService } from '@/services/storage.service';
-import { Coffee, Key, LogOut, User, ArrowRight } from 'lucide-react';
+import { Coffee, Key, LogOut, User, ArrowRight, QrCode, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { testId } from '@/lib/utils/test-id';
 
@@ -47,6 +47,12 @@ export default function DashboardPage() {
           </h2>
         </div>
 
+        <nav className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-xs font-black uppercase tracking-widest text-primary border-b-2 border-primary pb-1">Home</Link>
+          <Link href="/coffee" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Buy Coffee</Link>
+          <Link href="/trace" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Traceability</Link>
+        </nav>
+
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <div className="flex items-center gap-3 bg-white p-1.5 pr-5 rounded-full border border-outline-variant/10 shadow-sm">
@@ -78,14 +84,30 @@ export default function DashboardPage() {
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="px-10 py-6 flex justify-between items-end bg-white/50 border-b border-outline-variant/5">
+          <div className="px-10 py-6 flex justify-between items-end bg-white border-b border-outline-variant/5">
             <div>
               <h1 className="text-3xl font-black font-headline text-on-surface tracking-tighter uppercase italic leading-none">
                 <span {...testId('public-topology-heading')}>Architecture <span className="text-primary">Topology</span></span>
               </h1>
               <p className="text-[10px] font-bold text-on-surface-variant/60 mt-2 uppercase tracking-widest leading-none">
-                Left-to-right Runtime Roasters service map
+                Live distributed service map & event telemetry
               </p>
+            </div>
+            <div className="flex gap-4">
+               <Link 
+                 href="/trace"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm"
+               >
+                 <QrCode className="w-4 h-4" />
+                 Trace Registry
+               </Link>
+               <Link 
+                 href="/coffee"
+                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg shadow-primary/20"
+               >
+                 <ShoppingBag className="w-4 h-4" />
+                 Buy Coffee
+               </Link>
             </div>
           </div>
 
