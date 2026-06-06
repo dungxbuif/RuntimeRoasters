@@ -168,10 +168,13 @@ export default function DriverClientPage() {
   const handleStart = useCallback(() => {
     if (!activeRoute || !activeShipment) return;
     setSimActive(true);
+    // Initial position logic
     if (waypointIndex === 0 && currentMilestone === 'ASSIGNED' && activeRoute.coordinates[0]) {
       setDriverPos(p => ({ ...p, [activeShipment.driver_id!]: activeRoute.coordinates[0] }));
+    } else if (waypointIndex === totalWaypoints - 1 && currentMilestone === 'RETURN_STARTED' && activeRoute.coordinates[totalWaypoints - 1]) {
+      setDriverPos(p => ({ ...p, [activeShipment.driver_id!]: activeRoute.coordinates[totalWaypoints - 1] }));
     }
-  }, [activeRoute, activeShipment, waypointIndex, currentMilestone]);
+  }, [activeRoute, activeShipment, waypointIndex, currentMilestone, totalWaypoints]);
 
   const handlePause = () => setSimActive(false);
 
