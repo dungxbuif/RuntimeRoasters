@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AUTH_PARAMS } from '@/constants/auth';
 import { APP_ROUTES } from '@/constants/routes';
 import { useAuth } from '@/lib/auth';
 import { storageService } from '@/services/storage.service';
-import { Coffee, Key, LogOut, User, ArrowRight, QrCode, ShoppingBag } from 'lucide-react';
+import { Coffee, Key, LogOut, User, ArrowRight, QrCode, ShoppingBag, Info, ShieldCheck, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { testId } from '@/lib/utils/test-id';
 
@@ -18,8 +18,9 @@ const ArchitectureDiagramCanvas = dynamic(
   }
 );
 
-export default function DashboardPage() {
+export default function LandingPage() {
   const { isAuthenticated, login, logout, refreshSession } = useAuth();
+  const [activeTab, setActiveTab] = useState<'topology' | 'registry'>('topology');
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -48,9 +49,10 @@ export default function DashboardPage() {
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-xs font-black uppercase tracking-widest text-primary border-b-2 border-primary pb-1">Home</Link>
-          <Link href="/coffee" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Buy Coffee</Link>
-          <Link href="/trace" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Traceability</Link>
+          <Link href="/" className="text-xs font-black uppercase tracking-widest text-primary border-b-2 border-primary pb-1">Platform</Link>
+          <Link href="/coffee" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Order Now</Link>
+          <Link href="/trace" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Trace Registry</Link>
+          <Link href="/api-docs" className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">Specs</Link>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -73,7 +75,7 @@ export default function DashboardPage() {
             <button
               onClick={() => login()}
               {...testId('public-access-terminal')}
-              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-[0.98] transition-all flex items-center gap-2"
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-slate-900/20"
             >
               <Key className="w-4 h-4" />
               Access Terminal
@@ -83,36 +85,98 @@ export default function DashboardPage() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="px-10 py-6 flex justify-between items-end bg-white border-b border-outline-variant/5">
-            <div>
-              <h1 className="text-3xl font-black font-headline text-on-surface tracking-tighter uppercase italic leading-none">
-                <span {...testId('public-topology-heading')}>Architecture <span className="text-primary">Topology</span></span>
+        {/* Left Info Panel */}
+        <div className="w-[400px] border-r border-outline-variant/5 bg-white overflow-y-auto p-10 flex flex-col gap-12">
+           <section>
+              <div className="flex items-center gap-2 text-primary mb-4">
+                 <ShieldCheck className="w-5 h-5" />
+                 <span className="text-[10px] font-black uppercase tracking-[0.3em]">Verified Transparency</span>
+              </div>
+              <h1 className="text-4xl font-black font-headline text-on-surface tracking-tighter uppercase italic leading-none mb-6">
+                Data <span className="text-primary italic">Proof</span> Ecosystem
               </h1>
-              <p className="text-[10px] font-bold text-on-surface-variant/60 mt-2 uppercase tracking-widest leading-none">
-                Live distributed service map & event telemetry
+              <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                Experience 100% digital transparency. Every bean is tracked via real-time GPS and cryptographically linked through our distributed service mesh.
               </p>
+           </section>
+
+           <div className="space-y-4">
+              <Link 
+                href="/coffee"
+                className="flex items-center justify-between group p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-primary/30 transition-all shadow-sm"
+              >
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                       <ShoppingBag className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                       <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Step 1: Purchase</div>
+                       <div className="text-sm font-black uppercase tracking-tight">Buy Coffee Kiosk</div>
+                    </div>
+                 </div>
+                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+              </Link>
+
+              <Link 
+                href="/trace"
+                className="flex items-center justify-between group p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-primary/30 transition-all shadow-sm"
+              >
+                 <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                       <QrCode className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                       <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Step 2: Verify</div>
+                       <div className="text-sm font-black uppercase tracking-tight">Public Trace Registry</div>
+                    </div>
+                 </div>
+                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+              </Link>
+           </div>
+
+           <div className="mt-auto pt-10 border-t border-slate-100">
+              <div className="flex items-center gap-2 mb-4">
+                 <Globe className="w-4 h-4 text-slate-400" />
+                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">System Health</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Status</div>
+                    <div className="flex items-center gap-1.5">
+                       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                       <span className="text-[10px] font-bold text-slate-700">Operational</span>
+                    </div>
+                 </div>
+                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Latency</div>
+                    <div className="text-[10px] font-bold text-slate-700">42ms</div>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Right Topology Panel */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white">
+          <div className="px-10 py-6 flex justify-between items-center border-b border-outline-variant/5">
+            <div>
+              <h3 className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-[0.3em] leading-none">
+                Live Distributed Service Map
+              </h3>
             </div>
-            <div className="flex gap-4">
-               <Link 
-                 href="/trace"
-                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm"
+            <div className="flex gap-2">
+               <button 
+                 onClick={() => setActiveTab('topology')}
+                 className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                   activeTab === 'topology' ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                 }`}
                >
-                 <QrCode className="w-4 h-4" />
-                 Trace Registry
-               </Link>
-               <Link 
-                 href="/coffee"
-                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg shadow-primary/20"
-               >
-                 <ShoppingBag className="w-4 h-4" />
-                 Buy Coffee
-               </Link>
+                 Service Mesh
+               </button>
             </div>
           </div>
 
-          <div className="flex-1 relative bg-white overflow-auto p-0">
-            <ArchitectureDiagramCanvas />
+          <div className="flex-1 relative overflow-hidden">
+            <ArchitectureDiagramCanvas isPrivate={false} />
           </div>
         </div>
       </div>

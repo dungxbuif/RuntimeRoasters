@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-09A
-status: open
+status: done
 owner: ai
 priority: high
 trace:
@@ -22,11 +22,11 @@ Public users need to see the system's live health (topology) and find cups to tr
 - Ensure no-auth access to these components.
 
 ## Tasks
-- [ ] Update `src/app/page.tsx` to include the `ArchitectureTopology` component.
-- [ ] Implement `src/app/coffee/page.tsx` as the Public QR Trace List.
-- [ ] Verify no-auth API calls for these pages.
+- [x] Update `src/app/page.tsx` to include the `ArchitectureTopology` component.
+- [x] Implement `src/app/trace/page.tsx` as the Public QR Trace Registry.
+- [x] Verify no-auth API calls for these pages.
 
 ## Acceptance Criteria
-- Public users can see the topology on the home page.
-- Public users can browse sold cups at `/coffee`.
-- No login is required for these views.
+- [x] Public users can see the topology on the home page.
+- [x] Public users can browse sold cups at `/trace`.
+- [x] No login is required for these views.
