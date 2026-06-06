@@ -68,10 +68,10 @@ export default function CreateOrderPage() {
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 flex items-center gap-3 italic">
             <ShoppingBag className="w-8 h-8 text-primary" />
-            Supply Chain Order
+            Retail Paid Order
           </h1>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
-            Initiate Saga Choreography for Store Replenishment
+            Initialize Fulfillment Saga for Paid Customer Order
           </p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function CreateOrderPage() {
         <div className="space-y-4">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
             <Store className="w-3.5 h-3.5" />
-            Receiving Store Node
+            Fulfillment Store Node
           </label>
           <select 
             value={selectedStore}

@@ -104,14 +104,20 @@ export default function HarvestsPage() {
           <p className="text-on-surface-variant font-medium">Record harvests and broadcast to <span className="text-primary font-black italic">Warehouse Service</span> via Kafka.</p>
         </div>
         <CasbinGuard obj={AUTH_RESOURCES.HARVEST} act={AUTH_ACTIONS.WRITE}>
-          <button 
-            onClick={() => setShowModal(true)}
-            {...testId(e2eSelectors.CREATE_HARVEST_BTN)}
-            className="bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined !text-sm">add_circle</span>
-            Declare New Harvest
-          </button>
+          {farms.length > 0 ? (
+            <button 
+              onClick={() => setShowModal(true)}
+              {...testId(e2eSelectors.CREATE_HARVEST_BTN)}
+              className="bg-tertiary text-on-tertiary px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-tertiary/20 flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined !text-sm">add_circle</span>
+              Declare New Harvest
+            </button>
+          ) : (
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-4 py-2 rounded-xl italic border border-slate-200">
+              No farms assigned to your account
+            </div>
+          )}
         </CasbinGuard>
       </div>
 

@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { logisticsService } from '@/services/logistics.service';
 import { Shipment } from '@/types/logistics';
 import dynamic from 'next/dynamic';
-import { Activity, Gauge, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Activity, Gauge, Truck, AlertTriangle, CheckCircle2, MapPin, X } from 'lucide-react';
+import Link from 'next/link';
 
 const LogisticsMap = dynamic(() => import('@/components/features/logistics/LogisticsMap'), {
   ssr: false,
@@ -15,6 +16,7 @@ const LogisticsMap = dynamic(() => import('@/components/features/logistics/Logis
 export default function LogisticsDashboard() {
   const [activeDriverLocations, setActiveDriverLocations] = useState<Record<string, [number, number]>>({});
   const [simulationActive, setSimulationActive] = useState(false);
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
   const { data: locations = [] } = useQuery({
     queryKey: ['logistics', 'locations'],
@@ -163,7 +165,10 @@ export default function LogisticsDashboard() {
                 shipments.map(shipment => (
                   <div 
                     key={shipment.id}
+                    onClick={() => setSelectedShipment(shipment)}
                     className={`p-4 rounded-lg border-l-4 transition-all hover:translate-x-1 cursor-pointer ${
+                      selectedShipment?.id === shipment.id ? 'ring-2 ring-primary ring-offset-2 shadow-md' : ''
+                    } ${
                       shipment.status === 'IN_TRANSIT' 
                         ? 'bg-blue-50/50 border-primary' 
                         : shipment.status === 'FAILED'
@@ -246,6 +251,89 @@ export default function LogisticsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Shipment Detail Drawer */}
+      {selectedShipment && (
+        <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[100] border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300">
+           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-tight">Shipment Details</h3>
+                <code className="text-[10px] font-mono text-slate-400">ID: {selectedShipment.id.slice(0, 8).toUpperCase()}</code>
+              </div>
+              <button 
+                onClick={() => setSelectedShipment(null)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {/* Status Section */}
+              <div>
+                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 block">Current Status</span>
+                 <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                      selectedShipment.status === 'DELIVERED' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                       <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                       <div className="text-sm font-black uppercase italic">{selectedShipment.status}</div>
+                       <div className="text-[10px] font-bold text-slate-400 italic">Last updated: {new Date(selectedShipment.updated_at).toLocaleTimeString()}</div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Destination Section */}
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Destination</span>
+                 <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                    <p className="text-xs font-bold text-slate-700 leading-relaxed">{selectedShipment.destination_address || 'Unspecified Address'}</p>
+                 </div>
+              </div>
+
+              {/* Assignment Section */}
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="bg-white border border-slate-200 rounded-xl p-4">
+                    <span className="text-[8px] font-black uppercase text-slate-400 mb-2 block">Driver</span>
+                    <div className="text-[10px] font-bold text-slate-800">{selectedShipment.driver_id ? `Driver #${selectedShipment.driver_id.slice(-4)}` : 'Unassigned'}</div>
+                 </div>
+                 <div className="bg-white border border-slate-200 rounded-xl p-4">
+                    <span className="text-[8px] font-black uppercase text-slate-400 mb-2 block">Vehicle</span>
+                    <div className="text-[10px] font-bold text-slate-800">{selectedShipment.vehicle_id ? `Unit #${selectedShipment.vehicle_id.slice(-4)}` : 'Unassigned'}</div>
+                 </div>
+              </div>
+
+              {/* Telemetry Section */}
+              {activeDriverLocations[selectedShipment.driver_id || ''] && (
+                <div className="space-y-3">
+                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Live Telemetry</span>
+                   <div className="font-mono text-[10px] bg-slate-900 text-primary p-4 rounded-xl space-y-1">
+                      <div className="flex justify-between">
+                         <span className="opacity-50 text-white">LAT</span>
+                         <span>{activeDriverLocations[selectedShipment.driver_id!][0].toFixed(6)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                         <span className="opacity-50 text-white">LNG</span>
+                         <span>{activeDriverLocations[selectedShipment.driver_id!][1].toFixed(6)}</span>
+                      </div>
+                   </div>
+                </div>
+              )}
+           </div>
+
+           <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <button 
+                onClick={() => setSelectedShipment(null)}
+                className="w-full bg-slate-900 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-primary transition-colors shadow-xl"
+              >
+                Close Details <X className="w-3 h-3" />
+              </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

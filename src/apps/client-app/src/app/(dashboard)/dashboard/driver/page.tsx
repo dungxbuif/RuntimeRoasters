@@ -117,20 +117,30 @@ export default function DriverClientPage() {
 
     tickRef.current = setInterval(() => {
       setWaypointIndex(prev => {
-        const next = prev + 1;
+        let next = prev;
+        const isReturning = currentMilestone === 'RETURN_STARTED' || currentMilestone === (isPickup ? 'ARRIVED_WAREHOUSE' : 'RETURNED_BASE');
 
-        // Auto-advance milestones
-        if (next === 1) {
-            handleMilestone(isPickup ? 'DEPARTED_BASE' : 'DEPARTED_WH');
-        } else if (next === Math.floor(totalWaypoints / 2)) {
-            handleMilestone(isPickup ? 'ARRIVED_FARM' : 'ARRIVED_STORE');
-        } else if (next === totalWaypoints - 1) {
-            handleMilestone(isPickup ? 'PICKUP_CONFIRMED' : 'DELIVERED');
-        }
-
-        if (next >= totalWaypoints) {
-          setSimActive(false);
-          return prev;
+        if (!isReturning) {
+          next = prev + 1;
+          // Auto-advance outbound milestones
+          if (next === 1) {
+              handleMilestone(isPickup ? 'DEPARTED_BASE' : 'DEPARTED_WH');
+          } else if (next === Math.floor(totalWaypoints / 2)) {
+              handleMilestone(isPickup ? 'ARRIVED_FARM' : 'ARRIVED_STORE');
+          } else if (next >= totalWaypoints - 1) {
+              // Reached destination, pause for manual confirmation
+              handleMilestone(isPickup ? 'PICKUP_CONFIRMED' : 'DELIVERED');
+              setSimActive(false);
+              return totalWaypoints - 1;
+          }
+        } else {
+          // Returning leg goes backwards
+          next = prev - 1;
+          if (next <= 0) {
+              handleMilestone(isPickup ? 'ARRIVED_WAREHOUSE' : 'RETURNED_BASE');
+              setSimActive(false);
+              return 0;
+          }
         }
 
         const coord = activeRoute.coordinates[next];
@@ -153,15 +163,15 @@ export default function DriverClientPage() {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [simActive, activeRoute, activeShipment, tickInterval, totalWaypoints, isPickup, handleMilestone]);
+  }, [simActive, activeRoute, activeShipment, tickInterval, totalWaypoints, isPickup, handleMilestone, currentMilestone]);
 
   const handleStart = useCallback(() => {
     if (!activeRoute || !activeShipment) return;
     setSimActive(true);
-    if (waypointIndex === 0 && activeRoute.coordinates[0]) {
+    if (waypointIndex === 0 && currentMilestone === 'ASSIGNED' && activeRoute.coordinates[0]) {
       setDriverPos(p => ({ ...p, [activeShipment.driver_id!]: activeRoute.coordinates[0] }));
     }
-  }, [activeRoute, activeShipment, waypointIndex]);
+  }, [activeRoute, activeShipment, waypointIndex, currentMilestone]);
 
   const handlePause = () => setSimActive(false);
 
