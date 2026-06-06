@@ -142,9 +142,17 @@ export default function WarehouseOperationsPage() {
                  {req.status === 'DISPATCHED' && (
                    <div className="space-y-2">
                      <p className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1 italic">
-                       <Loader2 className="w-3 h-3 animate-spin" /> Driver en route to farm...
+                       <Loader2 className="w-3 h-3 animate-spin" /> Driver moving to farm...
                      </p>
-                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className="bg-blue-500 h-full w-[45%]" /></div>
+                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className="bg-primary h-full w-[45%] animate-pulse" /></div>
+                   </div>
+                 )}
+                 {req.status === 'PICKED_UP' && (
+                   <div className="space-y-2">
+                     <p className="text-[9px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1 italic">
+                       <Truck className="w-3 h-3" /> Returning to warehouse...
+                     </p>
+                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className="bg-green-500 h-full w-[75%] animate-pulse" /></div>
                    </div>
                  )}
                  {(req.status === 'ARRIVED_WAREHOUSE' || req.status === 'PICKED_UP') && (
@@ -260,12 +268,11 @@ export default function WarehouseOperationsPage() {
                    </CasbinGuard>
                  )}
                  {req.status === 'DISPATCHED' && (
-                   <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-2"><MapPin className="w-3 h-3"/> Live Tracking</p>
-                     <div className="w-full h-20 bg-slate-200 rounded-lg relative overflow-hidden flex items-center justify-center">
-                        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at center, #cbd5e1 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
-                        <div className="w-3 h-3 bg-primary rounded-full animate-pulse relative z-10 shadow-[0_0_8px_rgba(0,74,198,0.6)]" />
-                     </div>
+                   <div className="space-y-2">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-2 italic">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Delivery in progress...
+                     </p>
+                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden"><div className="bg-primary h-full w-[60%] animate-pulse" /></div>
                    </div>
                  )}
               </div>

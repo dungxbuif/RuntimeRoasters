@@ -22,8 +22,9 @@ const PICKUP_STEPS: PipelineStep[] = [
 function getPickupStatus(harvestStatus: string): string {
   const mapping: Record<string, string> = {
     'NEW': 'CREATED',
-    'PENDING': 'PICKUP_REQUESTED',
+    'PICKUP_REQUESTED': 'PICKUP_REQUESTED',
     'ASSIGNED': 'PICKUP_ASSIGNED',
+    'IN_TRANSIT': 'PICKED_UP',
     'PICKED_UP': 'PICKED_UP',
     'ARRIVED_WAREHOUSE': 'ARRIVED_WAREHOUSE',
     'INTAKE_CREATED': 'INTAKE_CREATED',
