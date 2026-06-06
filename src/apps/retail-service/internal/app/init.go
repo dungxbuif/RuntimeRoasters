@@ -23,7 +23,12 @@ func InitializeApp() (*App, func(), error) {
 	}
 
 	// Auto-migrate tables
-	if err := db.AutoMigrate(&domain.Store{}, &domain.Order{}, &domain.OutboxEvent{}, &domain.InboxEvent{}); err != nil {
+	if err := db.AutoMigrate(
+		&domain.Store{}, &domain.Menu{}, &domain.MenuItem{}, &domain.Order{},
+		&domain.InventoryLot{}, &domain.Sale{}, &domain.SaleItem{},
+		&domain.StockMovement{}, &domain.StoreMenuInventory{},
+		&domain.OutboxEvent{}, &domain.InboxEvent{},
+	); err != nil {
 		return nil, nil, err
 	}
 

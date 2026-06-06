@@ -1,9 +1,9 @@
 ---
 artifact_type: detail_design
 id: DESIGN-RR-URG-07A
-status: ready
+status: in_review
 owner: ai
-approval: pending
+approval: approved
 human_fields:
   - approval
   - constraints
@@ -26,14 +26,15 @@ trace:
   requirement: REQ-QR-001
   phase: PHASE-2
   ticket_or_bug: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/ticket.md
-  test_verification: pending
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/test_verification.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
-  docs_review: pending
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/docs_review.md
   adrs:
-    - pending
+    - docs/decisions/0010-retail-sales-and-availability.md
   master_docs_touched:
     - docs/architecture/ERD.md
-    - docs/requirements/MASTER_DATA.md
+    - docs/architecture/SDD/MASTER_DATA.md
+    - docs/requirements/SAMPLE_MENU.md
 ---
 
 # RR-URG-07A Detail Design
@@ -41,9 +42,9 @@ trace:
 ## Status
 
 - ID: `DESIGN-RR-URG-07A`
-- Status: `ready`
+- Status: `in_review`
 - Ticket: `RR-URG-07A`
-- Approval: `pending`
+- Approval: `approved` in chat on 2026-06-06
 - Author: AI
 - Updated: 2026-06-06
 
@@ -53,7 +54,9 @@ Retail service currently persists only stores, supply orders, outbox, and inbox 
 
 ## RR-URG-07A must provide the minimum durable schema and deterministic demo seed required by later sale API, public trace, UI, and platform-evidence subtickets.
 
-Success means an empty or existing retail database can receive the additive migration and idempotent seed, producing traceable sold cups without exposing an API in this ticket.
+Success means a fresh development retail database can receive the rewritten
+schema and idempotent seed, producing traceable sold cups without exposing an
+API in this ticket.
 
 ## Context Loaded
 
@@ -65,7 +68,8 @@ Success means an empty or existing retail database can receive the additive migr
 - `docs/work/phases/PHASE-2.md`
 - `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/ticket.md`
 - `docs/requirements/REQUIREMENTS.md`
-- `docs/requirements/MASTER_DATA.md`
+- `docs/architecture/SDD/MASTER_DATA.md`
+- `docs/requirements/SAMPLE_MENU.md`
 - `docs/architecture/ERD.md`
 - `src/apps/retail-service/internal/domain/models.go`
 - `src/apps/retail-service/internal/app/init.go`
@@ -77,7 +81,7 @@ Success means an empty or existing retail database can receive the additive migr
 
 - Touched modules/files:
   - retail domain models.
-  - retail migration `000002`.
+  - rewritten retail development migration `000001`.
   - retail seed loader and checked-in seed JSON.
   - retail seed usecase and tests.
   - retail startup migration model list.
@@ -87,8 +91,8 @@ Success means an empty or existing retail database can receive the additive migr
   - GORM and Postgres migration conventions.
 - Contracts affected: retail database schema and internal seed result/counts.
 - Known unknowns:
-  - Exact upstream batch/harvest/warehouse IDs available in the current warehouse seed must be verified before final seed values are committed.
-  - Existing demo databases may contain schema drift; migration must be run against the current local `retail_db`, not only a fresh DB.
+  - The stable lineage keys are cross-database references and are intentionally
+    not database foreign keys.
 - Scope expansion: none. No HTTP API, trace projection, QR rendering, or UI work.
 
 ## Small Task Exemption
@@ -99,29 +103,25 @@ Success means an empty or existing retail database can receive the additive migr
 
 ## Identifier Contract
 
-- `retail_menu_items.id` is the stable chain-wide menu item identifier and is exposed as `menu_item_id` in application/API contracts.
-- `retail_sale_items.menu_item_id` is a foreign key to `retail_menu_items.id`.
-- `retail_sale_items.product_id` is the unique identity of one sold cup/item.
-- `retail_sale_items.trace_code` equals `product_id` for public URL compatibility.
+- `menu_items.id` is the stable chain-wide sellable drink-size identifier and is exposed as `menu_item_id` in application/API contracts.
+- `sale_items.menu_item_id` is a foreign key to `menu_items.id`.
+- `sale_items.product_id` is the unique identity of one sold cup/item.
+- `sale_items.trace_code` equals `product_id` for public URL compatibility.
 - A QR token alone does not encode provenance. Backend resolves provenance through sale item -> inventory lot -> upstream lineage.
 
 ## Proposed Approach
 
-1. Add domain models and enums:
-   - `RetailMenuItem`
-   - `RetailInventoryLot`
-   - `RetailSale`
-   - `RetailSaleItem`
-   - `RetailStockMovement`
-   - sale status, movement type, and reference type constants.
-2. Add additive migration `000002_retail_sales.up.sql`:
-   - create the five tables without altering existing `stores` or `orders`.
+1. Add domain models and enums for `Menu`, `MenuItem`, `InventoryLot`, `Sale`, `SaleItem`, `StockMovement`, and `StoreMenuInventory`.
+2. Rewrite development migration `000001_init.up.sql`:
+   - create the complete retail schema without business-data inserts.
    - add foreign keys inside `retail_db`.
    - keep upstream lineage IDs as indexed string/UUID-compatible values without cross-database foreign keys.
    - add unique indexes for menu item `product_code`, `sku`, `invoice_no`, `idempotency_key`, sold-item `product_id`, and `trace_code`.
    - add store/SKU/lot/sold-time query indexes needed by later APIs.
-3. Include the five models in startup `AutoMigrate` only as a development compatibility layer. The SQL migration remains the reviewed schema contract.
-4. Add checked-in seed files for menu items, inventory lots, sales, sale items, and stock movements.
+3. Include the models in startup `AutoMigrate` only as a development compatibility layer. The SQL migration remains the reviewed schema contract.
+4. Seed 42 sellable drink-size menu items derived from `SAMPLE_MENU.md`, plus
+   deterministic runtime lots, 25 sold cups, stock movements, and materialized
+   availability.
 5. Extend the seed loader to validate:
    - non-empty IDs and required fields.
    - unique menu item IDs/SKUs.
@@ -129,11 +129,12 @@ Success means an empty or existing retail database can receive the additive migr
    - unique sold-item `product_id` and `trace_code == product_id`.
    - movement references and balance arithmetic.
 6. Extend `SeedData` to run all retail seed writes in one GORM transaction:
-   - upsert stores/menu items/lots.
-   - upsert sales and sale items by deterministic IDs.
-   - upsert movements by deterministic IDs.
-   - set inventory-lot `available_quantity` to the deterministic expected balance.
-7. Preserve current force behavior without deleting user-created records. Re-running seed updates deterministic rows only and does not duplicate stock movements.
+   - reconcile stores, menus, and menu items.
+   - insert deterministic demo transactions only when absent.
+   - rebuild lot balance from the complete movement ledger.
+   - rebuild `store_menu_inventories` from valid lots.
+7. Preserve user-created records. Re-running seed does not reset runtime
+   transactions or duplicate stock movements.
 
 ## Data Constraints
 
@@ -175,7 +176,8 @@ available_quantity = sum(all quantity_delta)
 - API/contracts: no public API in 07A.
 - Data/schema: five new retail tables and indexes.
 - Security/auth: no change; seed remains internal/admin-orchestrated.
-- Deployment/runtime: migration order gains `000002`; startup auto-migration includes additive models.
+- Deployment/runtime: Retail development `000001` is rewritten; startup
+  auto-migration includes the complete model set.
 - Docs: ERD, master data, ticket, validation matrix, context, changelog.
 
 ## Test Plan
@@ -188,8 +190,7 @@ available_quantity = sum(all quantity_delta)
   - `trace_code != product_id` rejected.
   - negative resulting inventory rejected.
 - Integration:
-  - apply `000001` then `000002` to an empty retail DB.
-  - apply `000002` against current demo retail DB.
+  - apply rewritten `000001` to an empty retail DB.
   - run seed twice and assert stable counts/balances.
   - force seed updates deterministic rows without duplicates.
   - transaction rolls back on an injected invalid reference/database error.
@@ -212,9 +213,10 @@ available_quantity = sum(all quantity_delta)
 - Architecture docs: no architecture-boundary change.
 - API docs: no change.
 - ERD docs: update with new retail entities and relationships.
-- ADR: create a schema/data-ownership ADR because this introduces durable operational tables and identifier semantics.
+- ADR: ADR-0010 records table ownership, one-cup sale items, development
+  migration rewrite, and materialized availability.
 - Context: update after implementation and verification.
 
 ## Approval Gate
 
-Implementation is blocked until the human changes `approval: pending` to `approval: approved` or explicitly approves this design in chat.
+Approved by the human in chat on 2026-06-06.

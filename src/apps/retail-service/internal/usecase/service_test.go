@@ -83,6 +83,83 @@ func TestConfirmOrderReceiptRequiresDeliveredOrder(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateStoreDerivesCodeForExistingAdminContract(t *testing.T) {
+	db := setupRetailDB(t)
+	service := NewService(db, nil, events.TopicRetailOrderCreated)
+
+	created, err := service.CreateStore(context.Background(), domain.Store{
+		Name: "New Demo Store", City: "Hanoi", Address: "1 Demo Street",
+		Status: domain.StoreStatusActive,
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, created.Code)
+	assert.Contains(t, created.Code, "STORE-")
+}
+
+func TestSeedDataIsIdempotentAndRebuildsAvailability(t *testing.T) {
+	db := setupRetailDB(t)
+	service := NewService(db, nil, events.TopicRetailOrderCreated)
+	users := map[string]string{
+		"mgr.hn.hoankiem@runtimeroasters.com": "user-hk",
+		"mgr.hn.caugiay@runtimeroasters.com":  "user-cg",
+		"mgr.hcm.d1@runtimeroasters.com":      "user-d1",
+		"mgr.hcm.d7@runtimeroasters.com":      "user-d7",
+		"mgr.dn.haichau@runtimeroasters.com":  "user-hc",
+	}
+
+	first, err := service.SeedData(context.Background(), false, users)
+	require.NoError(t, err)
+	assert.True(t, first.Success)
+	firstStatus, err := service.GetSystemStatus(context.Background())
+	require.NoError(t, err)
+	assert.True(t, firstStatus.Seeded)
+	assert.Equal(t, int64(42), firstStatus.RecordCounts["menu_items"])
+	assert.Equal(t, int64(25), firstStatus.RecordCounts["sale_items"])
+	assert.Equal(t, int64(210), firstStatus.RecordCounts["store_menu_inventories"])
+
+	_, err = service.SeedData(context.Background(), false, users)
+	require.NoError(t, err)
+	secondStatus, err := service.GetSystemStatus(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, firstStatus.RecordCounts, secondStatus.RecordCounts)
+
+	var lots []domain.InventoryLot
+	require.NoError(t, db.Find(&lots).Error)
+	for _, lot := range lots {
+		var ledgerBalance float64
+		require.NoError(t, db.Model(&domain.StockMovement{}).
+			Where("inventory_lot_id = ?", lot.ID).
+			Select("COALESCE(SUM(quantity_delta), 0)").
+			Scan(&ledgerBalance).Error)
+		assert.InDelta(t, lot.AvailableQuantity, ledgerBalance, 0.001, lot.ID)
+	}
+
+	var espresso domain.MenuItem
+	require.NoError(t, db.Where("id = ?", "MI-ESPRESSO-DOUBLE-S").Take(&espresso).Error)
+	var availability domain.StoreMenuInventory
+	require.NoError(t, db.Where("store_id = ? AND menu_item_id = ?",
+		"11111111-1111-1111-1111-111111111101", espresso.ID).
+		Take(&availability).Error)
+	assert.Positive(t, availability.AvailableUnits)
+
+	userMovement := domain.StockMovement{
+		ID: uuid.NewString(), StoreID: "11111111-1111-1111-1111-111111111101",
+		InventoryLotID: "LOT-HK-AR-001", StockSKU: "BEAN-ARABICA-ROASTED",
+		MovementType: domain.StockMovementSold, QuantityDelta: -18, Unit: "GRAM",
+		ReferenceType: domain.StockReferenceSaleItem, ReferenceID: uuid.NewString(),
+		OccurredAt: time.Now(),
+	}
+	require.NoError(t, db.Create(&userMovement).Error)
+	var beforeReseed domain.InventoryLot
+	require.NoError(t, db.Where("id = ?", userMovement.InventoryLotID).Take(&beforeReseed).Error)
+
+	_, err = service.SeedData(context.Background(), false, users)
+	require.NoError(t, err)
+	var afterReseed domain.InventoryLot
+	require.NoError(t, db.Where("id = ?", userMovement.InventoryLotID).Take(&afterReseed).Error)
+	assert.InDelta(t, beforeReseed.AvailableQuantity-18, afterReseed.AvailableQuantity, 0.001)
+}
+
 func setupRetailDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open("file:"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
@@ -90,7 +167,12 @@ func setupRetailDB(t *testing.T) *gorm.DB {
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
-	require.NoError(t, db.AutoMigrate(&domain.Store{}, &domain.Order{}, &domain.OutboxEvent{}, &domain.InboxEvent{}))
+	require.NoError(t, db.AutoMigrate(
+		&domain.Store{}, &domain.Menu{}, &domain.MenuItem{}, &domain.Order{},
+		&domain.InventoryLot{}, &domain.Sale{}, &domain.SaleItem{},
+		&domain.StockMovement{}, &domain.StoreMenuInventory{},
+		&domain.OutboxEvent{}, &domain.InboxEvent{},
+	))
 	return db
 }
 

@@ -12,7 +12,7 @@ owner: shared
 | Farm Role Contract | M2 | ADR-0009 | Identity, Casbin, backend, and frontend accept only `FARM_MANAGER` for farm operators | yes | yes | no | partial | implemented | Casbin/farm tests, FE 9/9, lint pass; build lock blocked |
 | Logistics Map | M2 | LOG-01 | Map route filtering and light mode | no | no | yes | no | implemented | verified |
 | Order Saga | M2 | SAGA-01 | Inventory reservation flow | yes | yes | no | no | implemented | verified |
-| Public Sold-Cup QR Trace | M2 | RR-URG-07A..07E | UI-issued sold-item `product_id` resolves to sanitized origin trace | planned | planned | planned | planned | planned | pending |
+| Public Sold-Cup QR Trace | M2 | RR-URG-07A..07E | UI-issued sold-item `product_id` resolves to sanitized origin trace | partial | partial | planned | partial | partial | 07A unit/SQLite seed and PostgreSQL migration pass; live PostgreSQL seed path pending |
 | Fresh Setup And Admin Bootstrap | M1 | Bootstrap | Reset, admin login, first-run seed, resource assignment visibility | partial | partial | pending | partial | partial | Legacy TC-1.* consolidated; needs current evidence refresh |
 | Upstream Farm To Warehouse | M2 | Farm/Warehouse/Logistics | Harvest declaration, pickup dispatch, driver route, warehouse intake | pending | pending | pending | pending | planned | Legacy TC-2.* consolidated |
 | Downstream Warehouse To Retail | M2 | Retail/Payment/Warehouse/Logistics | Store order, payment pass/fail, stock reservation, dispatch, return to base | partial | partial | pending | pending | partial | Legacy TC-3.* consolidated |

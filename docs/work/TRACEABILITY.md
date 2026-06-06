@@ -27,7 +27,7 @@ This file maps high-level Runtime Roasters requirements to tickets, evidence, de
 | Farm-to-warehouse pickup flow | Emergency sprint | RR-URG-03, RR-URG-04 | Ticket docs | Pending final sprint evidence | Active | `docs/work/tickets/sprint10/` | TBD |
 | Paid order fulfillment and delivery return | Emergency sprint | RR-URG-05 | Ticket docs | Passed targeted evidence before RR-URG-07 | Active | `docs/work/tickets/sprint10/RR-URG-05/ticket.md` | TBD |
 | Realtime notifications | Emergency sprint | RR-URG-06 | Ticket docs | Unit, integration, E2E, platform evidence recorded | Active | `docs/work/tickets/sprint10/RR-URG-06/ticket.md` | TBD |
-| Public sold-cup QR trace | Emergency sprint | RR-URG-07A to RR-URG-07E | Required per split ticket | Pending | Active | `docs/work/tickets/sprint10/RR-URG-07/ticket.md` | TBD |
+| Public sold-cup QR trace | Emergency sprint | RR-URG-07A to RR-URG-07E | 07A implemented; 07B-07D required | 07A evidence recorded | 07A docs reviewed | ADR-0010, `docs/work/tickets/sprint10/RR-URG-07/ticket.md` | TBD |
 | Deterministic demo seeding | Bootstrap/demo | RR-URG-08 | Ticket docs | Pending final seed verification | Active | `docs/requirements/MASTER_DATA.md` | TBD |
 
 ## Rules

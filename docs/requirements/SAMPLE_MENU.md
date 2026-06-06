@@ -1,11 +1,29 @@
-# 📋 Highlands Coffee Menu - Coffee Items Only
+---
+artifact_type: sample_menu_requirement
+id: SAMPLE_MENU
+status: active
+owner: human
+updated: 2026-06-06
+---
 
-Highlands Coffee nổi tiếng với hương vị cà phê Phin đậm đà truyền thống và các sản phẩm cà phê thế hệ mới. Dưới đây là đặc tả chi tiết các sản phẩm cà phê trong menu kèm theo mô tả và khoảng giá tham khảo theo các size (S, M, L).
+# Highlands Coffee Menu - Coffee Items Only
+
+## Runtime Roasters Contract
+
+This human-provided menu is the canonical source for RR-URG-07 sellable coffee names, descriptions, sizes, and prices.
+
+- Each priced drink-size cell becomes one menu_items row.
+- Cells containing a dash do not create a sellable item.
+- The current menu produces 15 product groups and 42 sellable items.
+- Serving consumption is a Runtime Roasters demo inventory assumption:
+  - PHIN, ESPRESSO, FREEZE: S=18g, M=22g, L=25g.
+  - PHINDI: S=16g, M=20g, L=24g.
+- Phin, PhinDi, and Freeze consume BEAN-ROBUSTA-ROASTED.
+- Espresso category items consume BEAN-ARABICA-ROASTED.
 
 ---
 
-## 1. Cà Phê Phin (Traditional Vietnamese Phin Coffee)
-*Dòng sản phẩm cốt lõi làm nên thương hiệu Highlands Coffee, được pha chế bằng phin nhôm truyền thống cho ra hương vị đậm đặc, mạnh mẽ.*
+## 1. Cà Phê Phin
 
 | Drink Name (Vietnamese) | English / Description | Size S (VND) | Size M (VND) | Size L (VND) |
 | :--- | :--- | :---: | :---: | :---: |
@@ -17,8 +35,7 @@ Highlands Coffee nổi tiếng với hương vị cà phê Phin đậm đà truy
 
 ---
 
-## 2. PhinDi (Modernized Phin Coffee)
-*Dòng sản phẩm cà phê Phin thế hệ mới với chất cà phê êm nhẹ hơn, kết hợp cùng các loại sốt và kem béo ngọt, rất được giới trẻ ưa chuộng.*
+## 2. PhinDi
 
 | Drink Name (Vietnamese) | English / Description | Size S (VND) | Size M (VND) | Size L (VND) |
 | :--- | :--- | :---: | :---: | :---: |
@@ -28,8 +45,7 @@ Highlands Coffee nổi tiếng với hương vị cà phê Phin đậm đà truy
 
 ---
 
-## 3. Cà Phê Espresso (Espresso & European Style)
-*Dòng cà phê máy hiện đại theo phong cách phương Tây dành cho những người thích vị cà phê nhẹ nhàng và hương thơm espresso.*
+## 3. Cà Phê Espresso
 
 | Drink Name (Vietnamese) | English / Description | Size S (VND) | Size M (VND) | Size L (VND) |
 | :--- | :--- | :---: | :---: | :---: |
@@ -41,8 +57,7 @@ Highlands Coffee nổi tiếng với hương vị cà phê Phin đậm đà truy
 
 ---
 
-## 4. Coffee-Based Freeze (Ice-Blended Beverages)
-*Dòng thức uống đá xay vị cà phê truyền thống của Highlands, phủ một lớp kem tươi (whipped cream) và thạch cà phê.*
+## 4. Coffee-Based Freeze
 
 | Drink Name (Vietnamese) | English / Description | Size S (VND) | Size M (VND) | Size L (VND) |
 | :--- | :--- | :---: | :---: | :---: |

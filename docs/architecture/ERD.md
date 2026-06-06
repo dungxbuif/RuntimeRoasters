@@ -54,7 +54,28 @@ erDiagram
 | Entity | Description |
 | :--- | :--- |
 | **RetailStore** | Coffee shop location. |
-| **Order** | Customer order containing multiple SKUs. |
+| **Order** | Existing warehouse supply-order workflow. |
+| **Menu** | Versionable chain-wide menu. |
+| **MenuItem** | One sellable drink-size entry from SAMPLE_MENU.md. |
+| **InventoryLot** | Store stock with upstream harvest/batch/warehouse lineage. |
+| **Sale** | Public POS invoice, separate from supply orders. |
+| **SaleItem** | One sold cup, UI-issued `product_id`, and QR identity. |
+| **StockMovement** | Immutable received/sold/adjustment ledger. |
+| **StoreMenuInventory** | Materialized available units by store and menu item. |
+
+```mermaid
+erDiagram
+    RETAIL_STORE ||--o{ ORDER : "places supply order"
+    MENU ||--o{ MENU_ITEM : "contains"
+    RETAIL_STORE ||--o{ INVENTORY_LOT : "holds"
+    RETAIL_STORE ||--o{ SALE : "issues"
+    SALE ||--|{ SALE_ITEM : "contains sold cups"
+    MENU_ITEM ||--o{ SALE_ITEM : "snapshotted by"
+    INVENTORY_LOT ||--o{ SALE_ITEM : "provides lineage"
+    INVENTORY_LOT ||--o{ STOCK_MOVEMENT : "has ledger"
+    RETAIL_STORE ||--o{ STORE_MENU_INVENTORY : "materializes"
+    MENU_ITEM ||--o{ STORE_MENU_INVENTORY : "available at"
+```
 
 ### Logistics Service
 | Entity | Description |

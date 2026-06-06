@@ -551,38 +551,49 @@ Store database IDs remain deterministic UUIDs. Logistics location IDs remain rea
 
 ### RR-URG-07A Retail Dataset
 
-Canonical menu table: `retail_menu_items`. Contract identifier: `menu_item_id`.
+Canonical catalog tables are menus and menu_items. The API contract calls
+menu_items.id a menu_item_id.
 
-Planned menu:
+docs/requirements/SAMPLE_MENU.md is the source of truth for drink names,
+descriptions, available sizes, and prices. One priced drink-size cell is one
+sellable menu_items row. The current dataset has:
 
-| Menu Item ID | SKU | Name | Coffee Type | Price |
-| --- | --- | --- | --- | ---: |
-| `MENU-ESPRESSO-001` | `CUP-ESPRESSO` | Espresso | `ARABICA` | 45000 |
-| `MENU-AMERICANO-001` | `CUP-AMERICANO` | Americano | `ARABICA` | 50000 |
-| `MENU-LATTE-001` | `CUP-LATTE` | Cafe Latte | `ARABICA` | 65000 |
-| `MENU-CAPPUCCINO-001` | `CUP-CAPPUCCINO` | Cappuccino | `ARABICA` | 65000 |
-| `MENU-PHIN-ROBUSTA-001` | `CUP-PHIN-RB` | Vietnamese Phin | `ROBUSTA` | 40000 |
-| `MENU-MILK-COFFEE-001` | `CUP-MILK-RB` | Vietnamese Milk Coffee | `ROBUSTA` | 48000 |
+- 1 active menu: MENU-COFFEE-DEFAULT.
+- 15 product groups.
+- 42 sellable drink-size items.
+- PHIN, PHINDI, and FREEZE mapped to BEAN-ROBUSTA-ROASTED.
+- ESPRESSO mapped to BEAN-ARABICA-ROASTED.
 
 Planned 07A baseline:
 
-- 6 active chain-wide menu items.
+- 42 active chain-wide menu items.
 - 5 stores.
 - 2 to 4 retail inventory lots per store.
 - Every store has both Arabica and Robusta availability.
 - At least two stores receive lots from more than one warehouse/batch lineage.
 - 3 to 8 completed sales per store.
-- 1 to 3 sale items per invoice.
-- 20 to 40 sold items system-wide.
+- One sale item per sold cup and QR identity.
+- 25 deterministic sold items in the 07A baseline.
 - Every sold item has unique UI-style `product_id`, for example `RR-PROD-HK-0001`.
 - `trace_code = product_id`.
-- Every sale item references exactly one `menu_item_id` and one `retail_inventory_lot_id`.
+- Every sale item references exactly one menu_item_id and one inventory_lot_id.
 - Stock movement history is authoritative:
 
 ```text
 received_quantity = sum(RECEIVED quantity_delta)
 available_quantity = sum(all quantity_delta)
 ```
+
+store_menu_inventories materializes store-level availability. Reads do not run
+SUM(FLOOR(...)) over lots. Stock writes and reconciliation rebuild:
+
+```text
+available_units(item, store)
+= sum(floor(lot.available_quantity / item.consumption_quantity))
+```
+
+The floor is applied per lot because one sold cup must derive lineage from one
+lot; remainder quantities from separate lots are not combined.
 
 ## 8. Canonical Historical Demo Scenarios
 
@@ -845,7 +856,8 @@ The following must be corrected as tickets are implemented:
 
 - `Taskfile.yml` currently runs specific `000001` migration files instead of all migrations in order.
 - Several migrations currently insert stores, farms, fleet, locations, inventory, or webhook demo rows.
-- Retail fixtures use `mgr.hcm.q1/q7`, while auth creates `mgr.hcm.d1/d7`.
+- Resolved in RR-URG-07A: Retail fixtures use canonical
+  `mgr.hcm.d1/d7` identities.
 - Older docs list non-canonical manager aliases.
 - Logistics code defines `ROASTERY`, while fixtures use `WAREHOUSE`.
 - Admin seed currently fans out only to Farm, Retail, Logistics, and Warehouse.
@@ -853,4 +865,5 @@ The following must be corrected as tickets are implemented:
 - Historical `task seed:demo` uses unseeded randomness and wall-clock time, so it is not reproducible.
 - `deployments/reset-demo-state.sh` resets runtime state but does not run migrations or Admin seed.
 
-RR-URG-07A must follow this document for `retail_menu_items`, inventory lots, sales, sold-item `product_id`, and stock movements.
+RR-URG-07A follows this document for menus, menu items, inventory lots, sales,
+sold-item `product_id`, stock movements, and materialized availability.

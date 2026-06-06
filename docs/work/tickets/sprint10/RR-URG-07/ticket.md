@@ -32,7 +32,7 @@ No payment, payment simulation, or delivery workflow is required inside the cup 
 
 | Ticket | Scope | Depends On |
 | :--- | :--- | :--- |
-| [RR-URG-07A](./subtickets/RR-URG-07A/ticket.md) | Retail menu items, retail inventory lots, sales, sale items, stock movements, seed data | RR-URG-05 |
+| [RR-URG-07A](./subtickets/RR-URG-07A/ticket.md) | Menus, menu items, store inventory lots, sales, sold cups, movements, availability, seed data | RR-URG-05 |
 | [RR-URG-07B](./subtickets/RR-URG-07B/ticket.md) | Public demo sale APIs, manager sold-items APIs, event contract | RR-URG-07A |
 | [RR-URG-07C](./subtickets/RR-URG-07C/ticket.md) | Trace-service hybrid public lookup by `product_id`/`trace_code` | RR-URG-07A, RR-URG-07B |
 | [RR-URG-07D](./subtickets/RR-URG-07D/ticket.md) | Public POS UI, invoice modal, QR rendering, sold-items UI | RR-URG-07B, RR-URG-07C |
@@ -42,8 +42,8 @@ No payment, payment simulation, or delivery workflow is required inside the cup 
 
 - QR token is UI-issued `product_id`.
 - Backend validates and persists `product_id`; backend does not invent origin from the QR token.
-- Backend derives source lineage from `product_id` plus selected `retail_inventory_lot`.
-- `retail_menu_items` is the chain-wide menu and uses `menu_item_id` in contracts.
+- Backend derives source lineage from `product_id` plus selected `inventory_lot`.
+- `menus` and `menu_items` own the chain-wide catalog; contracts use `menu_item_id`.
 - Store inventory is separate from warehouse inventory.
 - Each sold cup/item maps to exactly one `product_id`.
 - Public trace data is sanitized and no-auth.

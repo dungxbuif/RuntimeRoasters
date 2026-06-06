@@ -67,7 +67,7 @@ Internal dependency:
 - `warehouse`
 - `origin_batch_id`
 - `harvest_id`
-- `retail_inventory_lot_id`
+- `inventory_lot_id`
 - `milestones`
 - `service_participation`
 - `trace_ids`

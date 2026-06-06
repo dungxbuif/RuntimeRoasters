@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"RuntimeRoasters/apps/retail-service/internal/domain"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type CreateOrderRequest struct {
@@ -51,34 +53,51 @@ func (s *Service) SeedStores(ctx context.Context, stores []domain.Store) error {
 }
 
 func (s *Service) GetSystemStatus(ctx context.Context) (*domain.SystemStatus, error) {
-	var storeCount int64
-	s.db.WithContext(ctx).Model(&domain.Store{}).Count(&storeCount)
+	counts := map[string]int64{}
+	models := []struct {
+		name  string
+		model interface{}
+	}{
+		{"stores", &domain.Store{}},
+		{"menus", &domain.Menu{}},
+		{"menu_items", &domain.MenuItem{}},
+		{"inventory_lots", &domain.InventoryLot{}},
+		{"sales", &domain.Sale{}},
+		{"sale_items", &domain.SaleItem{}},
+		{"stock_movements", &domain.StockMovement{}},
+		{"store_menu_inventories", &domain.StoreMenuInventory{}},
+	}
+	for _, entry := range models {
+		var count int64
+		if err := s.db.WithContext(ctx).Model(entry.model).Count(&count).Error; err != nil {
+			return nil, err
+		}
+		counts[entry.name] = count
+	}
 
-	seeded := storeCount > 0
+	seeded := counts["stores"] == 5 &&
+		counts["menus"] >= 1 &&
+		counts["menu_items"] == 42 &&
+		counts["inventory_lots"] >= 10 &&
+		counts["sale_items"] >= 20
 
 	return &domain.SystemStatus{
-		Seeded:      seeded,
-		ServiceName: "retail-service",
-		RecordCounts: map[string]int64{
-			"stores": storeCount,
-		},
+		Seeded:       seeded,
+		ServiceName:  "retail-service",
+		RecordCounts: counts,
 	}, nil
 }
 
 func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]string) (*domain.SeedResult, error) {
-	status, err := s.GetSystemStatus(ctx)
+	stores, err := retailseed.LoadStores()
 	if err != nil {
 		return nil, err
 	}
-
-	if status.Seeded && !force {
-		return &domain.SeedResult{
-			Success: true,
-			Message: "System already seeded",
-		}, nil
+	menu, menuItems, err := retailseed.LoadMenu()
+	if err != nil {
+		return nil, err
 	}
-
-	stores, err := retailseed.LoadStores()
+	demo, err := retailseed.BuildDemoData(stores, menuItems)
 	if err != nil {
 		return nil, err
 	}
@@ -88,31 +107,176 @@ func (s *Service) SeedData(ctx context.Context, force bool, usersMap map[string]
 		if id, ok := usersMap[stores[i].ManagerEmail]; ok {
 			stores[i].ManagerID = id
 		} else {
-			logger.GetLogger().Warn("Manager email not found in users_map during seeding", 
-				zap.String("email", stores[i].ManagerEmail), 
+			logger.GetLogger().Warn("Manager email not found in users_map during seeding",
+				zap.String("email", stores[i].ManagerEmail),
 				zap.String("store", stores[i].Name))
 		}
 	}
 
-	if err := s.SeedStores(ctx, stores); err != nil {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := upsertSeedRows(tx, stores); err != nil {
+			return fmt.Errorf("seed stores: %w", err)
+		}
+		if err := upsertSeedRows(tx, []domain.Menu{menu}); err != nil {
+			return fmt.Errorf("seed menus: %w", err)
+		}
+		if err := upsertSeedRows(tx, menuItems); err != nil {
+			return fmt.Errorf("seed menu items: %w", err)
+		}
+		if err := insertSeedRows(tx, demo.Lots); err != nil {
+			return fmt.Errorf("seed inventory lots: %w", err)
+		}
+		if err := insertSeedRows(tx, demo.Sales); err != nil {
+			return fmt.Errorf("seed sales: %w", err)
+		}
+		if err := insertSeedRows(tx, demo.SaleItems); err != nil {
+			return fmt.Errorf("seed sale items: %w", err)
+		}
+		if err := insertSeedRows(tx, demo.Movements); err != nil {
+			return fmt.Errorf("seed stock movements: %w", err)
+		}
+		if err := rebuildLotBalances(ctx, tx); err != nil {
+			return fmt.Errorf("rebuild inventory lot balances: %w", err)
+		}
+		for _, store := range stores {
+			if err := rebuildStoreMenuInventory(ctx, tx, store.ID); err != nil {
+				return fmt.Errorf("rebuild store menu inventory for %s: %w", store.Code, err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
+	records := int64(len(stores) + 1 + len(menuItems) + len(demo.Lots) + len(demo.Sales) + len(demo.SaleItems) + len(demo.Movements))
 	return &domain.SeedResult{
 		Success:        true,
-		Message:        "Successfully seeded retail data",
-		RecordsCreated: int64(len(stores)),
+		Message:        "Successfully reconciled retail master and demo data",
+		RecordsCreated: records,
 	}, nil
+}
+
+func upsertSeedRows[T any](tx *gorm.DB, rows []T) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	return tx.Omit(clause.Associations).Clauses(clause.OnConflict{UpdateAll: true}).Create(&rows).Error
+}
+
+func insertSeedRows[T any](tx *gorm.DB, rows []T) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	return tx.Omit(clause.Associations).Clauses(clause.OnConflict{DoNothing: true}).Create(&rows).Error
+}
+
+func rebuildLotBalances(ctx context.Context, tx *gorm.DB) error {
+	var lots []domain.InventoryLot
+	if err := tx.WithContext(ctx).Find(&lots).Error; err != nil {
+		return err
+	}
+	type lotBalance struct {
+		InventoryLotID string
+		Balance        float64
+	}
+	var balances []lotBalance
+	if err := tx.WithContext(ctx).Model(&domain.StockMovement{}).
+		Select("inventory_lot_id, SUM(quantity_delta) AS balance").
+		Group("inventory_lot_id").
+		Scan(&balances).Error; err != nil {
+		return err
+	}
+	byLot := make(map[string]float64, len(balances))
+	for _, balance := range balances {
+		byLot[balance.InventoryLotID] = balance.Balance
+	}
+	for _, lot := range lots {
+		balance := byLot[lot.ID]
+		if balance < 0 {
+			return fmt.Errorf("inventory lot %s has negative ledger balance %.3f", lot.ID, balance)
+		}
+		updates := map[string]interface{}{"available_quantity": balance}
+		if lot.Status != domain.InventoryLotStatusBlocked {
+			status := domain.InventoryLotStatusAvailable
+			if balance == 0 {
+				status = domain.InventoryLotStatusDepleted
+			}
+			updates["status"] = status
+		}
+		if err := tx.WithContext(ctx).Model(&domain.InventoryLot{}).
+			Where("id = ?", lot.ID).Updates(updates).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func rebuildStoreMenuInventory(ctx context.Context, tx *gorm.DB, storeID string) error {
+	var items []domain.MenuItem
+	if err := tx.WithContext(ctx).
+		Joins("JOIN menus ON menus.id = menu_items.menu_id").
+		Where("menu_items.active = ? AND menus.status = ?", true, domain.MenuStatusActive).
+		Find(&items).Error; err != nil {
+		return err
+	}
+
+	var lots []domain.InventoryLot
+	if err := tx.WithContext(ctx).
+		Where("store_id = ? AND status = ?", storeID, domain.InventoryLotStatusAvailable).
+		Find(&lots).Error; err != nil {
+		return err
+	}
+
+	now := time.Now()
+	for _, item := range items {
+		var availableUnits int64
+		var activeLotCount int64
+		for _, lot := range lots {
+			if lot.StockSKU != item.StockSKU || lot.AvailableQuantity <= 0 {
+				continue
+			}
+			if lot.ExpiresAt != nil && !lot.ExpiresAt.After(now) {
+				continue
+			}
+			units := int64(math.Floor(lot.AvailableQuantity / item.ConsumptionQuantity))
+			if units <= 0 {
+				continue
+			}
+			availableUnits += units
+			activeLotCount++
+		}
+		row := domain.StoreMenuInventory{
+			StoreID: storeID, MenuItemID: item.ID, AvailableUnits: availableUnits,
+			ActiveLotCount: activeLotCount, Version: 1, UpdatedAt: now,
+		}
+		if err := tx.WithContext(ctx).Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "store_id"}, {Name: "menu_item_id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"available_units":  availableUnits,
+				"active_lot_count": activeLotCount,
+				"version":          gorm.Expr("store_menu_inventories.version + 1"),
+				"updated_at":       now,
+			}),
+		}).Create(&row).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Service) CreateStore(ctx context.Context, store domain.Store) (domain.Store, error) {
 	if store.ID == "" {
 		store.ID = uuid.NewString()
 	}
+	if store.Code == "" {
+		codeID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(store.Name+"|"+store.City)).String()
+		store.Code = "STORE-" + codeID[:8]
+	}
 	now := time.Now()
 	store.CreatedAt = now
 	store.UpdatedAt = now
-	
+
 	err := s.db.WithContext(ctx).Where("name = ? AND city = ?", store.Name, store.City).FirstOrCreate(&store).Error
 	return store, err
 }

@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-URG-07A
-status: ready
+status: in_review
 owner: shared
 priority: high
 lane: high-risk
@@ -10,6 +10,9 @@ trace:
   requirement: REQ-QR-001
   phase: PHASE-2
   detail_design: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md
+  test_verification: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/test_verification.md
+  docs_review: docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/docs_review.md
+  adr: docs/decisions/0010-retail-sales-and-availability.md
   validation_matrix: docs/work/VALIDATION_MATRIX.md
 ---
 
@@ -31,18 +34,24 @@ This ticket does not implement UI or retail-service public lookup.
 
 ## Data Model
 
-`retail_menu_items`:
+`menus`:
+
+- versionable chain-wide catalog
+- one active baseline menu: `MENU-COFFEE-DEFAULT`
+
+`menu_items`:
 
 - `id` (`menu_item_id` in application/API contracts)
-- `product_code`
-- `sku`
+- product group, category, and size
+- stock SKU and coffee type
 - `name`
 - `price`
+- serving consumption in grams
 - `active`
 - `created_at`
 - `updated_at`
 
-`retail_inventory_lots`:
+`inventory_lots`:
 
 - `id`
 - `store_id`
@@ -57,7 +66,7 @@ This ticket does not implement UI or retail-service public lookup.
 - `created_at`
 - `updated_at`
 
-`retail_sales`:
+`sales`:
 
 - `id`
 - `store_id`
@@ -68,7 +77,7 @@ This ticket does not implement UI or retail-service public lookup.
 - `idempotency_key`
 - `created_at`
 
-`retail_sale_items`:
+`sale_items`:
 
 - `id`
 - `sale_id`
@@ -76,32 +85,39 @@ This ticket does not implement UI or retail-service public lookup.
 - `menu_item_id`
 - `sku`
 - `product_name`
-- `retail_inventory_lot_id`
-- `quantity`
+- `inventory_lot_id`
+- one row per sold cup
 - `unit_price`
 - `product_id`
 - `trace_code`
 - `public_url`
 - `sold_at`
 
-`retail_stock_movements`:
+`stock_movements`:
 
 - `id`
 - `store_id`
 - `sku`
-- `retail_inventory_lot_id`
+- `inventory_lot_id`
 - `movement_type`: `RECEIVED`, `SOLD`, `ADJUSTMENT`
 - `quantity_delta`
 - `reference_type`: `SEED`, `SALE_ITEM`
 - `reference_id`
 - `occurred_at`
 
+`store_menu_inventories`:
+
+- `store_id`
+- `menu_item_id`
+- materialized `available_units`
+- active lot count and reconciliation version
+
 ## Seed Requirements
 
-- Seed at least 2 active chain-wide coffee products.
-- Seed store inventory lots for Hoan Kiem and District 1 stores.
+- Seed the 42 sellable drink-size items from `SAMPLE_MENU.md`.
+- Seed Arabica and Robusta inventory lots for all five stores.
 - Each inventory lot must have source lineage: batch, harvest, warehouse where known.
-- Seed at least 3 completed sales/invoices.
+- Seed 25 completed sales/invoices and sold cups.
 - Each seeded sold item must have a deterministic UI-style `product_id`, for example `RR-CUP-HK-0001`.
 - For seeded sold items, stock movements must already decrement inventory.
 

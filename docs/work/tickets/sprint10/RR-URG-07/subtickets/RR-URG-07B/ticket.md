@@ -69,11 +69,11 @@ In one DB transaction:
 4. Select one retail inventory lot for the store/SKU.
    - Demo selection may be random.
    - Production replacement is FIFO/FEFO.
-5. Create `retail_sales`.
-6. Create `retail_sale_items`.
+5. Create `sales`.
+6. Create `sale_items`.
 7. Set `trace_code = product_id`.
-8. Decrement `retail_inventory_lots.available_quantity`.
-9. Insert `retail_stock_movements`.
+8. Decrement `inventory_lots.available_quantity`.
+9. Insert `stock_movements` and reconcile `store_menu_inventories`.
 10. Insert outbox event `retail.sale.completed`.
 
 ## Event Contract
@@ -93,7 +93,7 @@ Payload:
   - `sku`
   - `product_name`
   - `quantity`
-  - `retail_inventory_lot_id`
+   - `inventory_lot_id`
   - `trace_code`
   - `public_url`
   - `source_batch_id`

@@ -14,6 +14,16 @@ Last Updated: 2026-06-06
 **HEAD:** `7663268 RR-URG-07 start trace public QR`
 
 ### Active Dirty Changes
+- RR-URG-07A Retail schema and seed implementation:
+  - rewrote the development `000001_init.up.sql` without business inserts.
+  - added `menus`, 42 `menu_items` from `SAMPLE_MENU.md`, inventory lots,
+    sales, one-cup sale items, stock movements, and materialized availability.
+  - seeded 5 stores, 10 lineage lots, 25 sold cups, and 210 store-menu
+    availability rows deterministically.
+  - added ledger reconciliation and insert-if-absent demo semantics so re-seed
+    does not reset user runtime movements.
+  - recorded ADR-0010 and reconciled SDD, ERD, master data, tickets, validation,
+    traceability, and release notes.
 - `docs/architecture/SDD/README.md` and `docs/architecture/README.md`: added the missing system-level Software Design Document, consolidating system boundaries, service ownership, primary flows, data/security/runtime design, failure handling, verification, and links to canonical master docs.
 - `src/apps/client-app/src/constants/casbin.ts`: frontend Casbin matcher now allows direct role policy matching (`r.sub == p.sub`) as well as inherited role matching (`g(r.sub, p.sub)`), fixing frontend unit failures where role policies such as `STORE_MGR` did not evaluate.
 - `src/apps/socket-service/internal/app/app_test.go`: added socket-service route integration coverage for private stream ticket requirement, public WebSocket access, ticketed private WebSocket access, and one-time ticket rejection.
@@ -32,6 +42,11 @@ Last Updated: 2026-06-06
   - Consolidated legacy non-template docs into Harness targets: requirements, master data, UI design, operations, canonical standards, roadmap, and validation matrix; removed duplicate legacy files after review.
 
 ### Outstanding Verification
+- RR-URG-07A targeted Retail tests passed:
+  - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/retail-service/...`
+- RR-URG-07A fresh PostgreSQL migration passed on `retail_07a_test`.
+- Opt-in live PostgreSQL service seed test remains pending because localhost
+  network access was denied by the execution sandbox.
 - RR-URG-06 targeted backend passed:
   - `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/socket-service/... ./apps/auth-service/internal/infrastructure/casbin/...`
 - Frontend checks passed:
@@ -98,9 +113,11 @@ Last Updated: 2026-06-06
 
 ## Active Work (Harness v1)
 - **Harness Migration:** Upgrading to Harness v1 (Pure Markdown) - structure reconciled against cloned Harness reference; content was rewritten/merged from RuntimeRoasters docs rather than blindly copied.
-- **Next Up:** RR-URG-07A (Retail Sale Schema And Seed Data).
-- RR-URG-07A detail design drafted at `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md`; implementation awaits human approval because it changes database schema and seed behavior.
-- `docs/requirements/MASTER_DATA.md` is now the canonical contract for all seed data and domain enums. It defines separate migration/Admin seed flows, deterministic SHA-256-based scenario variation, RR-URG-07A menu/lot/sale data, integrity rules, and current implementation drift.
+- **Next Up:** finish the live PostgreSQL seed check, then RR-URG-07B Retail Demo Sale APIs.
+- RR-URG-07A is in review at
+  `docs/work/tickets/sprint10/RR-URG-07/subtickets/RR-URG-07A/technical_design.md`.
+- `docs/architecture/SDD/MASTER_DATA.md` is the canonical contract for seed
+  data and domain enums; `docs/requirements/SAMPLE_MENU.md` owns menu content.
 - Farm role contract simplified by ADR-0009: `FARM_MANAGER` is the only farm operator role; the duplicate role was removed from Kratos, Casbin, farm-service, frontend types/options, tests, and docs.
 - FARM_MANAGER-only verification:
   - repository-wide removed-role scan returned no matches.

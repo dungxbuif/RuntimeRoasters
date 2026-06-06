@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 - Core architecture docs (API, ERD, INTEGRATIONS).
 - Unified standard docs.
 - Reviewed Harness v1 runtime docs: feedback log, traceability matrix, requirements index, user stories, engineering setup/local/troubleshooting guides, work-area indexes/templates, and RR-URG-07A through RR-URG-07E split tickets.
+- RR-URG-07A Retail catalog, inventory lineage, sold-cup sales, stock ledger,
+  and materialized store-menu availability schema and deterministic seed.
+- ADR-0010 for Retail naming and availability optimization.
 
 ### Changed
 - Reconciled migrated docs with Harness v1 folder structure and replaced stale pre-Harness product/story/feedback references with current Harness paths.
@@ -14,3 +17,5 @@ All notable changes to this project will be documented in this file.
 - Consolidated reviewed legacy non-template docs into Harness target files and removed duplicate legacy docs.
 - Replaced legacy seed notes with a canonical master-data/enum contract covering migration flow, Admin seed flow, reproducible demo variation, and RR-URG-07A retail data.
 - Removed the duplicate farm administration role; `FARM_MANAGER` is now the only farm-domain operator role across identity, authorization, backend, frontend, seed data, and documentation.
+- Rewrote the Retail development migration and adopted 42 sellable drink-size
+  entries from `docs/requirements/SAMPLE_MENU.md`.

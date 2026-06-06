@@ -289,7 +289,10 @@ The QR token is an identifier, not an encoded provenance document. `menu_item_id
 - Cross-service references use stable identifiers and are validated through contracts or seed integrity checks.
 - Cross-database foreign keys are not used.
 - Workflow-critical fields such as status, owner/entity scope, and identifiers use typed/indexed columns rather than opaque JSON only.
-- Migrations are additive and reviewed; GORM `AutoMigrate` is a development compatibility mechanism, not the production schema contract.
+- Migrations are reviewed schema contracts. During development, an approved
+  ticket may rewrite a service's initial migration and require a fresh reset.
+  GORM `AutoMigrate` remains a compatibility mechanism, not the production
+  schema contract.
 
 ### Consistency And Idempotency
 
@@ -298,6 +301,37 @@ The QR token is an identifier, not an encoded provenance document. `menu_item_id
 - Inbox/message IDs prevent duplicate consumer effects.
 - SAGA events coordinate multi-service success and compensation.
 - Deterministic seed IDs and upserts make reset/replay safe.
+
+### Retail Availability Read Model
+
+Retail uses three related representations:
+
+| Representation | Role |
+| --- | --- |
+| `stock_movements` | Immutable inventory ledger and reconciliation authority |
+| `inventory_lots.available_quantity` | Cached balance and lineage for one lot |
+| `store_menu_inventories.available_units` | Materialized store-menu read model |
+
+Availability is rebuilt when stock changes:
+
+```text
+available_units
+= sum(floor(lot.available_quantity / menu_item.consumption_quantity))
+```
+
+The calculation is grouped by store and `stock_sku`, with floor applied per
+lot. One sold cup therefore resolves to one inventory lot and one provenance
+chain; remainders from different lots are not combined.
+
+Public menu APIs read `store_menu_inventories` instead of aggregating lots on
+every request. This shifts work to stock mutations and reconciliation. Valkey
+was rejected for this phase because PostgreSQL can update lot, movement, and
+availability state in one transaction, while a distributed cache introduces
+invalidation and dual-write failures.
+
+Runtime demo rows use insert-if-absent semantics. Re-running Admin seed keeps
+user transactions, then rebuilds lot balances and menu availability from the
+complete movement ledger.
 
 ## 10. Security And Privacy
 
