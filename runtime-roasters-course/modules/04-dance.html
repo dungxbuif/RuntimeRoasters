@@ -1,0 +1,46 @@
+<section class="module" id="module-4" style="background: var(--color-bg-cool)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">The Retail Dance</h1>
+      <p class="module-subtitle">Ensuring perfect order in a complex world.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A Choreographed Performance</h2>
+        <p>When you buy a coffee, five different things must happen in perfect order: Pay ➔ Reserve Beans ➔ Update Stock ➔ Confirm.</p>
+        <div class="callout">
+          <div class="callout-icon">💃</div>
+          <div class="callout-content">
+             <strong class="callout-title">The Saga Pattern</strong>
+             <p>This ensures that complex actions involving many services either all succeed together or fail safely without leaving a mess.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+         <h2 class="screen-heading">The Fulfillment Saga</h2>
+         <div class="pipeline-container">
+            <div class="pipeline-steps">
+               <div class="pipeline-step active" data-tooltip="Payment Verified">💰 Paid</div>
+               <div class="pipeline-step" data-tooltip="Inventory Locked">📦 Reserved</div>
+               <div class="pipeline-step" data-tooltip="En Route to Store">🚚 Shipping</div>
+               <div class="pipeline-step" data-tooltip="Final Confirmation">✅ Done</div>
+            </div>
+         </div>
+      </section>
+
+      <section class="screen animate-in">
+         <h2 class="screen-heading">Handling Mistakes</h2>
+         <div class="pattern-card pattern-card-accent">
+            <div class="pattern-header">
+               <div class="pattern-icon">↩️</div>
+               <h3 class="pattern-title">Compensating Actions</h3>
+            </div>
+            <p class="pattern-desc">If the stock reservation fails, the system automatically triggers a 'Refund' to the customer. No money is lost, no data is left hanging.</p>
+         </div>
+      </section>
+    </div>
+  </div>
+</section>

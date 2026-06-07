@@ -1,0 +1,61 @@
+<section class="module" id="module-3" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">The Logistics Pulse</h1>
+      <p class="module-subtitle">How events move physical coffee through digital wires.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The System's Nervous System</h2>
+        <p>A harvest is sitting at the farm. How does the Warehouse know it's time to send a truck? They listen for a <strong>Pulse</strong>.</p>
+        <div class="callout callout-accent">
+          <div class="callout-icon">⚡</div>
+          <div class="callout-content">
+            <strong class="callout-title">React, Don't Ask</strong>
+            <p>Our system is <strong>Event-Driven</strong>. It reacts to things that happen, rather than asking "is anything new?" every second.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Pulse Signal</h2>
+        <div class="translation-block">
+          <div class="translation-code">
+             <span class="translation-label">topics.go</span>
+             <pre><code><span class="code-line"><span class="code-keyword">const</span> (</span>
+<span class="code-line">  TopicFarmHarvestCreated = <span class="code-string">"farm.harvest.created"</span></span>
+<span class="code-line">  TopicLogisticsGpsUpdated = <span class="code-string">"logistics.driver.gps_updated"</span></span>
+<span class="code-line">)</span></code></pre>
+          </div>
+          <div class="translation-english">
+             <span class="translation-label">Translation</span>
+             <div class="translation-lines">
+                <p class="tl">Define constant names for our 'wires'...</p>
+                <p class="tl">The signal sent when cherries are picked.</p>
+                <p class="tl">The signal sent when a truck moves.</p>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+         <h2 class="screen-heading">Real-time GPS Pulse</h2>
+         <div class="flow-animation" id="flow-gps" data-steps='[
+           {"actor": "Truck", "action": "Update GPS", "packet": "LAT: 11.9, LNG: 108.4"},
+           {"actor": "Logistics Service", "action": "Broadcast Pulse", "packet": "gps_updated"},
+           {"actor": "Dashboard", "action": "Move Marker", "packet": "🚚"}
+         ]'>
+            <div class="flow-actors">
+               <div class="flow-actor" data-id="Truck">🚛</div>
+               <div class="flow-actor" data-id="Logistics Service">🖥️</div>
+               <div class="flow-actor" data-id="Dashboard">🗺️</div>
+            </div>
+            <div class="flow-packets"></div>
+            <button class="flow-start-btn">Trigger GPS Pulse</button>
+         </div>
+      </section>
+    </div>
+  </div>
+</section>

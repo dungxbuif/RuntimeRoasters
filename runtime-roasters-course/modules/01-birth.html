@@ -1,0 +1,72 @@
+<section class="module" id="module-1" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">The Bean's Digital Birth</h1>
+      <p class="module-subtitle">How a physical cherry becomes a traceable line of data.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">From Dirt to Data</h2>
+        <p>Imagine you're standing in a Dalat coffee farm, holding a handful of fresh cherries. How does that physical moment become a record that follows the bean halfway across the world?</p>
+        
+        <div class="callout callout-accent">
+          <div class="callout-icon">📜</div>
+          <div class="callout-content">
+            <strong class="callout-title">The Digital Birth Certificate</strong>
+            <p>Just like a newborn gets an ID and a record of where they were born, every coffee harvest gets a permanent digital identity. The journey begins with a <strong>Declaration</strong>. Data isn't just "there" — it has to be born through a deliberate act of recording.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Harvest Object</h2>
+        <div class="translation-block">
+          <div class="translation-code">
+            <span class="translation-label">harvest.go</span>
+            <pre><code><span class="code-line"><span class="code-keyword">type</span> Harvest <span class="code-keyword">struct</span> {</span>
+<span class="code-line">  ID          <span class="code-keyword">uint</span>      <span class="code-string">`json:"id"`</span></span>
+<span class="code-line">  FarmID      <span class="code-keyword">uint</span>      <span class="code-string">`json:"farm_id"`</span></span>
+<span class="code-line">  CoffeeType  <span class="code-keyword">string</span>    <span class="code-string">`json:"coffee_type"`</span></span>
+<span class="code-line">  Quantity    <span class="code-keyword">float64</span>   <span class="code-string">`json:"quantity"`</span></span>
+<span class="code-line">  HarvestDate time.Time <span class="code-string">`json:"harvest_date"`</span></span>
+<span class="code-line">  Status      <span class="code-keyword">string</span>    <span class="code-string">`json:"status"`</span></span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">Translation</span>
+            <div class="translation-lines">
+              <p class="tl">Define a blueprint for a "Harvest"...</p>
+              <p class="tl">Give it a unique permanent ID number...</p>
+              <p class="tl">Record exactly which farm grew it...</p>
+              <p class="tl">Note if it's Arabica or Robusta...</p>
+              <p class="tl">How many kilograms were picked?</p>
+              <p class="tl">When did this happen?</p>
+              <p class="tl">What is its current state? (e.g., "NEW")</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Knowledge Check</h2>
+        <div class="quiz-container" id="quiz-module-1">
+          <div class="quiz-question-block" data-correct="opt-b">
+            <h3 class="quiz-question">Why does the system assign a unique 'ID' to the Harvest instead of just using the date and farm name?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <span>Because dates are hard to format.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <span>A farm might have multiple harvests on the same day. An ID guarantees we never mix them up.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-1')">Check Answer</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,103 @@
+<section class="module" id="module-5" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">Transparent Proof</h1>
+      <p class="module-subtitle">How a single cup of coffee tells its entire life story through data.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Digital Birth Certificate</h2>
+        <p>You scan a <span class="term" data-definition="A Quick Response code — a type of barcode that can be scanned by a phone camera to quickly open a website or see data.">QR code</span> on your cup. Instantly, you see the exact farm in Dalat where the beans were picked. But how does the system "remember" this specific journey?</p>
+        
+        <div class="callout callout-accent">
+          <div class="callout-icon">🔗</div>
+          <div class="callout-content">
+            <strong class="callout-title">The Unbreakable Chain</strong>
+            <p>Imagine a physical chain where each link is welded shut. You can follow it from the end back to the very first link, knowing nothing was removed or faked. In code, we call this <strong>Lineage</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Tracing the Journey</h2>
+        <div class="arch-diagram">
+          <div class="arch-zone">
+            <h4 class="arch-zone-label">The Data Path</h4>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; align-items: center; gap: var(--space-4);">
+              <div class="arch-component" data-desc="ID: CUP-882. Points to the Sale ID.">
+                <div class="arch-icon">☕</div>
+                <span>Sold Cup</span>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="arch-component" data-desc="ID: SALE-441. Points to the Roast Batch ID.">
+                <div class="arch-icon">💰</div>
+                <span>Retail Sale</span>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="arch-component" data-desc="ID: BATCH-112. Points to the Harvest ID.">
+                <div class="arch-icon">🔥</div>
+                <span>Roast Batch</span>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="arch-component" data-desc="ID: HARVEST-009. The origin point.">
+                <div class="arch-icon">🌿</div>
+                <span>Farm Harvest</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The "Story" Object</h2>
+        <div class="translation-block">
+          <div class="translation-code">
+            <span class="translation-label">trace.go</span>
+            <pre><code><span class="code-line"><span class="code-keyword">type</span> TraceDocument <span class="code-keyword">struct</span> {</span>
+<span class="code-line">  ProductID   <span class="code-keyword">string</span> <span class="code-string">`json:"product_id"`</span></span>
+<span class="code-line">  TraceCode   <span class="code-keyword">string</span> <span class="code-string">`json:"trace_code"`</span></span>
+<span class="code-line">  HarvestID   <span class="code-keyword">string</span> <span class="code-string">`json:"harvest_id"`</span></span>
+<span class="code-line">  OriginBatch <span class="code-keyword">string</span> <span class="code-string">`json:"origin_batch_id"`</span></span>
+<span class="code-line">  Milestones  []TraceMilestone <span class="code-string">`json:"milestones"`</span></span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">Translation</span>
+            <div class="translation-lines">
+              <p class="tl">Define a "TraceDocument" container...</p>
+              <p class="tl">Store which product this is...</p>
+              <p class="tl">The unique public code printed on the cup...</p>
+              <p class="tl">The link back to the specific farm harvest...</p>
+              <p class="tl">The link back to the roasting session...</p>
+              <p class="tl">A list of every major event that happened along the way.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Knowledge Check</h2>
+        <div class="quiz-container" id="quiz-module-5">
+          <div class="quiz-question-block" data-correct="opt-c">
+            <h3 class="quiz-question">If we accidentally deleted the Batch ID from a Trace Document, what would happen?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="opt-a" onclick="selectOption(this)">
+                <span>The cup would taste different.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-b" onclick="selectOption(this)">
+                <span>The customer couldn't see their price.</span>
+              </button>
+              <button class="quiz-option" data-value="opt-c" onclick="selectOption(this)">
+                <span>The 'chain' would break, and we couldn't prove which farm the beans came from.</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-5')">Check Answer</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

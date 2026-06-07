@@ -1,0 +1,56 @@
+<section class="module" id="module-6" style="background: var(--color-bg-cool)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">When Nodes Whisper</h1>
+      <p class="module-subtitle">The big picture of a distributed system.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The City at Night</h2>
+        <p>From high up, you see the whole city — traffic moving between buildings, lights turning on and off. Our <strong>Topology</strong> is the city map of our services.</p>
+        <div class="callout callout-accent">
+           <div class="callout-icon">🏙️</div>
+           <div class="callout-content">
+              <strong class="callout-title">Observability</strong>
+              <p>This means being able to see what's happening inside a complex system from the outside. No more "ghost problems".</p>
+           </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+         <h2 class="screen-heading">System Whispers</h2>
+         <div class="chat-container" id="chat-telemetry">
+            <div class="chat-messages" id="chat-messages-telemetry"></div>
+            <button class="chat-next-btn" id="chat-btn-telemetry">Next Message</button>
+         </div>
+         <script>
+            document.addEventListener('DOMContentLoaded', () => {
+              initChat('chat-telemetry', [
+                { sender: "SigNoz", message: "I see a slow request! ⚠️", align: "left", color: "#E06B56" },
+                { sender: "Jaeger", message: "It's coming from the Warehouse Service.", align: "right", color: "#2A7B9B" },
+                { sender: "SigNoz", message: "Found it. Latency is 500ms in the DB query.", align: "left", color: "#D94F30" }
+              ]);
+            });
+         </script>
+      </section>
+
+      <section class="screen animate-in">
+         <h2 class="screen-heading">The Topology Map</h2>
+         <div class="arch-diagram">
+            <div class="arch-zone">
+               <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                  <div class="arch-component glow">Farm</div>
+                  <div class="arch-component glow">Warehouse</div>
+                  <div class="arch-component glow">Retail</div>
+                  <div class="arch-component">Audit</div>
+                  <div class="arch-component">Trace</div>
+                  <div class="arch-component">Auth</div>
+               </div>
+            </div>
+         </div>
+      </section>
+    </div>
+  </div>
+</section>

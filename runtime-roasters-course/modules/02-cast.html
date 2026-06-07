@@ -1,0 +1,68 @@
+<section class="module" id="module-2" style="background: var(--color-bg-cool)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">The Cast of Services</h1>
+      <p class="module-subtitle">Meet the specialized team behind the scenes.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Professional Relay Race</h2>
+        <p>Runtime Roasters isn't one big app — it's a team of specialized <span class="term" data-definition="Small, independent programs that do one specific job and talk to each other over a network.">microservices</span> working together. In a relay race, no single person runs the whole track. One runner finishes their leg and hands the baton to the next.</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The Team Roster</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+          <div class="pattern-card">
+            <div class="pattern-header">
+              <div class="pattern-icon">🌿</div>
+              <h3 class="pattern-title">Farm Service</h3>
+            </div>
+            <p class="pattern-desc">Records the origin. Where the digital bean is born.</p>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-header">
+              <div class="pattern-icon">🏭</div>
+              <h3 class="pattern-title">Warehouse Service</h3>
+            </div>
+            <p class="pattern-desc">Manages physical inventory and roasting batches.</p>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-header">
+              <div class="pattern-icon">🚚</div>
+              <h3 class="pattern-title">Logistics Service</h3>
+            </div>
+            <p class="pattern-desc">Tracks drivers, vehicles, and real-time GPS coordinates.</p>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-header">
+              <div class="pattern-icon">🏪</div>
+              <h3 class="pattern-title">Retail Service</h3>
+            </div>
+            <p class="pattern-desc">Handles customer orders, payments, and store menus.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Passing the Baton</h2>
+        <div class="chat-container" id="chat-module-2">
+          <div class="chat-messages" id="chat-messages-module-2"></div>
+          <button class="chat-next-btn" id="chat-btn-module-2">Next Message</button>
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            initChat('chat-module-2', [
+              { sender: "Farm", message: "I just recorded a 500kg Arabica harvest!", align: "left", color: "var(--color-accent)" },
+              { sender: "Warehouse", message: "Got it. I'll ask Logistics for a truck.", align: "right", color: "#2A7B9B" },
+              { sender: "Logistics", message: "Driver HN-01 is assigned and en route.", align: "left", color: "#2D8B55" },
+              { sender: "Trace", message: "Writing all this down for the public record. 📝", align: "right", color: "#6B7280" }
+            ]);
+          });
+        </script>
+      </section>
+    </div>
+  </div>
+</section>
