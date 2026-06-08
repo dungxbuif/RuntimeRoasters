@@ -39,7 +39,6 @@ func NewHandler(cfg *config.Config, enforcer *casbin.Enforcer, u usecase.UserUse
 	}
 }
 
-
 func (h *Handler) GetFullSnapshot(ctx context.Context, req *authv1.GetFullSnapshotRequest) (*authv1.GetFullSnapshotResponse, error) {
 	policies, _ := h.enforcer.GetPolicy()
 	groupingPolicies, _ := h.enforcer.GetGroupingPolicy()
@@ -185,6 +184,15 @@ func (h *Handler) GetSystemStatus(ctx context.Context, req *authv1.GetSystemStat
 		if h.cfg.WarehouseServiceURL != "" {
 			targets["warehouse"] = h.cfg.WarehouseServiceURL + "/v1/system/status"
 		}
+		if h.cfg.PaymentServiceURL != "" {
+			targets["payment"] = h.cfg.PaymentServiceURL + "/v1/system/status"
+		}
+		if h.cfg.TraceServiceURL != "" {
+			targets["trace"] = h.cfg.TraceServiceURL + "/v1/system/status"
+		}
+		if h.cfg.AuditServiceURL != "" {
+			targets["audit"] = h.cfg.AuditServiceURL + "/v1/system/status"
+		}
 	}
 
 	// Fallback hardcoded if needed
@@ -194,6 +202,9 @@ func (h *Handler) GetSystemStatus(ctx context.Context, req *authv1.GetSystemStat
 			"retail":    "http://localhost:8084/v1/system/status",
 			"logistics": "http://localhost:8085/v1/system/status",
 			"warehouse": "http://localhost:8089/v1/system/status",
+			"payment":   "http://localhost:8086/v1/system/status",
+			"trace":     "http://localhost:8087/v1/system/status",
+			"audit":     "http://localhost:8088/v1/system/status",
 		}
 	}
 
@@ -208,7 +219,7 @@ func (h *Handler) GetSystemStatus(ctx context.Context, req *authv1.GetSystemStat
 		wg.Add(1)
 		go func(n, u string) {
 			defer wg.Done()
-			
+
 			status := false
 			resp, err := httpClient.Get(u)
 			if err == nil {
@@ -316,6 +327,15 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		if h.cfg.WarehouseServiceURL != "" {
 			targets = append(targets, h.cfg.WarehouseServiceURL+"/v1/system/seed")
 		}
+		if h.cfg.PaymentServiceURL != "" {
+			targets = append(targets, h.cfg.PaymentServiceURL+"/v1/system/seed")
+		}
+		if h.cfg.TraceServiceURL != "" {
+			targets = append(targets, h.cfg.TraceServiceURL+"/v1/system/seed")
+		}
+		if h.cfg.AuditServiceURL != "" {
+			targets = append(targets, h.cfg.AuditServiceURL+"/v1/system/seed")
+		}
 	}
 
 	// Fallback to legacy hardcoded logic if no targets defined in config
@@ -324,12 +344,18 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		retailURL := "http://localhost:8084"
 		logisticsURL := "http://localhost:8085"
 		warehouseURL := "http://localhost:8089"
+		paymentURL := "http://localhost:8086"
+		traceURL := "http://localhost:8087"
+		auditURL := "http://localhost:8088"
 
 		if h.cfg != nil && (strings.Contains(h.cfg.KratosAdminURL, "rr-kratos") || strings.Contains(h.cfg.KratosAdminURL, "kratos")) && !strings.Contains(h.cfg.KratosAdminURL, "localhost") {
 			farmURL = "http://farm-service:8083"
 			retailURL = "http://retail-service:8084"
 			logisticsURL = "http://logistics-service:8085"
 			warehouseURL = "http://warehouse-service:8089"
+			paymentURL = "http://payment-service:8086"
+			traceURL = "http://trace-service:8087"
+			auditURL = "http://audit-service:8088"
 		}
 
 		targets = []string{
@@ -337,6 +363,9 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 			retailURL + "/v1/system/seed",
 			logisticsURL + "/v1/system/seed",
 			warehouseURL + "/v1/system/seed",
+			paymentURL + "/v1/system/seed",
+			traceURL + "/v1/system/seed",
+			auditURL + "/v1/system/seed",
 		}
 	}
 
@@ -409,4 +438,3 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		RecordsCreated: int64(len(usersMap)),
 	}, nil
 }
-

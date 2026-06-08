@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - RR-URG-07E end-to-end evidence across PostgreSQL, Kafka, service HTTP,
   Playwright, and visual screenshots.
 - ADR-0011 for the hybrid Retail/Trace public ownership boundary.
+- RR-31 service-owned Payment, Trace, and Audit seed/status endpoints plus
+  auth-service fan-out for Admin Initialize Data demo parity.
 
 ### Changed
 - Reconciled migrated docs with Harness v1 folder structure and replaced stale pre-Harness product/story/feedback references with current Harness paths.

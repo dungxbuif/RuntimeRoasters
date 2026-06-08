@@ -8,7 +8,7 @@
 
 | Ticket | Summary | Status | Role |
 | :--- | :--- | :--- | :--- |
-| [RR-31](./RR-31.md) | [Tech] Audit Service (Cassandra) | 🕒 To Do | Tech Lead |
+| [RR-31](./RR-31/ticket.md) | [Tech] Complete Admin Demo Seed and Retire Direct-DB Seeder | 🔎 In review | Tech Lead |
 | [RR-32](./RR-32.md) | [Tech] System Health Dashboards (SigNoz) | 🕒 To Do | DevOps |
 | [RR-33](./RR-33.md) | [Tech] mTLS Zero Trust | 🕒 To Do | Security Eng |
 | [RR-34](./RR-34.md) | [Tech] Token Revocation & Security Audit | 🕒 To Do | Tech Lead |

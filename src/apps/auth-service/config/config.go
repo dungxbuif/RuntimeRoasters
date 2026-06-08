@@ -24,6 +24,9 @@ type Config struct {
 	RetailServiceURL    string `mapstructure:"RETAIL_SERVICE_URL"`
 	LogisticsServiceURL string `mapstructure:"LOGISTICS_SERVICE_URL"`
 	WarehouseServiceURL string `mapstructure:"WAREHOUSE_SERVICE_URL"`
+	PaymentServiceURL   string `mapstructure:"PAYMENT_SERVICE_URL"`
+	TraceServiceURL     string `mapstructure:"TRACE_SERVICE_URL"`
+	AuditServiceURL     string `mapstructure:"AUDIT_SERVICE_URL"`
 }
 
 // Load loads the auth-service configuration

@@ -56,6 +56,19 @@ and a pending `retail.sale.completed` outbox CloudEvent. Validation errors use
 `400`, missing active resources use `404`, and duplicate identities or
 insufficient inventory use `409`.
 
+### Internal System Seed Endpoints
+
+These routes are service-internal and are not public KrakenD contracts. They are
+called by auth-service during Admin Initialize Data and require
+X-Internal-Secret when the target service is configured with an internal secret.
+
+- POST /v1/system/seed: Seed deterministic service-owned demo data.
+- GET /v1/system/status: Return seed readiness and canonical demo counts.
+
+RR-31 extends this internal contract to Payment, Trace, and Audit so the Admin
+seed path can cover finance scenarios, trace projections, and audit evidence
+without cross-service database writes.
+
 ### Warehouse Endpoints
 - `GET /v1/warehouse/warehouses`: List warehouses.
 - `POST /v1/warehouse/warehouses`: Create a warehouse.

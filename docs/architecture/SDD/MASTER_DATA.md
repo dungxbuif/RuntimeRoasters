@@ -818,7 +818,11 @@ Production runtime may later use FIFO/FEFO. Seeded pseudo-random lot selection e
 | Audit | append-only seed audit evidence | mutable operational records |
 | Socket | no durable seed data | business state |
 
-Payment, trace, and audit demo rows should be produced from owned APIs/events or an explicitly labeled projection builder. They are not part of the current four-service Admin fan-out and remain a required implementation gap.
+Payment, trace, and audit demo rows are produced through service-owned
+/v1/system/seed endpoints or deterministic service-handled events from the
+Admin seed fan-out. They must not be inserted by a central direct-DB seeder.
+Live PostgreSQL, Elasticsearch, and Cassandra parity remains the removal gate
+before the legacy task seed:demo path can be deleted.
 
 ## 11. Idempotency And Integrity
 

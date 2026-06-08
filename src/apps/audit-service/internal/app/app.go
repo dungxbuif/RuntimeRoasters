@@ -67,6 +67,37 @@ func (a *App) Shutdown() error {
 }
 
 func (a *App) routes(r *gin.Engine) {
+	sys := r.Group("/v1/system")
+	sys.Use(func(c *gin.Context) {
+		secret := c.GetHeader("X-Internal-Secret")
+		if a.Cfg.InternalSecret != "" && secret != a.Cfg.InternalSecret {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid or missing internal secret"})
+			return
+		}
+		c.Next()
+	})
+	sys.GET("/status", func(c *gin.Context) {
+		count, err := a.Service.DemoAuditCount(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"seeded": count >= 4, "service_name": "audit-service", "record_counts": gin.H{"demo_audit_logs": count}})
+	})
+	sys.POST("/seed", func(c *gin.Context) {
+		var req struct {
+			Force    bool              `json:"force"`
+			UsersMap map[string]string `json:"users_map"`
+		}
+		_ = c.ShouldBindJSON(&req)
+		created, err := a.Service.SeedDemoData(c.Request.Context(), req.Force, req.UsersMap)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"success": true, "service_name": "audit-service", "records_created": created})
+	})
+
 	v1 := r.Group("/v1/audit")
 	if a.Guards != nil {
 		v1.Use(a.Guards.Authn, a.Guards.Authz)
