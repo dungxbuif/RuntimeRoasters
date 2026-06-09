@@ -1,7 +1,7 @@
 ---
 artifact_type: detail_design
 id: RR-31-DETAIL-DESIGN
-status: in_review
+status: done
 owner: ai
 trace:
   ticket: docs/work/tickets/sprint11/RR-31/ticket.md

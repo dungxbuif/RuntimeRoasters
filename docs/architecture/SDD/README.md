@@ -469,6 +469,7 @@ Runtime proof belongs in `docs/work/VALIDATION_MATRIX.md` and the active work ar
 - External/runtime dependencies: [INTEGRATIONS.md](../INTEGRATIONS.md)
 - Durable decisions: [decisions](../../decisions/README.md)
 - Deterministic seed contract: [MASTER_DATA.md](./MASTER_DATA.md)
+- **Proposed: [mTLS and Zero Trust Security Mesh](./MTLS_ZERO_TRUST.md)**
 
 ### Change Rules
 

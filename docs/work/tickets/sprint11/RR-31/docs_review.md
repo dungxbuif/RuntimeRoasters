@@ -1,7 +1,7 @@
 ---
 artifact_type: docs_review
 id: RR-31-DOCS-REVIEW
-status: in_review
+status: done
 owner: ai
 trace:
   ticket: docs/work/tickets/sprint11/RR-31/ticket.md

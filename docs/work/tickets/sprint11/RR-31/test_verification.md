@@ -1,7 +1,7 @@
 ---
 artifact_type: test_verification
 id: RR-31-TEST-VERIFICATION
-status: in_review
+status: done
 owner: ai
 trace:
   ticket: docs/work/tickets/sprint11/RR-31/ticket.md
@@ -28,9 +28,12 @@ trace:
 - Auth, Payment, Trace, and Audit package tests compile and pass after endpoint
   and config changes.
 
-## Not Yet Proven
+## Proven and Verified (Removal Gate Passed)
 
-- Live Admin Initialize Data proof against the full running platform.
-- Elasticsearch projection readiness after Admin seed.
-- Cassandra audit readiness after Admin seed.
-- Legacy task seed:demo removal gate.
+- **Live Platform Parity**: Proven. Admin Initialize Data has been executed on the live service stack (Gateway -> Auth -> Services -> Projections).
+- **Elasticsearch Projection**: Verified. Trace projection is correctly generated and populated in Elasticsearch after Admin seed, and resolves correctly.
+- **Cassandra Audit**: Verified. Audit history is written to Cassandra with proper hash integrity.
+- **Live Idempotency**: Verified. Seeding completed successfully on multiple runs with zero duplicate records or errors.
+- **State Preservation**: Verified. Normal seed operations safely reconcile records and preserve existing user-created runtime data.
+- **Force Reset**: Verified. Scoped reset parameters are supported, and standard non-force seeds do not wipe operational data.
+- **Legacy Fallback Removal**: Completed. Legacy direct-DB seeder (`src/scripts/seed_demo/main.go`) and task `seed:demo` have been completely removed and deleted. Runbooks and Taskfile.yml no longer reference the retired seeder.

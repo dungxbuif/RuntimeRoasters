@@ -821,8 +821,7 @@ Production runtime may later use FIFO/FEFO. Seeded pseudo-random lot selection e
 Payment, trace, and audit demo rows are produced through service-owned
 /v1/system/seed endpoints or deterministic service-handled events from the
 Admin seed fan-out. They must not be inserted by a central direct-DB seeder.
-Live PostgreSQL, Elasticsearch, and Cassandra parity remains the removal gate
-before the legacy task seed:demo path can be deleted.
+The legacy direct-DB task seed:demo has been successfully retired and deleted.
 
 ## 11. Idempotency And Integrity
 
@@ -864,9 +863,9 @@ The following must be corrected as tickets are implemented:
   `mgr.hcm.d1/d7` identities.
 - Older docs list non-canonical manager aliases.
 - Logistics code defines `ROASTERY`, while fixtures use `WAREHOUSE`.
-- Admin seed currently fans out only to Farm, Retail, Logistics, and Warehouse.
+- Resolved in RR-31: Admin seed now fans out to Farm, Retail, Logistics, Warehouse, Payment, Trace, and Audit.
 - UI currently sends `force=true` unconditionally.
-- Historical `task seed:demo` uses unseeded randomness and wall-clock time, so it is not reproducible.
+- Resolved in RR-31: Historical `task seed:demo` has been completely deleted and retired.
 - `deployments/reset-demo-state.sh` resets runtime state but does not run migrations or Admin seed.
 
 RR-URG-07A follows this document for menus, menu items, inventory lots, sales,

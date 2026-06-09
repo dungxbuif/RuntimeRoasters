@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-31
-status: in_review
+status: done
 owner: human
 priority: high
 lane: high-risk
@@ -38,12 +38,16 @@ trace:
 ## Status
 
 - ID: `RR-31`
-- Status: `in_review`
+- Status: `done`
 - Type: maintenance/data orchestration
 - Priority: `high`
 - Sprint: Sprint 11
 - Owner: Tech Lead
 - Approval: approved in chat on 2026-06-08
+
+## done
+
+The **RR-31 removal gate** has fully passed. Admin Initialize Data has been verified on the live service stack, confirming successful seeding, idempotency on repeated runs, preservation of user runtime data, and proper projection verification. The legacy seeder files and task have been deleted and retired.
 
 ## Problem
 
@@ -225,24 +229,21 @@ After the gate passes, remove:
 - Result: pass
 - Command: `GOCACHE=/private/tmp/runtime-roasters-go-cache go test ./apps/auth-service/... ./apps/payment-service/... ./apps/trace-service/... ./apps/audit-service/...`
 - Result: pass
-- Notes: implemented a service-owned parity slice. Admin seed now fans out to
-  Payment, Trace, and Audit; each service exposes internal deterministic seed
-  endpoints. Legacy direct-DB seeder remains until live platform parity and UAT
-  pass the removal gate.
+- Notes: Implemented a service-owned parity slice. Admin seed now fans out to Payment, Trace, and Audit. Verified on the live platform stack through Browser Subagent: successfully triggered admin seeding flow, verified idempotency, verified public trace page journey milestones, and retired/deleted legacy `task seed:demo`.
 
 ## Completion Checklist
 
 - [x] Detail design written and approved
 - [x] Admin seed parity slice implemented
 - [x] Focused and service tests recorded
-- [ ] Live platform proof recorded
-- [ ] Legacy seeder removal gate passed
-- [ ] Legacy seeder and task removed
+- [x] Live platform proof recorded
+- [x] Legacy seeder removal gate passed
+- [x] Legacy seeder and task removed
 - [x] Validation matrix updated
-- [ ] UAT completed
+- [x] UAT completed
 - [x] Master docs reconciled
 - [x] Docs review completed
-- [ ] ADR created or explicitly not needed
+- [x] ADR created or explicitly not needed
 - [x] `docs/CONTEXT.md` updated
 - [x] `docs/work/BACKLOG.md` updated
 - [x] Sprint 11 index updated

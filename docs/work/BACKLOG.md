@@ -18,4 +18,5 @@ ai_fields:
 | 1 | BL-001 | feature | high-risk | RR-URG-07: Public sold-cup QR trace split | High | done | API, Data model, Public no-auth trace | complete |
 | 2 | BL-002 | maintenance | normal | Valkey Geo Tracking Implementation | Medium | open | | TICKET |
 | 3 | BL-003 | enhancement | normal | Saga Monitor SSE Real-time Updates | Medium | open | | TICKET |
-| 5 | BL-005 | maintenance | high-risk | RR-31: Complete Admin Demo Seed and Retire Direct-DB Seeder | High | in_review | Data reset, Cross-service seed, ES, Cassandra | docs/work/tickets/sprint11/RR-31/test_verification.md |
+| 4 | BL-004 | security | high-risk | RR-34: Timestamp-Based Token Revocation & Security Audit | High | draft | API, DB, Security, Runtime, Hydra | `docs/work/tickets/sprint11/RR-34/technical_design.md` |
+| 5 | BL-005 | maintenance | high-risk | RR-31: Complete Admin Demo Seed and Retire Direct-DB Seeder | High | done | Data reset, Cross-service seed, ES, Cassandra | `docs/work/tickets/sprint11/RR-31/test_verification.md` |

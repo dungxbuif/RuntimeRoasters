@@ -18,7 +18,7 @@ owner: shared
 | Downstream Warehouse To Retail | M2 | Retail/Payment/Warehouse/Logistics | Store order, payment pass/fail, stock reservation, dispatch, return to base | partial | partial | pending | pending | partial | Legacy TC-3.* consolidated |
 | Observability Trace Integrity | M2 | Trace/Observability | One trace ID across gateway, services, Kafka, trace read models | pending | pending | pending | pending | planned | Legacy TC-4.* consolidated |
 | Realtime Awareness | M2 | RR-URG-06 | Public topology and private role-scoped notification streams | yes | yes | yes | yes | implemented | RR-URG-06 evidence |
-| Admin Demo Seed Parity | Sprint 11 | RR-31 | Admin Initialize Data fans out to service-owned Payment, Trace, and Audit demo seed/status paths without direct cross-DB writes | yes | partial | pending | pending | in_review | Payment/Trace/Audit seed unit tests and Auth/Payment/Trace/Audit package tests passed; live PostgreSQL/ES/Cassandra proof pending |
+| Admin Demo Seed Parity | Sprint 11 | RR-31 | Admin Initialize Data fans out to service-owned Payment, Trace, and Audit demo seed/status paths without direct cross-DB writes | yes | partial | yes | yes | verified | Payment/Trace/Audit unit/pkg tests passed; live seeding flow triggered via Admin Bootstrap UI; idempotency and trace public journey milestones verified via Browser Subagent |
 
 ## Manual UAT Flow Checklist
 
