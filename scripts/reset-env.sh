@@ -13,8 +13,8 @@ docker compose -f deployments/docker-compose.dev.yaml down -v --remove-orphans
 echo -e "${BLUE}🚀 Starting infrastructure containers...${NC}"
 docker compose -f deployments/docker-compose.dev.yaml up -d
 
-echo -e "${BLUE}⏳ Waiting for Postgres (rr-postgres) to be ready...${NC}"
-until docker exec rr-postgres pg_isready -U user -d postgres > /dev/null 2>&1; do
+echo -e "${BLUE}⏳ Waiting for Postgres (Local Host) to be ready...${NC}"
+until PGPASSWORD=password psql -h localhost -p 5432 -U dev -d postgres -c '\q' > /dev/null 2>&1; do
   echo -n "."
   sleep 1
 done

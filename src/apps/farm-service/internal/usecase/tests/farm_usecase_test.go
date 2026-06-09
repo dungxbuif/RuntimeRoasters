@@ -47,6 +47,11 @@ func (m *MockRepository) Delete(ctx context.Context, id uint64) error {
 	return args.Error(0)
 }
 
+func (m *MockRepository) Count(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return int64(args.Int(0)), args.Error(1)
+}
+
 func TestCreateFarm(t *testing.T) {
 	repo := new(MockRepository)
 	u := usecase.NewFarmUsecase(repo)

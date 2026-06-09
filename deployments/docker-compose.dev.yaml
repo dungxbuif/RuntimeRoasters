@@ -2,8 +2,7 @@
 # RuntimeRoasters — Development Compose File
 #
 # Mục đích: Dựng toàn bộ hạ tầng Dev trên máy local.
-# Tất cả services dùng CHUNG 1 Postgres instance (rr-postgres),
-# mỗi service có DB riêng (identity_db, demo_db, ...) được tạo bởi init-db.sql.
+# (Postgres và Redis dùng trực tiếp bản cài trên máy host)
 #
 # Cách chạy:
 #   docker compose -f deployments/docker-compose.dev.yaml up -d
@@ -13,48 +12,6 @@
 # ===========================================================================
 
 services:
-
-  # ---------------------------------------------------------------------------
-  # PostgreSQL — Shared DB server cho toàn bộ stack
-  # init-db.sql tự động tạo tất cả các DB cần thiết khi container khởi động lần đầu.
-  # ---------------------------------------------------------------------------
-  postgres:
-    image: postgres:16-alpine
-    container_name: rr-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres # default db, các DB khác tạo qua init-db.sql
-    ports:
-      - "54321:5432"
-    volumes:
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - rr-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # ---------------------------------------------------------------------------
-  # Valkey — Dùng cho: Session Store, Token Blacklist, Idempotency & GPS Tracking
-  # ---------------------------------------------------------------------------
-  valkey:
-    image: valkey/valkey:7.2-alpine
-    container_name: rr-valkey
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - rr-network
-    healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   # ---------------------------------------------------------------------------
   # Apache Kafka — single-node broker, no ZooKeeper
@@ -178,9 +135,6 @@ services:
   # ---------------------------------------------------------------------------
   # SigNoz Observability — OpenTelemetry traces/metrics/logs UI
   # Truy cập: http://localhost:3301
-  #
-  # Note: signoz-zookeeper-1 is used only by ClickHouse/SigNoz coordination.
-  # Kafka above remains Apache Kafka without ZooKeeper.
   # ---------------------------------------------------------------------------
   signoz-zookeeper-1:
     image: signoz/zookeeper:3.7.1
@@ -334,31 +288,29 @@ services:
 
   # ---------------------------------------------------------------------------
   # Ory Kratos — Identity Management
-  #
-  # Vai trò: Quản lý người dùng, hồ sơ (identities) và đăng nhập (sessions).
   # ---------------------------------------------------------------------------
   kratos-migrate:
     image: oryd/kratos:v1.2.0
     container_name: rr-kratos-migrate
     environment:
-      DSN: postgres://user:password@postgres:5432/identity_db?sslmode=disable
+      DSN: postgres://dev:password@host.docker.internal:5432/identity_db?sslmode=disable
     volumes:
       - ./kratos:/etc/config/kratos
     command: migrate sql -e --yes
     networks:
       - rr-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   kratos:
     image: oryd/kratos:v1.2.0
     container_name: rr-kratos
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       kratos-migrate:
         condition: service_completed_successfully
     environment:
-      DSN: postgres://user:password@postgres:5432/identity_db?sslmode=disable&max_conns=20&max_idle_conns=4
+      DSN: postgres://dev:password@host.docker.internal:5432/identity_db?sslmode=disable&max_conns=20&max_idle_conns=4
     command: serve --config /etc/config/kratos/kratos.yaml --dev
     volumes:
       - ./kratos:/etc/config/kratos
@@ -369,32 +321,32 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # ---------------------------------------------------------------------------
   # Ory Hydra — OAuth2 & OIDC Provider
-  #
-  # Vai trò: Phát hành JWT (Access Token) và ID Token chuẩn OAuth2/OIDC.
   # ---------------------------------------------------------------------------
   hydra-migrate:
     image: oryd/hydra:v2.2.0
     container_name: rr-hydra-migrate
     environment:
-      DSN: postgres://user:password@postgres:5432/hydra_db?sslmode=disable
+      DSN: postgres://dev:password@host.docker.internal:5432/hydra_db?sslmode=disable
     command: migrate sql -e --yes
     networks:
       - rr-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   hydra:
     image: oryd/hydra:v2.2.0
     container_name: rr-hydra
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       hydra-migrate:
         condition: service_completed_successfully
     environment:
-      DSN: postgres://user:password@postgres:5432/hydra_db?sslmode=disable
+      DSN: postgres://dev:password@host.docker.internal:5432/hydra_db?sslmode=disable
       URLS_SELF_ISSUER: http://localhost:4444/
       URLS_CONSENT: http://localhost:3000/consent
       URLS_LOGIN: http://localhost:3000/login
@@ -413,12 +365,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # ---------------------------------------------------------------------------
   # Identity Proxy (Nginx) — JWKS Gatekeeper
-  #
-  # Vai trò: Bọc bên ngoài Hydra Public port (4444).
-  # Chặn endpoint /.well-known/jwks.json: chỉ cho qua nếu có header đúng.
   # ---------------------------------------------------------------------------
   identity:
     image: nginx:1.27-alpine
@@ -472,8 +423,6 @@ services:
         condition: service_healthy
       hydra:
         condition: service_healthy
-      postgres:
-        condition: service_healthy
     volumes:
       - ./kratos:/etc/config/kratos
       - ./hydra:/etc/config/hydra
@@ -504,10 +453,8 @@ networks:
 
 volumes:
   cassandra_data:
-  postgres_data:
   elasticsearch_data:
   signoz_clickhouse_data:
   signoz_clickhouse_user_scripts:
   signoz_sqlite_data:
   signoz_zookeeper_data:
-

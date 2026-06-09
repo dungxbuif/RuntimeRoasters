@@ -1,10 +1,10 @@
 version: '3'
 
 vars:
-  PG_USER: user
+  PG_USER: dev
+  PG_PASS: password
   PG_DB_HOST: localhost
-  PG_DB_PORT: 54321
-  PG_CONTAINER: rr-postgres
+  PG_DB_PORT: 5432
 
 tasks:
   infra:
@@ -32,33 +32,28 @@ tasks:
   # --- Individual Service Migrations ---
   
   logistics:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d logistics_db < src/apps/logistics-service/migrations/000001_create_logistics_tables.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d logistics_db < src/apps/logistics-service/migrations/000001_create_logistics_tables.up.sql"]
   retail:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d retail_db < src/apps/retail-service/migrations/000001_init.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d retail_db < src/apps/retail-service/migrations/000001_init.up.sql"]
   warehouse:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d warehouse_db < src/apps/warehouse-service/migrations/000001_init.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d warehouse_db < src/apps/warehouse-service/migrations/000001_init.up.sql"]
   farm:migrate:
     cmds:
-      - "docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000001_create_farms_table.up.sql"
-      - "docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000002_create_outbox_events_table.up.sql"
-      - "docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000003_create_harvests_table.up.sql"
+      - "PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000001_create_farms_table.up.sql"
+      - "PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000002_create_outbox_events_table.up.sql"
+      - "PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d farm_db < src/apps/farm-service/migrations/000003_create_harvests_table.up.sql"
   payment:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d payment_db < src/apps/payment-service/migrations/000001_init.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d payment_db < src/apps/payment-service/migrations/000001_init.up.sql"]
   audit:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d audit_db < src/apps/audit-service/migrations/000001_init.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d audit_db < src/apps/audit-service/migrations/000001_init.up.sql"]
   trace:migrate:
-    cmds: ["docker exec -i {{.PG_CONTAINER}} psql -U {{.PG_USER}} -d trace_db < src/apps/trace-service/migrations/000001_init.up.sql"]
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d trace_db < src/apps/trace-service/migrations/000001_init.up.sql"]
 
   # --- Infrastructure Seeding ---
   seed:infra:
     desc: Seed Admin User & OAuth2 Client (Kratos/Hydra)
     cmds:
       - docker compose -f deployments/docker-compose.dev.yaml up seeder
-
-  seed:demo:
-    desc: Run dynamic Ultra-Rich Farm-to-Cup simulation seeder directly into DB, ES, and Cassandra
-    cmds:
-      - go run src/scripts/seed_demo/main.go
 
   be:
     desc: Start all backend services with hot-reload (Air)

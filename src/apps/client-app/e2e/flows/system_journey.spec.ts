@@ -170,14 +170,20 @@ async function mockPublicTrace(page: any, code: string) {
             trace: {
                 product_id: 'CUP-DEMO-01',
                 trace_code: code,
-                product: { name: 'Premium Arabica Blend', size: 'L' },
-                store: { name: 'Downtown Roastery' },
-                sold_at: now,
+                product: { name: 'Premium Arabica Blend', size: 'L', sku: 'SKU-ARB-001' },
+                store: { name: 'Downtown Roastery', city: 'Hanoi', address: '123 Ly Thai To St.' },
+                invoice_no: 'INV-RR-9922',
+                sale_item: { sold_at: now },
+                inventory_lot_id: 'LOT-DEMO-441',
+                harvest_id: 'HRV-CAUDAT-001',
+                origin_batch_id: 'BATCH-ROAST-202',
+                warehouse: { id: 'WAREHOUSE-HN' },
+                service_participation: ['farm-service', 'warehouse-service', 'logistics-service', 'retail-service'],
                 milestones: [
-                    { status: 'SOLD', title: 'Coffee Served', timestamp: now },
-                    { status: 'DELIVERED', title: 'Beans Delivered to Store', timestamp: now },
-                    { status: 'ROASTED', title: 'Batch Roasted (RR-S-001)', timestamp: now },
-                    { status: 'HARVESTED', title: 'Harvested at Cầu Đất', timestamp: now }
+                    { status: 'SOLD', title: 'Coffee Served', timestamp: now, description: 'Cup served and verified by public trace ledger.' },
+                    { status: 'DELIVERED', title: 'Beans Delivered to Store', timestamp: now, description: 'Final retail delivery completed by Driver HN-01.' },
+                    { status: 'ROASTED', title: 'Batch Roasted (RR-S-001)', timestamp: now, description: 'Green beans roasted and packaged at Hanoi Warehouse.' },
+                    { status: 'HARVESTED', title: 'Harvested at Cầu Đất', timestamp: now, description: 'Fresh Arabica cherries harvested and declared at Dalat Farm.' }
                 ]
             } 
         }) 

@@ -52,6 +52,8 @@ func InitializeApp() (*App, func(), error) {
 					"/runtime.auth.v1.AuthService/GetFullSnapshot", // Internal service-to-service
 					"/runtime.auth.v1.AuthService/ListUsers",       // Internal
 					"/runtime.auth.v1.AuthService/AcceptLogin",     // Internal via Gateway
+					"/runtime.auth.v1.AuthService/SeedSystem",      // CLI/Admin Seed
+					"/runtime.system.v1.SystemService/SeedData",    // CLI/Admin Seed
 				)),
 			),
 		},
