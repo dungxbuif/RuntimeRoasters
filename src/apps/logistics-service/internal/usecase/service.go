@@ -399,6 +399,19 @@ func (s *Service) transitionDriverAction(ctx context.Context, shipmentID string,
 
 func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message) error {
 	messageID := kafka.MessageID(msg)
+
+	if msg.Topic == s.gpsUpdatedTopic {
+		cloudEvent, err := events.ParseCloudEvent(msg.Value)
+		if err != nil {
+			return err
+		}
+		event, err := events.DataAs[events.LogisticsGPSUpdated](cloudEvent)
+		if err != nil {
+			return err
+		}
+		return s.HandleGPSUpdatedEvent(ctx, event)
+	}
+
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing domain.ProcessedKafkaMessage
 		if err := tx.Where("msg_key = ?", messageID).Take(&existing).Error; err == nil {
@@ -435,6 +448,42 @@ func (s *Service) HandleWarehouseEvent(ctx context.Context, msg kafkago.Message)
 
 		return tx.Create(&domain.ProcessedKafkaMessage{MsgKey: messageID, Topic: msg.Topic, ProcessedAt: time.Now()}).Error
 	})
+}
+
+func (s *Service) HandleGPSUpdatedEvent(ctx context.Context, event events.LogisticsGPSUpdated) error {
+	if err := s.storeDriverLocation(ctx, event.DriverID, event.Latitude, event.Longitude); err != nil {
+		return err
+	}
+	return s.db.WithContext(ctx).Model(&domain.Vehicle{}).
+		Where("id = (SELECT vehicle_id FROM drivers WHERE id = ?)", event.DriverID).
+		Updates(map[string]interface{}{"current_latitude": event.Latitude, "current_longitude": event.Longitude}).Error
+}
+
+func (s *Service) ListDriverLocations(ctx context.Context) ([]domain.DriverLocation, error) {
+	members, err := s.rdb.ZRange(ctx, driverLocationsKey, 0, -1).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(members) == 0 {
+		return []domain.DriverLocation{}, nil
+	}
+
+	pos, err := s.rdb.GeoPos(ctx, driverLocationsKey, members...).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	locations := make([]domain.DriverLocation, 0, len(members))
+	for i, p := range pos {
+		if p != nil {
+			locations = append(locations, domain.DriverLocation{
+				DriverID:  members[i],
+				Latitude:  p.Latitude,
+				Longitude: p.Longitude,
+			})
+		}
+	}
+	return locations, nil
 }
 
 func (s *Service) createShipmentFromEvent(ctx context.Context, tx *gorm.DB, topic string, payload []byte) (*domain.Shipment, error) {

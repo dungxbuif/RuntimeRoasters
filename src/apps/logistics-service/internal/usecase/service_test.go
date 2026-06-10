@@ -9,6 +9,8 @@ import (
 	"RuntimeRoasters/apps/logistics-service/internal/domain"
 	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,6 +18,43 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+func TestGPSIngestionAndRetrieval(t *testing.T) {
+	s := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	db, err := gorm.Open(sqlite.Open("file:"+t.Name()+"?mode=memory&cache=shared"), &gorm.Config{})
+	assert.NoError(t, err)
+	assert.NoError(t, db.AutoMigrate(&domain.Driver{}, &domain.Vehicle{}))
+
+	driver := domain.Driver{ID: "driver-1", VehicleID: "vehicle-1", Name: "Driver"}
+	vehicle := domain.Vehicle{ID: "vehicle-1", PlateNumber: "HN-001"}
+	require.NoError(t, db.Create(&driver).Error)
+	require.NoError(t, db.Create(&vehicle).Error)
+
+	service := NewService(db, rdb, nil, "", "", "", "")
+
+	event := events.LogisticsGPSUpdated{
+		DriverID:  "driver-1",
+		Latitude:  10.5,
+		Longitude: 20.5,
+	}
+
+	err = service.HandleGPSUpdatedEvent(context.Background(), event)
+	assert.NoError(t, err)
+
+	// Verify PostgreSQL update
+	var updatedVehicle domain.Vehicle
+	require.NoError(t, db.Where("id = ?", "vehicle-1").Take(&updatedVehicle).Error)
+	assert.Equal(t, 10.5, updatedVehicle.CurrentLatitude)
+
+	// Verify Valkey GEO update
+	locations, err := service.ListDriverLocations(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, locations, 1)
+	assert.Equal(t, "driver-1", locations[0].DriverID)
+	// Some precision difference might exist in GEO, but for 10.5/20.5 it should be close
+	assert.InDelta(t, 10.5, locations[0].Latitude, 0.001)
+}
 
 type MockProducer struct {
 	mock.Mock

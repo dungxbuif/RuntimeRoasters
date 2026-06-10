@@ -70,6 +70,7 @@ func InitializeApp() (*App, func(), error) {
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-delivery-assigned", events.TopicLogisticsDeliveryAssigned),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-stock-updated", cfg.StockUpdatedTopic),
 		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-pickup-requested", cfg.PickupRequestedTopic),
+		kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID+"-gps-updated", cfg.GPSUpdatedTopic),
 	}
 
 	guards, err := security.NewHTTPGuards(security.HTTPOptions{
