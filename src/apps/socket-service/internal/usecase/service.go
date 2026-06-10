@@ -409,8 +409,53 @@ func (s *Service) readPump(client *Client) {
 		s.removeClient(client)
 	}()
 	for {
-		if _, _, err := client.conn.ReadMessage(); err != nil {
+		_, message, err := client.conn.ReadMessage()
+		if err != nil {
 			return
+		}
+
+		var env Envelope
+		if err := json.Unmarshal(message, &env); err != nil {
+			continue
+		}
+
+		if env.Type == "gps_update" {
+			if client.scope.Role != "DRIVER" {
+				continue
+			}
+
+			data, ok := env.Data.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			lat, _ := data["lat"].(float64)
+			long, _ := data["long"].(float64)
+			shipmentID, _ := data["shipment_id"].(string)
+			storeID, _ := data["store_id"].(string)
+
+			event := events.LogisticsGPSUpdated{
+				EventID:    uuid.NewString(),
+				DriverID:   client.scope.Subject,
+				ShipmentID: shipmentID,
+				StoreID:    storeID,
+				Latitude:   lat,
+				Longitude:  long,
+				OccurredAt: time.Now(),
+			}
+
+			cloudEvent, err := events.NewCloudEvent(context.Background(), events.TopicLogisticsGPSUpdated, "/services/socket-service", "drivers/"+client.scope.Subject, event, events.Metadata{
+				EventID:       event.EventID,
+				CorrelationID: event.DriverID,
+				OccurredAt:    event.OccurredAt,
+				DriverID:      event.DriverID,
+				ShipmentID:    event.ShipmentID,
+			})
+			if err != nil {
+				continue
+			}
+
+			_ = s.producer.Publish(context.Background(), events.TopicLogisticsGPSUpdated, event.DriverID, cloudEvent)
 		}
 	}
 }

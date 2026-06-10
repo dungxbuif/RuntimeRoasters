@@ -3,13 +3,18 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"RuntimeRoasters/pkg/base/identity"
 	"RuntimeRoasters/pkg/events"
 	"github.com/alicebob/miniredis/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 	kafkago "github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
@@ -119,6 +124,72 @@ func TestKafkaEventCreatesScopedNotification(t *testing.T) {
 	assert.Equal(t, event.OrderID, notifications[0].EntityID)
 	assert.Equal(t, event.WarehouseID, notifications[0].WarehouseID)
 }
+
+func TestGPSIngestion(t *testing.T) {
+	s := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: s.Addr()})
+	mockProducer := &mockProducer{}
+	service := NewService(rdb, mockProducer, "broadcast", 1*time.Minute, "")
+
+	// Create a dummy WebSocket connection using a local server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = service.ServeWS(w, r, ClientScope{
+			Role:    "DRIVER",
+			Subject: "driver-123",
+		})
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	gpsMsg := Envelope{
+		Type: "gps_update",
+		Data: map[string]interface{}{
+			"lat":         10.5,
+			"long":        20.5,
+			"shipment_id": "ship-1",
+		},
+	}
+	body, _ := json.Marshal(gpsMsg)
+	err = conn.WriteMessage(websocket.TextMessage, body)
+	require.NoError(t, err)
+
+	// Wait for processing
+	time.Sleep(100 * time.Millisecond)
+
+	assert.True(t, mockProducer.published)
+	assert.Equal(t, events.TopicLogisticsGPSUpdated, mockProducer.topic)
+
+	var event events.LogisticsGPSUpdated
+	// cloudevents.Event wraps the data
+	var ce cloudevents.Event
+	err = json.Unmarshal(mockProducer.lastEvent, &ce)
+	require.NoError(t, err)
+
+	err = ce.DataAs(&event)
+	require.NoError(t, err)
+
+	assert.Equal(t, "driver-123", event.DriverID)
+	assert.Equal(t, 10.5, event.Latitude)
+}
+
+type mockProducer struct {
+	published bool
+	topic     string
+	lastEvent []byte
+}
+
+func (m *mockProducer) Publish(ctx context.Context, topic string, key string, value interface{}) error {
+	m.published = true
+	m.topic = topic
+	m.lastEvent, _ = json.Marshal(value)
+	return nil
+}
+
+func (m *mockProducer) Close() error { return nil }
 
 func socketCloudEvent(t *testing.T, topic string, data interface{}, metadata events.Metadata) []byte {
 	t.Helper()
