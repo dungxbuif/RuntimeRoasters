@@ -141,12 +141,11 @@ Last Updated: 2026-06-06
 - **Sprint 11 / RR-31:** Verified and completed. Live PostgreSQL, Elasticsearch,
   Cassandra, Kafka, and UI parity checks passed; the legacy direct-DB seeder
   and task seed:demo have been retired and removed.
-- **Sprint 11 / RR-34:** Draft ticket and detail design created for user-wide
-  timestamp-based token revocation. Proposed model uses PostgreSQL
-  `tokens_valid_after` as source of truth, Valkey as a bounded cache, strict
-  `iat > tokens_valid_after` enforcement, and Hydra login/consent revocation.
-  Implementation is pending human approval at
-  `docs/work/tickets/sprint11/RR-34/technical_design.md`.
+- **Sprint 11 / RR-34:** Implemented user-wide timestamp-based token revocation.
+  Proposed model uses PostgreSQL `tokens_valid_after` as source of truth, Valkey
+  as a bounded cache, strict `iat > tokens_valid_after` enforcement, and Ory Hydra
+  login/consent and Kratos session invalidations. Implementation is complete and
+  pending proto generation and test verification.
 - **Harness Migration:** Upgrading to Harness v1 (Pure Markdown) - structure reconciled against cloned Harness reference; content was rewritten/merged from RuntimeRoasters docs rather than blindly copied.
 - **Next Up:** BL-002 Valkey Geo Tracking Implementation.
 - RR-URG-07A is done at

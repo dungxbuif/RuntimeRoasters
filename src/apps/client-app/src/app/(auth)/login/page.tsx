@@ -20,12 +20,16 @@ function LoginContent() {
 
   LOG('LoginContent mount', { loginChallenge, isAuthenticated });
 
-  // If already authenticated and no challenge, go home
+  // If already authenticated and no challenge, go home.
+  // If not authenticated and no challenge, redirect to Hydra to initiate OAuth2 flow.
   useEffect(() => {
     if (isAuthenticated && !loginChallenge) {
       router.push(APP_ROUTES.DASHBOARD.USERS);
+    } else if (!isAuthenticated && !loginChallenge) {
+      LOG('No session and no login challenge, initiating OAuth2 flow...');
+      login();
     }
-  }, [isAuthenticated, loginChallenge, router]);
+  }, [isAuthenticated, loginChallenge, router, login]);
 
   const { data: flow, error: flowError, refetch } = useLoginFlow(undefined, loginChallenge || undefined);
   const submitLogin = useSubmitLogin();

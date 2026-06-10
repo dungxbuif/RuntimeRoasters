@@ -26,16 +26,18 @@ import (
 type Handler struct {
 	authv1.UnimplementedAuthServiceServer
 	systemv1.UnimplementedSystemServiceServer
-	cfg      *config.Config
-	enforcer *casbin.Enforcer
-	usecase  usecase.UserUsecase
+	cfg             *config.Config
+	enforcer        *casbin.Enforcer
+	usecase         usecase.UserUsecase
+	securityUsecase usecase.SecurityUsecase
 }
 
-func NewHandler(cfg *config.Config, enforcer *casbin.Enforcer, u usecase.UserUsecase) *Handler {
+func NewHandler(cfg *config.Config, enforcer *casbin.Enforcer, u usecase.UserUsecase, su usecase.SecurityUsecase) *Handler {
 	return &Handler{
-		cfg:      cfg,
-		enforcer: enforcer,
-		usecase:  u,
+		cfg:             cfg,
+		enforcer:        enforcer,
+		usecase:         u,
+		securityUsecase: su,
 	}
 }
 
@@ -436,5 +438,76 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		Success:        true,
 		Message:        "Centralized system seeding completed successfully",
 		RecordsCreated: int64(len(usersMap)),
+	}, nil
+}
+
+func (h *Handler) Logout(ctx context.Context, req *authv1.LogoutRequest) (*authv1.LogoutResponse, error) {
+	claims, ok := identity.FromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "no identity found in context")
+	}
+
+	reason := req.GetReason()
+	if reason == "" {
+		reason = "user_logout_all"
+	}
+
+	_, err := h.securityUsecase.RevokeAllSessions(ctx, claims.Subject, reason, claims.Subject)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "revocation failed: %v", err)
+	}
+
+	return &authv1.LogoutResponse{
+		Success: true,
+		Message: "all subject sessions revoked successfully",
+	}, nil
+}
+
+func (h *Handler) AdminRevokeAll(ctx context.Context, req *authv1.AdminRevokeAllRequest) (*authv1.AdminRevokeAllResponse, error) {
+	claims, ok := identity.FromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "no identity found in context")
+	}
+
+	if claims.Role != "ADMIN" {
+		return nil, status.Error(codes.PermissionDenied, "unauthorized: administrator privilege required")
+	}
+
+	subject := req.GetSubject()
+	if subject == "" {
+		return nil, status.Error(codes.InvalidArgument, "subject is required")
+	}
+
+	reason := req.GetReason()
+	if reason == "" {
+		reason = "reason is required"
+	}
+
+	state, err := h.securityUsecase.RevokeAllSessions(ctx, subject, reason, claims.Subject)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "administrative revocation failed: %v", err)
+	}
+
+	return &authv1.AdminRevokeAllResponse{
+		Subject:          state.Subject,
+		TokensValidAfter: state.TokensValidAfter.Format(time.RFC3339),
+		Version:          state.Version,
+	}, nil
+}
+
+func (h *Handler) GetTokenValidityBoundary(ctx context.Context, req *authv1.GetTokenValidityBoundaryRequest) (*authv1.GetTokenValidityBoundaryResponse, error) {
+	subject := req.GetSubject()
+	if subject == "" {
+		return nil, status.Error(codes.InvalidArgument, "subject is required")
+	}
+
+	boundary, err := h.securityUsecase.GetTokensValidAfter(ctx, subject)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get token validity boundary: %v", err)
+	}
+
+	return &authv1.GetTokenValidityBoundaryResponse{
+		Subject:          subject,
+		TokensValidAfter: boundary.Format(time.RFC3339),
 	}, nil
 }

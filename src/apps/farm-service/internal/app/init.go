@@ -11,6 +11,7 @@ import (
 	"RuntimeRoasters/apps/farm-service/internal/infrastructure/repository"
 	"RuntimeRoasters/apps/farm-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/token"
 	"RuntimeRoasters/pkg/base/auth/provider"
 	authgrpc "RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"RuntimeRoasters/pkg/base/casbin"
@@ -84,13 +85,21 @@ func InitializeApp() (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	validityChecker, err := token.NewTokenValidityChecker(vdb, cfg.AuthServiceAddr)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// 3. Server Options & Base App
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer, authgrpc.WithPublicRoutes(
-				"/runtime.system.v1.SystemService/GetStatus",
-				"/runtime.system.v1.SystemService/SeedData",
-			)),
+			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer,
+				authgrpc.WithPublicRoutes(
+					"/runtime.system.v1.SystemService/GetStatus",
+					"/runtime.system.v1.SystemService/SeedData",
+				),
+				authgrpc.WithTokenValidityChecker(validityChecker),
+			),
 			casbingrpc.GRPCUnaryInterceptor(casbinEnforcer),
 		),
 	}

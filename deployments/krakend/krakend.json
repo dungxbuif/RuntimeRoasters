@@ -179,6 +179,70 @@
       }
     },
     {
+      "endpoint": "/v1/auth/logout",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/auth/logout",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/v1/admin/users/{subject}/security/revoke-all",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": [
+        "*",
+        "Authorization",
+        "Content-Type"
+      ],
+      "backend": [
+        {
+          "url_pattern": "/v1/admin/users/{subject}/security/revoke-all",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8082"
+          ],
+          "disable_host_sanitize": true
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://hydra:4444/.well-known/jwks.json",
+          "cache": true,
+          "cache_duration": 900,
+          "issuer": "http://localhost:4444/",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
       "endpoint": "/v1/users",
       "method": "GET",
       "output_encoding": "no-op",

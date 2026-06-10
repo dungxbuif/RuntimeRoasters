@@ -7,6 +7,7 @@ import (
 	demogrpc "RuntimeRoasters/apps/demo-service/internal/delivery/grpc"
 	"RuntimeRoasters/apps/demo-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
+	"RuntimeRoasters/pkg/base/auth/token"
 	"RuntimeRoasters/pkg/base/auth/provider"
 	authgrpc "RuntimeRoasters/pkg/base/auth/transport/grpc"
 	"RuntimeRoasters/pkg/base/casbin"
@@ -59,10 +60,15 @@ m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && regexMatc
 		return nil, nil, err
 	}
 
+	validityChecker, err := token.NewTokenValidityChecker(vdb, cfg.AuthServiceAddr)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// 3. Server Options & Base App
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer),
+			authgrpc.GRPCUnaryInterceptor(keyProvider, cfg.ExpectedIssuer, authgrpc.WithTokenValidityChecker(validityChecker)),
 			casbingrpc.GRPCUnaryInterceptor(casbinEnforcer),
 		),
 	}

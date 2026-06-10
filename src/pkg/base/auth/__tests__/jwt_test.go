@@ -25,6 +25,13 @@ func TestVerifyAndParseJWT(t *testing.T) {
 	}
 
 	createToken := func(claims jwt.MapClaims, signingKey *rsa.PrivateKey, kidHeader string) string {
+		if val, exists := claims["iat"]; exists {
+			if val == "missing" {
+				delete(claims, "iat")
+			}
+		} else {
+			claims["iat"] = time.Now().Unix()
+		}
 		t := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		if kidHeader != "" {
 			t.Header[token.JWTHeaderKeyID] = kidHeader
@@ -34,10 +41,13 @@ func TestVerifyAndParseJWT(t *testing.T) {
 	}
 
 	t.Run("successful verification", func(t *testing.T) {
+		iatVal := time.Now().Unix()
+		expVal := time.Now().Add(time.Hour).Unix()
 		claims := jwt.MapClaims{
 			"sub":           "user-123",
 			"iss":           issuer,
-			"exp":           time.Now().Add(time.Hour).Unix(),
+			"iat":           iatVal,
+			"exp":           expVal,
 			"email":         "user@example.com",
 			"role":          "admin",
 			"org_id":        "org-1",
@@ -60,6 +70,8 @@ func TestVerifyAndParseJWT(t *testing.T) {
 			StoreIDs:     []string{"store-1", "store-2"},
 			WarehouseIDs: []string{"warehouse-1"},
 			JTI:          "jti-1",
+			IssuedAt:     time.Unix(iatVal, 0).UTC(),
+			ExpiresAt:    time.Unix(expVal, 0).UTC(),
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -175,6 +187,49 @@ func TestVerifyAndParseJWT(t *testing.T) {
 		_, err := token.VerifyAndParseJWT(rawToken, keyProvider, issuer)
 		if err == nil {
 			t.Error("expected error for unknown kid, got nil")
+		}
+	})
+
+	t.Run("missing iat", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"sub": "user-123",
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+			"iat": "missing",
+		}
+		rawToken := createToken(claims, privateKey, kid)
+
+		_, err := token.VerifyAndParseJWT(rawToken, keyProvider, issuer)
+		if err == nil || err.Error() != "missing or invalid iat claim" {
+			t.Errorf("expected error for missing iat, got %v", err)
+		}
+	})
+
+	t.Run("future iat beyond skew allowance", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"sub": "user-123",
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+			"iat": time.Now().Add(6 * time.Minute).Unix(),
+		}
+		rawToken := createToken(claims, privateKey, kid)
+
+		_, err := token.VerifyAndParseJWT(rawToken, keyProvider, issuer)
+		if err == nil || err.Error() != "token issued in the future (skew exceeded)" {
+			t.Errorf("expected error for future iat, got %v", err)
+		}
+	})
+
+	t.Run("missing sub", func(t *testing.T) {
+		claims := jwt.MapClaims{
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+		}
+		rawToken := createToken(claims, privateKey, kid)
+
+		_, err := token.VerifyAndParseJWT(rawToken, keyProvider, issuer)
+		if err == nil || err.Error() != "missing or invalid sub claim" {
+			t.Errorf("expected error for missing sub, got %v", err)
 		}
 	})
 }

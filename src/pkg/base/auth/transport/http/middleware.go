@@ -13,8 +13,8 @@ import (
 )
 
 type MiddlewareOptions struct {
-	PublicRoutes     []string
-	BlacklistChecker token.BlacklistChecker
+	PublicRoutes         []string
+	TokenValidityChecker token.TokenValidityChecker
 }
 
 type MiddlewareOption func(*MiddlewareOptions)
@@ -25,9 +25,9 @@ func WithPublicRoutes(routes ...string) MiddlewareOption {
 	}
 }
 
-func WithBlacklistChecker(checker token.BlacklistChecker) MiddlewareOption {
+func WithTokenValidityChecker(checker token.TokenValidityChecker) MiddlewareOption {
 	return func(o *MiddlewareOptions) {
-		o.BlacklistChecker = checker
+		o.TokenValidityChecker = checker
 	}
 }
 
@@ -69,15 +69,15 @@ func GinMiddleware(keyProvider provider.KeyProvider, expectedIssuer string, opts
 			return
 		}
 
-		if options.BlacklistChecker != nil {
-			revoked, err := options.BlacklistChecker.IsRevoked(c.Request.Context(), claims.JTI)
+		if options.TokenValidityChecker != nil {
+			valid, err := options.TokenValidityChecker.IsValid(c.Request.Context(), claims.Subject, claims.IssuedAt)
 			if err != nil {
-				logger.FromContext(c.Request.Context()).Error("blacklist check failed", zap.Error(err), zap.String("jti", claims.JTI))
+				logger.FromContext(c.Request.Context()).Error("token validity check failed", zap.Error(err), zap.String("subject", claims.Subject))
 				_ = c.Error(errs.ErrInternal)
 				c.Abort()
 				return
 			}
-			if revoked {
+			if !valid {
 				_ = c.Error(errs.ErrUnauthorized)
 				c.Abort()
 				return

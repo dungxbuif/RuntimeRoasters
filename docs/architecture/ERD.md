@@ -34,6 +34,11 @@ erDiagram
 
 ## Core Entities
 
+### Auth Service
+| Entity | Description |
+| :--- | :--- |
+| **UserSecurityState** | Security boundary containing subject, validity timestamp boundary (`tokens_valid_after`), reason, updater, and version. |
+
 ### Farm Service
 | Entity | Description |
 | :--- | :--- |

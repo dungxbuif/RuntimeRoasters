@@ -31,6 +31,9 @@ func TestGRPCUnaryInterceptor(t *testing.T) {
 	}
 
 	createToken := func(claims jwt.MapClaims) string {
+		if _, exists := claims["iat"]; !exists {
+			claims["iat"] = time.Now().Unix()
+		}
 		t := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		t.Header[token.JWTHeaderKeyID] = kid
 		s, _ := t.SignedString(privateKey)
@@ -155,4 +158,72 @@ func TestGRPCUnaryInterceptor(t *testing.T) {
 			t.Errorf("expected Unauthenticated code, got %v", status.Code(err))
 		}
 	})
+
+	t.Run("revoked token via TokenValidityChecker is rejected", func(t *testing.T) {
+		checker := &mockTokenValidityChecker{
+			valid: false,
+		}
+		interceptorWithChecker := authgrpc.GRPCUnaryInterceptor(keyProvider, issuer, authgrpc.WithTokenValidityChecker(checker))
+
+		claims := jwt.MapClaims{
+			"sub": "user-grpc",
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+		}
+		rawToken := createToken(claims)
+
+		md := metadata.Pairs(token.GRPCAuthMetadataKey, "Bearer "+rawToken)
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return "ok", nil
+		}
+
+		info := &grpc.UnaryServerInfo{FullMethod: "/service.v1.Service/Method"}
+		_, err := interceptorWithChecker(ctx, nil, info, handler)
+
+		if status.Code(err) != codes.Unauthenticated {
+			t.Errorf("expected Unauthenticated, got %v", err)
+		}
+	})
+
+	t.Run("valid token via TokenValidityChecker is accepted", func(t *testing.T) {
+		checker := &mockTokenValidityChecker{
+			valid: true,
+		}
+		interceptorWithChecker := authgrpc.GRPCUnaryInterceptor(keyProvider, issuer, authgrpc.WithTokenValidityChecker(checker))
+
+		claims := jwt.MapClaims{
+			"sub": "user-grpc",
+			"iss": issuer,
+			"exp": time.Now().Add(time.Hour).Unix(),
+		}
+		rawToken := createToken(claims)
+
+		md := metadata.Pairs(token.GRPCAuthMetadataKey, "Bearer "+rawToken)
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return "ok", nil
+		}
+
+		info := &grpc.UnaryServerInfo{FullMethod: "/service.v1.Service/Method"}
+		resp, err := interceptorWithChecker(ctx, nil, info, handler)
+
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if resp != "ok" {
+			t.Errorf("expected ok, got %v", resp)
+		}
+	})
+}
+
+type mockTokenValidityChecker struct {
+	valid bool
+	err   error
+}
+
+func (m *mockTokenValidityChecker) IsValid(ctx context.Context, subject string, iat time.Time) (bool, error) {
+	return m.valid, m.err
 }

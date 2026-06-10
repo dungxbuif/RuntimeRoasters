@@ -1,5 +1,7 @@
 package identity
 
+import "time"
+
 type Claims struct {
 	Subject      string
 	Email        string
@@ -8,4 +10,6 @@ type Claims struct {
 	StoreIDs     []string
 	WarehouseIDs []string
 	JTI          string
+	IssuedAt     time.Time
+	ExpiresAt    time.Time
 }

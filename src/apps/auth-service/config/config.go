@@ -13,6 +13,9 @@ type Config struct {
 	KratosAdminURL string `mapstructure:"KRATOS_ADMIN_URL"`
 	HydraAdminURL  string `mapstructure:"HYDRA_ADMIN_URL"`
 
+	// Valkey Config
+	ValkeyAddr string `mapstructure:"VALKEY_ADDR"`
+
 	// Security
 	InternalSecret string `mapstructure:"INTERNAL_SECRET"`
 	JWKSURL        string `mapstructure:"JWKS_URL"`

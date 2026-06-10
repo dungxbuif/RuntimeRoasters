@@ -41,6 +41,7 @@ func createTestToken(t *testing.T, privateKey *rsa.PrivateKey, issuer, sub, role
 		"iss":    issuer,
 		"role":   role,
 		"exp":    time.Now().Add(time.Hour).Unix(),
+		"iat":    time.Now().Unix(),
 		"jti":    "test-jti",
 		"org_id": "test-org",
 	}

@@ -21,6 +21,7 @@ tasks:
   migrate:all:
     desc: Run all migrations and seeds for all services
     cmds:
+      - task: auth:migrate
       - task: logistics:migrate
       - task: retail:migrate
       - task: warehouse:migrate
@@ -31,6 +32,8 @@ tasks:
 
   # --- Individual Service Migrations ---
   
+  auth:migrate:
+    cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d auth_db < src/apps/auth-service/migrations/000001_create_user_security_states.up.sql"]
   logistics:migrate:
     cmds: ["PGPASSWORD={{.PG_PASS}} psql -h {{.PG_DB_HOST}} -p {{.PG_DB_PORT}} -U {{.PG_USER}} -d logistics_db < src/apps/logistics-service/migrations/000001_create_logistics_tables.up.sql"]
   retail:migrate:

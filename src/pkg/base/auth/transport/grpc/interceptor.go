@@ -7,6 +7,7 @@ import (
 	"RuntimeRoasters/pkg/base/auth/provider"
 	"RuntimeRoasters/pkg/base/auth/token"
 	"RuntimeRoasters/pkg/logger"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -14,26 +15,22 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// InterceptorOptions chứa các cấu hình mở rộng cho Interceptor.
 type InterceptorOptions struct {
-	PublicRoutes     []string
-	BlacklistChecker token.BlacklistChecker
+	PublicRoutes         []string
+	TokenValidityChecker token.TokenValidityChecker
 }
 
-// InterceptorOption định nghĩa signature cho Functional Options.
 type InterceptorOption func(*InterceptorOptions)
 
-// WithPublicRoutes là một Option cho phép developer truyền vào danh sách các API không cần check Token.
 func WithPublicRoutes(routes ...string) InterceptorOption {
 	return func(o *InterceptorOptions) {
 		o.PublicRoutes = append(o.PublicRoutes, routes...)
 	}
 }
 
-// WithBlacklistChecker allows injecting a revocation checker (e.g. Redis).
-func WithBlacklistChecker(checker token.BlacklistChecker) InterceptorOption {
+func WithTokenValidityChecker(checker token.TokenValidityChecker) InterceptorOption {
 	return func(o *InterceptorOptions) {
-		o.BlacklistChecker = checker
+		o.TokenValidityChecker = checker
 	}
 }
 
@@ -100,16 +97,16 @@ func GRPCUnaryInterceptor(keyProvider provider.KeyProvider, expectedIssuer strin
 			return nil, status.Error(codes.Unauthenticated, "unauthorized or invalid token")
 		}
 
-		// Bước 3.5: Kiểm tra Blacklist (Revocation)
-		if options.BlacklistChecker != nil {
-			revoked, err := options.BlacklistChecker.IsRevoked(ctx, idToken.JTI)
+		// Bước 3.5: Kiểm tra Revocation (Token Validity)
+		if options.TokenValidityChecker != nil {
+			valid, err := options.TokenValidityChecker.IsValid(ctx, idToken.Subject, idToken.IssuedAt)
 			if err != nil {
-				log.Error("blacklist check failed", zap.Error(err), zap.String("jti", idToken.JTI))
-				// Fail-Closed: Chặn nếu không kiểm tra được blacklist
+				log.Error("token validity check failed", zap.Error(err), zap.String("subject", idToken.Subject))
+				// Fail-Closed: Chặn nếu không kiểm tra được token validity
 				return nil, status.Error(codes.Internal, "security check failed")
 			}
-			if revoked {
-				log.Warn("token has been revoked", zap.String("jti", idToken.JTI))
+			if !valid {
+				log.Warn("token has been revoked", zap.String("subject", idToken.Subject))
 				return nil, status.Error(codes.Unauthenticated, "token has been revoked")
 			}
 		}

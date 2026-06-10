@@ -54,6 +54,7 @@ Use this document to understand the whole system. Use the linked master document
 | Realtime WebSocket transport and Valkey notification hints | implemented | `docs/decisions/0007-socket-service-transport-only.md` |
 | Valkey GEO driver tracking | implemented; broader operational validation remains active | `src/apps/logistics-service/` |
 | Public sold-cup QR trace | implemented and verified under RR-URG-07A to RR-URG-07E | `docs/work/tickets/sprint10/RR-URG-07/` |
+| Timestamp-based token revocation | implemented | `docs/decisions/0012-timestamp-based-token-revocation.md` |
 
 ## 3. Design Drivers
 
@@ -198,8 +199,13 @@ Rules:
 1. The browser starts an OIDC authorization flow through Hydra and Kratos.
 2. The client exchanges the authorization code for tokens.
 3. KrakenD verifies the JWT and applies route-level restrictions.
-4. The target service applies service-local Casbin policy.
-5. Repository/usecase scope restricts records to the assigned farm, warehouse, store, or shipment.
+4. Services enforce a timestamp-based token validity check:
+   - Each protected request parses `sub` and `iat` from the JWT.
+   - The auth middleware/interceptor queries a shared `TokenValidityChecker`.
+   - If the token's issue time `iat <= subject.tokens_valid_after`, the token is considered revoked and the request is rejected with `401 Unauthorized` / `Unauthenticated`.
+   - The validity checker uses a shared Valkey cache and falls back to a gRPC endpoint (`GetTokenValidityBoundary`) on `auth-service` (which queries PostgreSQL).
+5. The target service applies service-local Casbin policy.
+6. Repository/usecase scope restricts records to the assigned farm, warehouse, store, or shipment.
 
 Administrative identity operations are mediated by `auth-service`; the browser does not call internal identity administration APIs directly.
 

@@ -3,6 +3,7 @@ package token
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"RuntimeRoasters/pkg/base/auth/provider"
 	"RuntimeRoasters/pkg/base/identity"
@@ -39,7 +40,33 @@ func VerifyAndParseJWT(rawToken string, keyProvider provider.KeyProvider, expect
 		return nil, errors.New("invalid token claims")
 	}
 
-	return extractIdentityClaims(jwtClaims), nil
+	// Require non-empty sub and numeric iat/exp.
+	sub, err := jwtClaims.GetSubject()
+	if err != nil || sub == "" {
+		return nil, errors.New("missing or invalid sub claim")
+	}
+
+	iatTime, err := jwtClaims.GetIssuedAt()
+	if err != nil || iatTime == nil {
+		return nil, errors.New("missing or invalid iat claim")
+	}
+
+	expTime, err := jwtClaims.GetExpirationTime()
+	if err != nil || expTime == nil {
+		return nil, errors.New("missing or invalid exp claim")
+	}
+
+	// Reject iat beyond skew allowance (5 minutes)
+	const maxClockSkew = 5 * 60
+	if iatTime.Unix() > time.Now().Unix()+maxClockSkew {
+		return nil, errors.New("token issued in the future (skew exceeded)")
+	}
+
+	claims := extractIdentityClaims(jwtClaims)
+	claims.IssuedAt = iatTime.Time.UTC()
+	claims.ExpiresAt = expTime.Time.UTC()
+
+	return claims, nil
 }
 
 func extractIdentityClaims(jwtClaims jwt.MapClaims) *identity.Claims {

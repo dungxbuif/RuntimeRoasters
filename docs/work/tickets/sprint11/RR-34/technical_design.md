@@ -1,9 +1,9 @@
 ---
 artifact_type: detail_design
 id: DESIGN-RR-34
-status: draft
+status: in_progress
 owner: ai
-approval: pending
+approval: approved
 human_fields:
   - approval
   - constraints
@@ -250,7 +250,7 @@ during implementation. The gateway must not expose Hydra admin APIs directly.
 
 ```mermaid
 sequenceDiagram
-    actor Actor
+    actor User
     participant Gateway as KrakenD
     participant Auth as auth-service
     participant DB as PostgreSQL auth_db
@@ -258,7 +258,7 @@ sequenceDiagram
     participant Hydra as Ory Hydra Admin
     participant Audit as audit-service
 
-    Actor->>Gateway: POST revoke-all with JWT
+    User->>Gateway: POST revoke-all with JWT
     Gateway->>Auth: Authenticated request
     Auth->>Auth: Authorize actor and resolve subject
     Auth->>DB: Advance tokens_valid_after using DB time

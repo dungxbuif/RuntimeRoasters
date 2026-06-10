@@ -19,6 +19,7 @@ owner: shared
 | Observability Trace Integrity | M2 | Trace/Observability | One trace ID across gateway, services, Kafka, trace read models | pending | pending | pending | pending | planned | Legacy TC-4.* consolidated |
 | Realtime Awareness | M2 | RR-URG-06 | Public topology and private role-scoped notification streams | yes | yes | yes | yes | implemented | RR-URG-06 evidence |
 | Admin Demo Seed Parity | Sprint 11 | RR-31 | Admin Initialize Data fans out to service-owned Payment, Trace, and Audit demo seed/status paths without direct cross-DB writes | yes | partial | yes | yes | verified | Payment/Trace/Audit unit/pkg tests passed; live seeding flow triggered via Admin Bootstrap UI; idempotency and trace public journey milestones verified via Browser Subagent |
+| Timestamp-Based Token Revocation | Sprint 11 | RR-34 | JWT time validation and user-wide revocation via auth-service, Valkey, Kratos, and Hydra | yes | yes | pending | pending | implemented | JWT claims/future-skew/missing-sub, gRPC interceptor/HTTP middleware validity checker tests pass |
 
 ## Manual UAT Flow Checklist
 

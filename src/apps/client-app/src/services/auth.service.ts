@@ -52,6 +52,10 @@ class AuthService {
     const { data } = await api.get('/v1/auth/snapshot/frontend');
     return data;
   }
+
+  async logout(): Promise<void> {
+    await api.post('/v1/auth/logout', { reason: "user_logout" });
+  }
 }
 
 export const authService = new AuthService();

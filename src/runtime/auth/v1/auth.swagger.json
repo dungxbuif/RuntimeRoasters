@@ -16,6 +16,45 @@
     "application/json"
   ],
   "paths": {
+    "/v1/admin/users/{subject}/security/revoke-all": {
+      "post": {
+        "summary": "Administrative revoke all access tokens for a specific subject",
+        "operationId": "AuthService_AdminRevokeAll",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AdminRevokeAllResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AuthServiceAdminRevokeAllBody"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
     "/v1/auth/login/accept": {
       "post": {
         "summary": "AcceptLogin processes the login acceptance from Ory Kratos/Hydra",
@@ -41,6 +80,39 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v1AcceptLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "summary": "Self-service logout and revoke all access tokens for the authenticated subject",
+        "operationId": "AuthService_Logout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LogoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1LogoutRequest"
             }
           }
         ],
@@ -213,6 +285,14 @@
     }
   },
   "definitions": {
+    "AuthServiceAdminRevokeAllBody": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -264,6 +344,22 @@
       "properties": {
         "redirectTo": {
           "type": "string"
+        }
+      }
+    },
+    "v1AdminRevokeAllResponse": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "tokensValidAfter": {
+          "type": "string",
+          "title": "RFC3339 formatted string"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
@@ -335,6 +431,25 @@
             "type": "object",
             "$ref": "#/definitions/v1User"
           }
+        }
+      }
+    },
+    "v1LogoutRequest": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "v1LogoutResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
         }
       }
     },

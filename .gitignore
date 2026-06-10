@@ -75,3 +75,6 @@ harness.db-shm
 scripts/bin/harness-cli
 
 .playwright-mcp
+
+/src/.go-tmp
+/src/.go-cache

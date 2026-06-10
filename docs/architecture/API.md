@@ -7,89 +7,362 @@ owner: shared
 
 # API Specification
 
-## Public Gateway (KrakenD)
-The system exposes a unified REST API through KrakenD on port `8081`.
+This document details the API contracts across the Runtime Roasters platform, including the public API Gateway (KrakenD) endpoints, private internal-only endpoints, and service-to-service gRPC interfaces.
 
-### Auth Endpoints
-- `POST /v1/auth/login/accept`: Accept Hydra login request.
-- `GET /v1/auth/me`: Get current user identity.
-- `GET /v1/auth/system/status`: System-wide health check.
-- `POST /v1/auth/seed`: Trigger auth seeding.
+---
 
-### User Endpoints
-- `GET /v1/users`: List users.
-- `POST /v1/users`: Create a new user.
+## 1. System-wide Conventions
 
-### Farm Endpoints
-- `GET /v1/farms`: List farms.
-- `POST /v1/farms`: Register a farm.
-- `GET /v1/farms/{id}`: Get farm details.
-- `PUT /v1/farms/{id}`: Update farm.
-- `DELETE /v1/farms/{id}`: Delete farm.
-- `GET /v1/harvests`: List all harvests.
-- `POST /v1/harvests`: Record a harvest.
-- `GET /v1/farms/{id}/harvests`: List harvests for a specific farm.
+### Error Schema
+All public REST API endpoints follow a standardized error structure on failure:
+```json
+{
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "message": "Missing or invalid authorization token",
+    "details": []
+  }
+}
+```
 
-### Retail Endpoints
-- `GET /v1/retail/stores`: List retail stores.
-- `POST /v1/retail/stores`: Create a retail store.
-- `GET /v1/public/retail/stores`: List active stores for the public kiosk.
-- `GET /v1/public/retail/menu-items`: List the active chain-wide menu without authentication.
-- `GET /v1/public/retail/stores/{store_id}/menu-items`: List the active menu with materialized store availability without authentication.
-- `POST /v1/public/retail/sales`: Create a no-payment sold-cup sale without authentication. Requires `Idempotency-Key`; every item contains one `menu_item_id` and one client-issued `product_id`.
-- `GET /v1/retail/sales`: List sales within the authenticated manager's store scope.
-- `GET /v1/retail/sales/{sale_id}`: Get an in-scope sale and its sold cups.
-- `GET /v1/retail/stores/{store_id}/sold-items`: List sold cups for an assigned store.
-- `GET /v1/orders`: List orders.
-- `POST /v1/orders`: Create a new order (requires Idempotency-Key).
-- `GET /v1/orders/{id}`: Get order status.
-- `POST /v1/orders/{id}/confirm`: Confirm order (Saga manual step).
+### Common Error Codes
+* `INVALID_ARGUMENT` (HTTP 400): Malformed payload, missing required fields.
+* `UNAUTHENTICATED` (HTTP 401): Missing or invalid Bearer token.
+* `PERMISSION_DENIED` (HTTP 403): User lacks required Casbin role policy.
+* `NOT_FOUND` (HTTP 404): Resource does not exist.
+* `ALREADY_EXISTS` (HTTP 409): Resource conflict (e.g. idempotency or duplicate unique keys).
+* `INTERNAL` (HTTP 500): Server error (database, cache, or message broker outages).
 
-Retail internal support route, not exposed through KrakenD:
+---
 
-- `GET /v1/internal/retail/sold-items?limit=25`: List recent sold cups for trace composition. Requires `X-Internal-Secret`.
-- `GET /v1/internal/retail/sold-items/{product_id}`: Resolve the operational sold-cup and lineage record. Requires `X-Internal-Secret`.
+## 2. Public Gateway (KrakenD) & REST Endpoints
 
-`POST /v1/public/retail/sales` atomically writes the sale, one sale item per
-cup, FIFO lot decrement, stock movement, affected materialized availability,
-and a pending `retail.sale.completed` outbox CloudEvent. Validation errors use
-`400`, missing active resources use `404`, and duplicate identities or
-insufficient inventory use `409`.
+### 2.1 Identity & Authentication (Auth Service)
 
-### Internal System Seed Endpoints
+#### POST `/v1/auth/login/accept`
+* **Description**: Processes login acceptance from Kratos/Hydra bridge redirect.
+* **Authentication**: None (Internal system integration).
+* **Request**:
+  ```json
+  {
+    "login_challenge": "challenge_123abc",
+    "subject": "user-uuid-999",
+    "remember": true,
+    "remember_for": 3600
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "redirect_to": "http://localhost:4444/oauth2/auth?client_id=..."
+  }
+  ```
 
-These routes are service-internal and are not public KrakenD contracts. They are
-called by auth-service during Admin Initialize Data and require
-X-Internal-Secret when the target service is configured with an internal secret.
+#### GET `/v1/auth/me`
+* **Description**: Retrieves identity profile of the currently logged-in user.
+* **Authentication**: Bearer JWT.
+* **Request Headers**:
+  * `Authorization: Bearer <token>`
+* **Response (200 OK)**:
+  ```json
+  {
+    "user": {
+      "id": "usr_77239a0",
+      "email": "manager@runtimeroasters.com",
+      "name": "Hoan Kiem Manager",
+      "role": "STORE_MGR"
+    }
+  }
+  ```
 
-- POST /v1/system/seed: Seed deterministic service-owned demo data.
-- GET /v1/system/status: Return seed readiness and canonical demo counts.
+#### POST `/v1/auth/logout`
+* **Description**: Self-service immediate logout and revocation of all active access tokens for the authenticated subject.
+* **Authentication**: Bearer JWT.
+* **Request Body**:
+  ```json
+  {
+    "reason": "user_logout_all"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "all subject sessions revoked successfully"
+  }
+  ```
 
-RR-31 extends this internal contract to Payment, Trace, and Audit so the Admin
-seed path can cover finance scenarios, trace projections, and audit evidence
-without cross-service database writes.
+#### POST `/v1/admin/users/{subject}/security/revoke-all`
+* **Description**: Administrative revocation of all access tokens for a specific user.
+* **Authentication**: Bearer JWT (requires `ADMIN` role).
+* **Request Body**:
+  ```json
+  {
+    "reason": "compromised_credentials"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "subject": "usr_77239a0",
+    "tokens_valid_after": "2026-06-10T04:20:00Z",
+    "version": 2
+  }
+  ```
 
-### Warehouse Endpoints
-- `GET /v1/warehouse/warehouses`: List warehouses.
-- `POST /v1/warehouse/warehouses`: Create a warehouse.
-- `GET /v1/warehouse/inventory`: View global warehouse inventory.
-- `GET /v1/warehouse/batches`: List production batches.
-- `POST /v1/warehouse/batches`: Create production batch.
+---
 
-### Logistics Endpoints
-- `GET /v1/logistics/shipments`: List shipments.
-- `GET /v1/logistics/shipments/{id}`: Get shipment details.
-- `POST /v1/logistics/shipments/{id}/assign`: Assign driver/vehicle.
-- `POST /v1/logistics/drivers/location`: Update driver GPS.
+### 2.2 User Management (Auth Service)
 
-### Trace Endpoints
-- `GET /v1/public/trace-items`: List recently sold traceable cups without authentication.
-- `GET /v1/public/trace/{trace_code}`: Resolve a sanitized sold-cup journey without authentication; `trace_code` equals Retail `product_id`.
-- `GET /v1/trace/{id}`: Get trace topology for an entity.
-- `GET /v1/trace/{id}/document`: Get detailed trace document.
+#### POST `/v1/users`
+* **Description**: Registers a new system user inside Kratos and configures Casbin authorization policy.
+* **Authentication**: Bearer JWT (requires `ADMIN` role).
+* **Request**:
+  ```json
+  {
+    "email": "wh_mgr@runtimeroasters.com",
+    "password": "securepassword123",
+    "name": "Warehouse Manager",
+    "role": "WAREHOUSE_MGR"
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "user": {
+      "id": "usr_883a1b0",
+      "email": "wh_mgr@runtimeroasters.com",
+      "name": "Warehouse Manager",
+      "role": "WAREHOUSE_MGR"
+    }
+  }
+  ```
 
-## Internal gRPC Services
-Services communicate over gRPC on ports `50052-50060`.
+---
+
+### 2.3 Farm & Harvest (Farm Service)
+
+#### POST `/v1/farms`
+* **Description**: Registers a new coffee farm.
+* **Authentication**: Bearer JWT (requires `ADMIN` role).
+* **Request**:
+  ```json
+  {
+    "name": "Dalat Highlands Farm",
+    "location": "Dalat, Lam Dong",
+    "area": 25.4,
+    "coffee_type": "Arabica Catimor"
+  }
+  ```
+* **Response (201 Created)**:
+  ```json
+  {
+    "id": "frm_ HighlandsDalat",
+    "name": "Dalat Highlands Farm",
+    "location": "Dalat, Lam Dong",
+    "area": 25.4,
+    "coffee_type": "Arabica Catimor"
+  }
+  ```
+
+#### POST `/v1/harvests`
+* **Description**: Declares a coffee cherry harvest from an assigned farm. Automatically schedules logistics pickup shipments.
+* **Authentication**: Bearer JWT (requires `FARM_MANAGER` role scoped to the farm).
+* **Request**:
+  ```json
+  {
+    "farm_id": "frm_ HighlandsDalat",
+    "quantity": 1850.5,
+    "harvest_date": "2026-06-10"
+  }
+  ```
+* **Response (201 Created)**:
+  ```json
+  {
+    "id": "hrv_90123a0",
+    "farm_id": "frm_ HighlandsDalat",
+    "quantity": 1850.5,
+    "harvest_date": "2026-06-10",
+    "status": "PENDING_PICKUP"
+  }
+  ```
+
+---
+
+### 2.4 Retail & POS (Retail Service)
+
+#### POST `/v1/orders`
+* **Description**: Places a warehouse stock supply order for a store. This starts the async Saga transaction.
+* **Authentication**: Bearer JWT (requires `STORE_MGR` role).
+* **Request Headers**:
+  - `Idempotency-Key: idemp_112233`
+* **Request**:
+  ```json
+  {
+    "store_id": "str_hoankiem",
+    "warehouse_id": "wh_hanoi",
+    "items": [
+      {
+        "sku": "sku_arabica_medium",
+        "quantity": 50
+      }
+    ]
+  }
+  ```
+* **Response (202 Accepted)**:
+  ```json
+  {
+    "id": "ord_9901abc",
+    "status": "PROCESSING",
+    "store_id": "str_hoankiem",
+    "warehouse_id": "wh_hanoi",
+    "items": [
+      {
+        "sku": "sku_arabica_medium",
+        "quantity": 50
+      }
+    ]
+  }
+  ```
+
+#### POST `/v1/public/retail/sales`
+* **Description**: Registers a POS cup sale at a store (public kiosk path). Allocates inventory in FIFO order and maps lineage.
+* **Authentication**: None (Public Kiosk).
+* **Request Headers**:
+  - `Idempotency-Key: idemp_sale_8899`
+* **Request**:
+  ```json
+  {
+    "store_id": "str_hoankiem",
+    "items": [
+      {
+        "menu_item_id": "mn_espresso_double",
+        "product_id": "cup_plat_0610a"
+      }
+    ]
+  }
+  ```
+* **Response (201 Created)**:
+  ```json
+  {
+    "sale_id": "sal_88231c",
+    "store_id": "str_hoankiem",
+    "occurred_at": "2026-06-10T04:25:00Z",
+    "items": [
+      {
+        "menu_item_id": "mn_espresso_double",
+        "product_id": "cup_plat_0610a"
+      }
+    ]
+  }
+  ```
+
+---
+
+### 2.5 Logistics & Vehicle Tracking (Logistics Service)
+
+#### POST `/v1/logistics/drivers/location`
+* **Description**: Submits the driver's current coordinates for live route monitoring.
+* **Authentication**: Bearer JWT (requires `DRIVER` role).
+* **Request**:
+  ```json
+  {
+    "driver_id": "drv_loc_456",
+    "latitude": 21.0285,
+    "longitude": 105.8542
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "success": true
+  }
+  ```
+
+---
+
+### 2.6 Warehouse & Inventory (Warehouse Service)
+
+#### GET `/v1/warehouse/inventory`
+* **Description**: Retrieves current in-stock quantities per SKU.
+* **Authentication**: Bearer JWT (requires `WAREHOUSE_MGR` or `ADMIN`).
+* **Response (200 OK)**:
+  ```json
+  [
+    {
+      "warehouse_id": "wh_hanoi",
+      "sku": "sku_arabica_medium",
+      "quantity": 1240
+    },
+    {
+      "warehouse_id": "wh_hanoi",
+      "sku": "sku_robusta_dark",
+      "quantity": 890
+    }
+  ]
+  ```
+
+---
+
+### 2.7 Public Provenance Trace (Trace Service)
+
+#### GET `/v1/public/trace/{trace_code}`
+* **Description**: Resolves the complete origin and transportation journey of a cup by its identifier.
+* **Authentication**: None (Public Visitor).
+* **Response (200 OK)**:
+  ```json
+  {
+    "product_id": "cup_plat_0610a",
+    "menu_item_name": "Double Espresso",
+    "sold_at": "2026-06-10T04:25:00Z",
+    "store_name": "Hoan Kiem Store",
+    "journey": [
+      {
+        "stage": "Harvest",
+        "date": "2026-06-01",
+        "origin": "Dalat Highlands Farm",
+        "details": "Arabica Catimor, quantity: 1850.5kg"
+      },
+      {
+        "stage": "Processing & Roasting",
+        "date": "2026-06-04",
+        "facility": "Hanoi Central Warehouse",
+        "details": "Batch: bat_roast_442"
+      },
+      {
+        "stage": "Logistics Dispatch",
+        "date": "2026-06-06",
+        "shipment_id": "shp_wh_to_store_112",
+        "driver": "Nguyen Van A"
+      }
+    ]
+  }
+  ```
+
+---
+
+## 3. Private Internal HTTP Endpoints
+These endpoints are not exposed to the public internet via the KrakenD API Gateway and are protected by `X-Internal-Secret` matching.
+
+### 3.1 GET `/v1/internal/retail/sold-items/{product_id}`
+* **Description**: Retrieves a single cup's POS lineage record from `retail-service` database. Called synchronously by `trace-service` during composition.
+* **Headers**:
+  - `X-Internal-Secret: <shared_secret>`
+* **Response (200 OK)**:
+  ```json
+  {
+    "product_id": "cup_plat_0610a",
+    "menu_item_id": "mn_espresso_double",
+    "lot_id": "lot_dalat_arabica_0601",
+    "quantity": 1,
+    "sold_at": "2026-06-10T04:25:00Z"
+  }
+  ```
+
+---
+
+## 4. Internal gRPC Services
+Services communicate internally over gRPC on ports `50052-50060`.
 
 | Service | Port | Proto Definition |
 | :--- | :--- | :--- |
@@ -99,3 +372,25 @@ Services communicate over gRPC on ports `50052-50060`.
 | **Logistics** | 50055 | - |
 | **Warehouse** | 50059 | - |
 | **Socket** | 50060 | - |
+
+### 4.1 AuthService (Auth Service)
+
+#### Method: `GetTokenValidityBoundary`
+* **Proto Definition**:
+  ```protobuf
+  rpc GetTokenValidityBoundary(GetTokenValidityBoundaryRequest) returns (GetTokenValidityBoundaryResponse);
+  ```
+* **Description**: Returns the revocation boundary timestamp for a subject. Used by other microservices upon cache misses.
+* **Request**:
+  ```protobuf
+  message GetTokenValidityBoundaryRequest {
+    string subject = 1;
+  }
+  ```
+* **Response**:
+  ```protobuf
+  message GetTokenValidityBoundaryResponse {
+    string subject = 1;
+    string tokens_valid_after = 2; // RFC3339 formatted string
+  }
+  ```

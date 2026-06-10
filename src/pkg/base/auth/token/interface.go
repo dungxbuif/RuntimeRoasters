@@ -1,8 +1,11 @@
 package token
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
-// BlacklistChecker defines the interface for checking if a token (JTI) has been revoked.
-type BlacklistChecker interface {
-	IsRevoked(ctx context.Context, jti string) (bool, error)
+// TokenValidityChecker defines the interface for verifying user token validity boundary.
+type TokenValidityChecker interface {
+	IsValid(ctx context.Context, subject string, iat time.Time) (bool, error)
 }

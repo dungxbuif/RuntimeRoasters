@@ -56,6 +56,26 @@ service AuthService {
       get: "/v1/auth/system/status"
     };
   }
+
+  // Self-service logout and revoke all access tokens for the authenticated subject
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout"
+      body: "*"
+    };
+  }
+
+  // Administrative revoke all access tokens for a specific subject
+  rpc AdminRevokeAll(AdminRevokeAllRequest) returns (AdminRevokeAllResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/users/{subject}/security/revoke-all"
+      body: "*"
+    };
+  }
+
+  // Internal endpoint to get the token validity boundary for a subject.
+  // Not exposed via gRPC-Gateway.
+  rpc GetTokenValidityBoundary(GetTokenValidityBoundaryRequest) returns (GetTokenValidityBoundaryResponse);
 }
 
 message GetFullSnapshotRequest {
@@ -121,4 +141,33 @@ message GetSystemStatusRequest {}
 message GetSystemStatusResponse {
   bool all_seeded = 1;
   map<string, bool> services_status = 2;
+}
+
+message LogoutRequest {
+  string reason = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message AdminRevokeAllRequest {
+  string subject = 1;
+  string reason = 2;
+}
+
+message AdminRevokeAllResponse {
+  string subject = 1;
+  string tokens_valid_after = 2; // RFC3339 formatted string
+  int64 version = 3;
+}
+
+message GetTokenValidityBoundaryRequest {
+  string subject = 1;
+}
+
+message GetTokenValidityBoundaryResponse {
+  string subject = 1;
+  string tokens_valid_after = 2; // RFC3339 formatted string
 }

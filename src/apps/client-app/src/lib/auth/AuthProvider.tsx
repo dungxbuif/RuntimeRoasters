@@ -102,6 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      const { authService } = await import('@/services/auth.service');
+      await authService.logout();
+    } catch (err) {
+      console.warn('[Auth] Failed to call backend logout endpoint:', err);
+    }
+
     storageService.clearAll();
     setState({
       user: null,

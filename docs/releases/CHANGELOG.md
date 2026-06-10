@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- RR-34: Timestamp-based access token revocation, including gRPC/HTTP check middleware, Valkey security state cache, and Ory Hydra/Kratos session invalidations.
+- ADR-0012: Architectural decision record for timestamp-based user-wide token revocation.
 - New Harness v1 (Markdown-First) framework.
 - Core architecture docs (API, ERD, INTEGRATIONS).
 - Unified standard docs.

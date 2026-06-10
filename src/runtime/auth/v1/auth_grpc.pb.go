@@ -19,13 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_GetFullSnapshot_FullMethodName = "/runtime.auth.v1.AuthService/GetFullSnapshot"
-	AuthService_AcceptLogin_FullMethodName     = "/runtime.auth.v1.AuthService/AcceptLogin"
-	AuthService_CreateUser_FullMethodName      = "/runtime.auth.v1.AuthService/CreateUser"
-	AuthService_ListUsers_FullMethodName       = "/runtime.auth.v1.AuthService/ListUsers"
-	AuthService_GetMe_FullMethodName           = "/runtime.auth.v1.AuthService/GetMe"
-	AuthService_SeedSystem_FullMethodName      = "/runtime.auth.v1.AuthService/SeedSystem"
-	AuthService_GetSystemStatus_FullMethodName = "/runtime.auth.v1.AuthService/GetSystemStatus"
+	AuthService_GetFullSnapshot_FullMethodName          = "/runtime.auth.v1.AuthService/GetFullSnapshot"
+	AuthService_AcceptLogin_FullMethodName              = "/runtime.auth.v1.AuthService/AcceptLogin"
+	AuthService_CreateUser_FullMethodName               = "/runtime.auth.v1.AuthService/CreateUser"
+	AuthService_ListUsers_FullMethodName                = "/runtime.auth.v1.AuthService/ListUsers"
+	AuthService_GetMe_FullMethodName                    = "/runtime.auth.v1.AuthService/GetMe"
+	AuthService_SeedSystem_FullMethodName               = "/runtime.auth.v1.AuthService/SeedSystem"
+	AuthService_GetSystemStatus_FullMethodName          = "/runtime.auth.v1.AuthService/GetSystemStatus"
+	AuthService_Logout_FullMethodName                   = "/runtime.auth.v1.AuthService/Logout"
+	AuthService_AdminRevokeAll_FullMethodName           = "/runtime.auth.v1.AuthService/AdminRevokeAll"
+	AuthService_GetTokenValidityBoundary_FullMethodName = "/runtime.auth.v1.AuthService/GetTokenValidityBoundary"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -44,6 +47,13 @@ type AuthServiceClient interface {
 	// System Bootstrap & Status
 	SeedSystem(ctx context.Context, in *SeedSystemRequest, opts ...grpc.CallOption) (*SeedSystemResponse, error)
 	GetSystemStatus(ctx context.Context, in *GetSystemStatusRequest, opts ...grpc.CallOption) (*GetSystemStatusResponse, error)
+	// Self-service logout and revoke all access tokens for the authenticated subject
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
+	// Administrative revoke all access tokens for a specific subject
+	AdminRevokeAll(ctx context.Context, in *AdminRevokeAllRequest, opts ...grpc.CallOption) (*AdminRevokeAllResponse, error)
+	// Internal endpoint to get the token validity boundary for a subject.
+	// Not exposed via gRPC-Gateway.
+	GetTokenValidityBoundary(ctx context.Context, in *GetTokenValidityBoundaryRequest, opts ...grpc.CallOption) (*GetTokenValidityBoundaryResponse, error)
 }
 
 type authServiceClient struct {
@@ -124,6 +134,36 @@ func (c *authServiceClient) GetSystemStatus(ctx context.Context, in *GetSystemSt
 	return out, nil
 }
 
+func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutResponse)
+	err := c.cc.Invoke(ctx, AuthService_Logout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) AdminRevokeAll(ctx context.Context, in *AdminRevokeAllRequest, opts ...grpc.CallOption) (*AdminRevokeAllResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminRevokeAllResponse)
+	err := c.cc.Invoke(ctx, AuthService_AdminRevokeAll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetTokenValidityBoundary(ctx context.Context, in *GetTokenValidityBoundaryRequest, opts ...grpc.CallOption) (*GetTokenValidityBoundaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTokenValidityBoundaryResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetTokenValidityBoundary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -140,6 +180,13 @@ type AuthServiceServer interface {
 	// System Bootstrap & Status
 	SeedSystem(context.Context, *SeedSystemRequest) (*SeedSystemResponse, error)
 	GetSystemStatus(context.Context, *GetSystemStatusRequest) (*GetSystemStatusResponse, error)
+	// Self-service logout and revoke all access tokens for the authenticated subject
+	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
+	// Administrative revoke all access tokens for a specific subject
+	AdminRevokeAll(context.Context, *AdminRevokeAllRequest) (*AdminRevokeAllResponse, error)
+	// Internal endpoint to get the token validity boundary for a subject.
+	// Not exposed via gRPC-Gateway.
+	GetTokenValidityBoundary(context.Context, *GetTokenValidityBoundaryRequest) (*GetTokenValidityBoundaryResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -170,6 +217,15 @@ func (UnimplementedAuthServiceServer) SeedSystem(context.Context, *SeedSystemReq
 }
 func (UnimplementedAuthServiceServer) GetSystemStatus(context.Context, *GetSystemStatusRequest) (*GetSystemStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystemStatus not implemented")
+}
+func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*LogoutResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedAuthServiceServer) AdminRevokeAll(context.Context, *AdminRevokeAllRequest) (*AdminRevokeAllResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminRevokeAll not implemented")
+}
+func (UnimplementedAuthServiceServer) GetTokenValidityBoundary(context.Context, *GetTokenValidityBoundaryRequest) (*GetTokenValidityBoundaryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTokenValidityBoundary not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -318,6 +374,60 @@ func _AuthService_GetSystemStatus_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Logout(ctx, req.(*LogoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_AdminRevokeAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminRevokeAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).AdminRevokeAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_AdminRevokeAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).AdminRevokeAll(ctx, req.(*AdminRevokeAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetTokenValidityBoundary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTokenValidityBoundaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetTokenValidityBoundary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetTokenValidityBoundary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetTokenValidityBoundary(ctx, req.(*GetTokenValidityBoundaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -352,6 +462,18 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSystemStatus",
 			Handler:    _AuthService_GetSystemStatus_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _AuthService_Logout_Handler,
+		},
+		{
+			MethodName: "AdminRevokeAll",
+			Handler:    _AuthService_AdminRevokeAll_Handler,
+		},
+		{
+			MethodName: "GetTokenValidityBoundary",
+			Handler:    _AuthService_GetTokenValidityBoundary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

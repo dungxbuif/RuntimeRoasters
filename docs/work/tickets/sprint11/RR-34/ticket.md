@@ -1,7 +1,7 @@
 ---
 artifact_type: ticket
 id: RR-34
-status: draft
+status: done
 owner: human
 priority: high
 lane: high-risk
@@ -39,12 +39,12 @@ trace:
 ## Status
 
 - ID: `RR-34`
-- Status: `draft`
+- Status: `done`
 - Type: security feature
 - Priority: `high`
 - Sprint: Sprint 11
 - Owner: Tech Lead
-- Approval: pending
+- Approval: approved
 
 ## Context
 
@@ -87,31 +87,31 @@ server-owned validity boundary for its subject.
 
 ## Acceptance Criteria
 
-- [ ] JWT parsing requires valid `sub`, `iat`, and `exp`; malformed or missing
+- [x] JWT parsing requires valid `sub`, `iat`, and `exp`; malformed or missing
   required claims are rejected.
-- [ ] A protected request is accepted when `iat > tokens_valid_after` and all
+- [x] A protected request is accepted when `iat > tokens_valid_after` and all
   existing signature, issuer, expiry, RBAC, and data-scope checks pass.
-- [ ] A protected HTTP or gRPC request is rejected with an unauthenticated result
+- [x] A protected HTTP or gRPC request is rejected with an unauthenticated result
   when `iat <= tokens_valid_after`.
-- [ ] Self-service revoke-all can only revoke the authenticated subject.
-- [ ] Administrator revoke-all requires the existing administrative policy and
+- [x] Self-service revoke-all can only revoke the authenticated subject.
+- [x] Administrator revoke-all requires the existing administrative policy and
   accepts a reason; unauthorized callers cannot discover or revoke another
   subject.
-- [ ] Repeating revoke-all is idempotent and never moves
+- [x] Repeating revoke-all is idempotent and never moves
   `tokens_valid_after` backwards.
-- [ ] Revoke-all invalidates the subject's Hydra login and consent sessions so
+- [x] Revoke-all invalidates the subject's Hydra login and consent sessions so
   old refresh grants cannot create usable access tokens.
-- [ ] PostgreSQL is the authoritative validity-boundary store; Valkey is only a
+- [x] PostgreSQL is the authoritative validity-boundary store; Valkey is only a
   bounded cache and no JWT/token string is persisted.
-- [ ] Cache miss reads PostgreSQL and repopulates Valkey. Cache/storage errors
+- [x] Cache miss reads PostgreSQL and repopulates Valkey. Cache/storage errors
   follow the approved fail-closed policy for protected requests.
-- [ ] Revocation emits an audit record containing actor, subject, action, reason,
+- [x] Revocation emits an audit record containing actor, subject, action, reason,
   boundary time, result, and trace ID, but no JWT, refresh token, or secret.
-- [ ] Same-second behavior is deterministic: `iat <= tokens_valid_after` is
+- [x] Same-second behavior is deterministic: `iat <= tokens_valid_after` is
   rejected and a new login must receive `iat > tokens_valid_after`.
-- [ ] Existing non-revoked authentication remains backward compatible after the
+- [x] Existing non-revoked authentication remains backward compatible after the
   migration and rollout.
-- [ ] UAT proves an active token succeeds before revoke, fails immediately after
+- [x] UAT proves an active token succeeds before revoke, fails immediately after
   revoke, and a fresh login succeeds afterward.
 
 ## Flow, Test, And Seed Audit Notes
@@ -231,15 +231,15 @@ proposed RR-34 flow.
 
 ## Completion Checklist
 
-- [ ] Design approved
-- [ ] Implementation complete
-- [ ] Tests run and recorded
-- [ ] Fix/test loop guard respected
-- [ ] Validation matrix updated
-- [ ] UAT completed
-- [ ] Master docs reconciled
-- [ ] Docs review completed
-- [ ] ADR created
-- [ ] `docs/CONTEXT.md` updated
+- [x] Design approved
+- [x] Implementation complete
+- [x] Tests run and recorded
+- [x] Fix/test loop guard respected
+- [x] Validation matrix updated
+- [x] UAT completed
+- [x] Master docs reconciled
+- [x] Docs review completed
+- [x] ADR created
+- [x] `docs/CONTEXT.md` updated
 - [x] `docs/work/BACKLOG.md` updated
 - [x] Trace links initialized
