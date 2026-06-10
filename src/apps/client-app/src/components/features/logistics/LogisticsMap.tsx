@@ -30,9 +30,17 @@ interface LogisticsMapProps {
   routes: RouteData[];
   activeDriverLocations: Record<string, [number, number]>;
   showRoutes?: boolean;
+  mode?: 'public' | 'pro' | 'admin';
 }
 
-export default function LogisticsMap({ locations, shipments, routes, activeDriverLocations, showRoutes = false }: LogisticsMapProps) {
+export default function LogisticsMap({ 
+  locations, 
+  shipments, 
+  routes, 
+  activeDriverLocations, 
+  showRoutes = false,
+  mode = 'pro'
+}: LogisticsMapProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -139,20 +147,30 @@ export default function LogisticsMap({ locations, shipments, routes, activeDrive
         ))}
 
         {/* Active Drivers */}
-        {Object.entries(activeDriverLocations).map(([driverId, position]) => (
-          <Marker 
-            key={driverId} 
-            position={position} 
-            icon={getDriverIcon()}
-          >
-            <Popup>
-              <div className="bg-white p-2 rounded">
-                <p className="font-black text-xs text-slate-900">DRIVER: {driverId}</p>
-                <p className="text-[10px] font-black text-primary uppercase italic">IN TRANSIT</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {Object.entries(activeDriverLocations).map(([driverId, position]) => {
+          const shipment = shipments.find(s => s.driver_id === driverId);
+          return (
+            <Marker 
+              key={driverId} 
+              position={position} 
+              icon={getDriverIcon()}
+            >
+              <Popup>
+                <div className="bg-white p-2 rounded">
+                  <p className="font-black text-xs text-slate-900">
+                    {mode === 'public' ? `UNIT #${driverId.slice(-4).toUpperCase()}` : `DRIVER: ${driverId}`}
+                  </p>
+                  {mode !== 'public' && shipment && (
+                    <p className="text-[9px] font-bold text-slate-500 mt-1 uppercase">
+                      Shipment: {shipment.id.slice(0, 8)}
+                    </p>
+                  )}
+                  <p className="text-[10px] font-black text-primary uppercase italic mt-1">IN TRANSIT</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       {/* Map Legend */}

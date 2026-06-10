@@ -56,11 +56,11 @@ Ensures absolute consistency between sales and fulfillment capability.
 ### 3.4. Transportation & Journey Monitoring
 - **Auto-seeding Resources**: Vehicles and drivers are automatically generated (auto-seeded) as demo resources when a Warehouse is created, bypassing the need for manual ADMIN creation of individual drivers.
 - **Shipment Dispatching**: Warehouse Manager assigns available vehicles and drivers to inbound farm pickup or outbound retail delivery.
-- **Driver Client Simulation**: In production-demo mode, the driver logs in with a `DRIVER` account, starts the route simulation from the UI, and the browser posts GPS/status updates to backend as if it were a driver device.
-- **Progress Tracking**: The goods' journey is continuously monitored in real time on Warehouse, Logistics, Farm, Retail, Trace, and public architecture views.
+- **Driver Client Simulation**: In production-demo mode, the driver logs in with a `DRIVER` account and starts the route simulation. The browser streams GPS updates over a persistent **WebSocket** connection to the `socket-service` for high-performance edge ingestion.
+- **Progress Tracking**: The goods' journey is continuously monitored in real time on Warehouse, Logistics, Farm, Retail, Trace, and public architecture views. Updates are broadcasted via WebSockets for sub-second visual updates.
 - **Demo Confirmation Rule**: The main demo uses driver-only milestone confirmation for pickup, delivery, and return. Farm/store dual confirmation can be added later as a stricter business mode.
 - **Mandatory Return**: After both farm pickup and retail delivery, the driver must complete a return-to-base leg. This is not a background status reset.
-- **Backend Source of Truth**: The frontend may animate the route, but backend services validate assignment, persist accepted updates, emit events, broadcast realtime state, and drive trace/audit records.
+- **Backend Source of Truth**: The `socket-service` relays GPS updates to **Kafka**, which are consumed by the `logistics-service`. Current coordinates are indexed in **Valkey GEO** for fast retrieval, while PostgreSQL persists the historical state.
 
 ### 3.5. Realtime Control Plane & Traceability
 - **Business Events First**: UI flow diagrams should use backend domain events to explain the business story.

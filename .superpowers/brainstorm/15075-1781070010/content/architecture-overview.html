@@ -1,0 +1,64 @@
+<h2>Real-time GPS Ingestion Architecture</h2>
+<p class="subtitle">Moving from HTTP Polling/POSTs to WebSocket Event-Driven Streaming</p>
+
+<div class="mockup">
+  <div class="mockup-header">Event Flow: Driver -> Cloud -> Admin</div>
+  <div class="mockup-body">
+    <div style="display: flex; justify-content: space-around; align-items: center; padding: 20px; font-family: monospace;">
+      
+      <!-- Driver App -->
+      <div style="border: 2px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; width: 140px;">
+        <div style="font-weight: bold;">Driver App</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">(Simulator)</div>
+        <div style="margin-top: 10px; font-size: 12px; color: blue;">WS SEND<br>{"type":"gps_update"}</div>
+      </div>
+
+      <div style="font-size: 24px;">➡️</div>
+
+      <!-- Socket Service Ingress -->
+      <div style="border: 2px solid #004ac6; padding: 15px; border-radius: 8px; text-align: center; width: 140px; background: #f0f7ff;">
+        <div style="font-weight: bold; color: #004ac6;">Socket Service</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">Ingress Gate</div>
+        <div style="margin-top: 10px; font-size: 12px; color: green;">KAFKA PUB<br>logistics.gps.updated</div>
+      </div>
+
+      <div style="font-size: 24px;">➡️</div>
+
+      <!-- Logistics Service -->
+      <div style="border: 2px solid #333; padding: 15px; border-radius: 8px; text-align: center; width: 140px;">
+        <div style="font-weight: bold;">Logistics Svc</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">Data Processor</div>
+        <div style="margin-top: 10px; font-size: 11px;">1. Update DB<br>2. Valkey GEOADD</div>
+      </div>
+
+      <div style="font-size: 24px;">🔄</div>
+
+      <!-- Admin Dash -->
+      <div style="border: 2px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; width: 140px;">
+        <div style="font-weight: bold;">Admin Dash</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">(Map Viewer)</div>
+        <div style="margin-top: 10px; font-size: 12px; color: blue;">WS RECV<br>topology.event</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Key Architectural Benefits</h3>
+  <ul>
+    <li><strong>Zero Polling:</strong> Admin dashboard updates instantly when a driver moves.</li>
+    <li><strong>Reduced Battery/Data:</strong> Persistent WebSocket is cheaper than frequent HTTP handshakes.</li>
+    <li><strong>True Single Source of Truth:</strong> Admin simulation removed; all data comes from real driver accounts.</li>
+  </ul>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="proceed" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Looks correct</h3>
+      <p>Proceed with this architecture</p>
+    </div>
+  </div>
+</div>

@@ -33,6 +33,8 @@ export interface Shipment {
   harvest_id?: string;
   farm_id?: string;
   warehouse_id?: string;
+  destination_store_id?: string;
+  destination_warehouse_id?: string;
   vehicle_id?: string;
   driver_id: string | null;
   status: ShipmentStatus;

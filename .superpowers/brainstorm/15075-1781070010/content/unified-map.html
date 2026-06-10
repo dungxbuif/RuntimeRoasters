@@ -1,0 +1,68 @@
+<h2>Unified Map: One Engine, Three Contexts</h2>
+<p class="subtitle">Reusing the <code>LogisticsMap</code> component for Public, Professional, and Admin views</p>
+
+<div class="cards" data-multiselect>
+  <!-- Context 1: Public -->
+  <div class="card" data-choice="public">
+    <div class="card-image" style="background: #0f172a; display: flex; align-items: center; justify-content: center; height: 120px;">
+       <div style="text-align: center;">
+         <div style="font-size: 24px;">🚚 🚚 🚚</div>
+         <div style="font-size: 8px; color: #38bdf8; font-weight: bold; margin-top: 5px;">LIVE NETWORK VIEW</div>
+       </div>
+    </div>
+    <div class="card-body">
+      <h3>1. Public User</h3>
+      <div class="label">Visibility: Public</div>
+      <p style="font-size: 10px;">Root Domain. Anonymized trucks. No IDs. Purely for "Wow" factor.</p>
+    </div>
+  </div>
+
+  <!-- Context 2: Professional -->
+  <div class="card" data-choice="pro">
+    <div class="card-image" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; height: 120px;">
+       <div style="text-align: center; color: #1e293b;">
+         <div style="font-size: 20px;">📍 [SHP-902]</div>
+         <div style="font-size: 8px; font-weight: bold; margin-top: 5px;">LOGISTICS CONTROL</div>
+       </div>
+    </div>
+    <div class="card-body">
+      <h3>2. Manager/Driver</h3>
+      <div class="label">Visibility: Restricted</div>
+      <p style="font-size: 10px;">Auth Required. Real names, Shipment IDs, Routes, and ETA details.</p>
+    </div>
+  </div>
+
+  <!-- Context 3: Admin -->
+  <div class="card" data-choice="admin">
+    <div class="card-image" style="background: #1e293b; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; height: 120px;">
+       <div style="text-align: center; color: #ef4444;">
+         <div style="font-size: 20px;">📊 99.8%</div>
+         <div style="font-size: 8px; color: #94a3b8; font-weight: bold; margin-top: 5px;">SYSTEM HEALTH DASHBOARD</div>
+       </div>
+    </div>
+    <div class="card-body">
+      <h3>3. Global Admin</h3>
+      <div class="label">Visibility: Absolute</div>
+      <p style="font-size: 10px;">Deep metrics: Latency, Traffic Heatmaps, and Real-time Fleet Performance.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Technical Realization</h3>
+  <ul>
+    <li><strong>Map Component:</strong> We'll make <code>LogisticsMap</code> accept a <code>mode</code> prop (<code>"public" | "pro" | "admin"</code>).</li>
+    <li><strong>Ingress:</strong> <code>socket-service</code> will be the only gateway. It checks tickets for Pro/Admin but allows <code>public</code> connections to subscribe to an anonymized GPS stream.</li>
+    <li><strong>Admin Metrics:</strong> Add a <code>LogisticsStats</code> sidebar to the Admin view that calculates throughput and delivery success rates in real-time.</li>
+  </ul>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="confirm" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>Approve Unified Design</h3>
+      <p>Proceed with reusing the map engine across all three visibility tiers.</p>
+    </div>
+  </div>
+</div>

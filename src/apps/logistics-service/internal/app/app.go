@@ -193,6 +193,15 @@ func (a *App) routes(r *gin.Engine) {
 		a.handleGPSUpdate(c)
 	})
 
+	v1.GET("/drivers/location", func(c *gin.Context) {
+		locations, err := a.Service.ListDriverLocations(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"locations": locations})
+	})
+
 	v1.GET("/drivers", func(c *gin.Context) {
 		drivers, err := a.Service.ListDrivers(c.Request.Context())
 		if err != nil {

@@ -279,9 +279,39 @@ All public REST API endpoints follow a standardized error structure on failure:
   }
   ```
 
+#### GET `/v1/logistics/drivers/location`
+* **Description**: Retrieves current positions of all active drivers from Valkey GEO.
+* **Authentication**: Bearer JWT (requires `WAREHOUSE_MGR`, `RETAIL_MGR`, or `ADMIN`).
+* **Response (200 OK)**:
+  ```json
+  {
+    "locations": [
+      {
+        "driver_id": "drv_loc_456",
+        "latitude": 21.0285,
+        "longitude": 105.8542
+      }
+    ]
+  }
+  ```
+
 ---
 
-### 2.6 Warehouse & Inventory (Warehouse Service)
+### 2.6 Real-time Event Streaming (Socket Service)
+
+#### WS `/v1/realtime/stream`
+* **Description**: Authenticated persistent WebSocket for role-scoped operational updates.
+* **Authentication**: Real-time Ticket (obtained via `/v1/realtime/tickets`).
+* **Features**: Receives `topology.event` notifications, GPS updates, and system alerts.
+
+#### WS `/v1/realtime/public/topology/ws`
+* **Description**: Public anonymous WebSocket for sanitized architecture visualization.
+* **Authentication**: None.
+* **Features**: Receives anonymized GPS updates (Truck Name/Plate only) and public domain events.
+
+---
+
+### 2.7 Warehouse & Inventory (Warehouse Service)
 
 #### GET `/v1/warehouse/inventory`
 * **Description**: Retrieves current in-stock quantities per SKU.

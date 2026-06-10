@@ -6,6 +6,7 @@ import { logisticsService } from '@/services/logistics.service';
 import LogisticsMap from '@/components/features/logistics/LogisticsMap';
 import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import { Truck, Play, Pause, RotateCcw, MapPin, Navigation, Clock, Gauge, CheckCircle2, Circle } from 'lucide-react';
+import { useSocket } from '@/hooks/useSocket';
 
 const PICKUP_STEPS: PipelineStep[] = [
   { key: 'ASSIGNED', label: 'Assigned' },
@@ -35,6 +36,8 @@ export default function DriverClientPage() {
   const [currentMilestone, setCurrentMilestone] = useState('ASSIGNED');
   const [driverPos, setDriverPos] = useState<Record<string, [number, number]>>({});
   const tickRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { sendMessage } = useSocket();
 
   const { data: shipments = [] } = useQuery({
     queryKey: ['driver', 'shipments'],
@@ -147,13 +150,16 @@ export default function DriverClientPage() {
         if (coord && activeShipment.driver_id) {
           setDriverPos(p => ({ ...p, [activeShipment.driver_id!]: coord }));
 
-          // POST GPS to backend
-          logisticsService.updateDriverLocation({
-            driver_id: activeShipment.driver_id!,
-            shipment_id: activeShipment.id,
-            latitude: coord[0],
-            longitude: coord[1],
-          }).catch(() => {});
+          // Push GPS via WebSocket
+          sendMessage({
+            type: 'gps_update',
+            data: {
+              lat: coord[0],
+              long: coord[1],
+              shipment_id: activeShipment.id,
+              store_id: activeShipment.destination_store_id
+            }
+          });
         }
 
         return next;

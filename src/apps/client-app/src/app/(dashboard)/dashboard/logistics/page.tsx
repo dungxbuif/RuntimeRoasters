@@ -7,6 +7,7 @@ import { Shipment } from '@/types/logistics';
 import dynamic from 'next/dynamic';
 import { Activity, Gauge, Truck, AlertTriangle, CheckCircle2, MapPin, X } from 'lucide-react';
 import Link from 'next/link';
+import { useSocket } from '@/hooks/useSocket';
 
 const LogisticsMap = dynamic(() => import('@/components/features/logistics/LogisticsMap'), {
   ssr: false,
@@ -15,8 +16,37 @@ const LogisticsMap = dynamic(() => import('@/components/features/logistics/Logis
 
 export default function LogisticsDashboard() {
   const [activeDriverLocations, setActiveDriverLocations] = useState<Record<string, [number, number]>>({});
-  const [simulationActive, setSimulationActive] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+
+  const { data: initialLocations = [] } = useQuery({
+    queryKey: ['logistics', 'driver-locations'],
+    queryFn: () => logisticsService.listDriverLocations(),
+  });
+
+  useEffect(() => {
+    if (initialLocations.length > 0) {
+      const locs: Record<string, [number, number]> = {};
+      initialLocations.forEach(l => {
+        locs[l.driver_id] = [l.latitude, l.longitude];
+      });
+      setActiveDriverLocations(locs);
+    }
+  }, [initialLocations]);
+
+  const { lastMessage } = useSocket();
+
+  useEffect(() => {
+    if (lastMessage?.type === 'topology.event') {
+       const event = lastMessage.data;
+       if (event.topic === 'logistics.gps.updated') {
+         const payload = event.payload;
+         setActiveDriverLocations(prev => ({
+           ...prev,
+           [payload.driver_id]: [payload.latitude, payload.longitude]
+         }));
+       }
+    }
+  }, [lastMessage]);
 
   const { data: locations = [] } = useQuery({
     queryKey: ['logistics', 'locations'],
@@ -53,52 +83,6 @@ export default function LogisticsDashboard() {
     queryFn: () => logisticsService.getRoutes(),
   });
 
-  // Client-side simulation logic
-  useEffect(() => {
-    if (!simulationActive || routes.length === 0 || simulationTargets.length === 0) return;
-
-    const interval = setInterval(() => {
-      setActiveDriverLocations(prev => {
-        const next = { ...prev };
-        
-        simulationTargets.forEach((shipment, idx) => {
-          const driverId = shipment.driver_id!;
-          const route = routes[idx % routes.length];
-          const currentPos = prev[driverId];
-          let nextPos: [number, number];
-          
-          if (!currentPos) {
-            nextPos = route.coordinates[0];
-          } else {
-            // Find current index in coordinates
-            const currentIndex = route.coordinates.findIndex(
-              p => p[0] === currentPos[0] && p[1] === currentPos[1]
-            );
-            
-            if (currentIndex === -1 || currentIndex === route.coordinates.length - 1) {
-              nextPos = route.coordinates[0]; // Reset to start
-            } else {
-              nextPos = route.coordinates[currentIndex + 1];
-            }
-          }
-
-          next[driverId] = nextPos;
-
-          logisticsService.updateDriverLocation({
-            driver_id: driverId,
-            shipment_id: shipment.id,
-            latitude: nextPos[0],
-            longitude: nextPos[1]
-          }).catch(err => console.error(`Failed to update location for ${driverId}`, err));
-        });
-        
-        return next;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [routes, simulationActive, simulationTargets]);
-
   return (
     <div className="h-full flex flex-col gap-6">
       {/* Header Info */}
@@ -112,22 +96,6 @@ export default function LogisticsDashboard() {
             Monitoring {shipments.length} active shipments across Vietnam network
           </p>
         </div>
-        
-        <div className="flex gap-4">
-          <button 
-            onClick={() => setSimulationActive(!simulationActive)}
-            disabled={simulationTargets.length === 0}
-            className={`px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest border transition-all ${
-              simulationActive 
-                ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(0,74,198,0.2)]' 
-                : simulationTargets.length === 0
-                  ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
-                  : 'bg-slate-100 border-slate-200 text-slate-400'
-            }`}
-          >
-            {simulationTargets.length === 0 ? '○ NO ACTIVE REAL SHIPMENT' : simulationActive ? '● SIMULATION ACTIVE' : '○ SIMULATION PAUSED'}
-          </button>
-        </div>
       </div>
 
       <div className="flex-1 flex gap-6 overflow-hidden min-h-0">
@@ -138,7 +106,7 @@ export default function LogisticsDashboard() {
             shipments={shipments}
             routes={routes}
             activeDriverLocations={activeDriverLocations}
-            showRoutes={simulationActive}
+            showRoutes={true}
           />
         </div>
 

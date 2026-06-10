@@ -20,6 +20,7 @@ owner: shared
 | Realtime Awareness | M2 | RR-URG-06 | Public topology and private role-scoped notification streams | yes | yes | yes | yes | implemented | RR-URG-06 evidence |
 | Admin Demo Seed Parity | Sprint 11 | RR-31 | Admin Initialize Data fans out to service-owned Payment, Trace, and Audit demo seed/status paths without direct cross-DB writes | yes | partial | yes | yes | verified | Payment/Trace/Audit unit/pkg tests passed; live seeding flow triggered via Admin Bootstrap UI; idempotency and trace public journey milestones verified via Browser Subagent |
 | Timestamp-Based Token Revocation | Sprint 11 | RR-34 | JWT time validation and user-wide revocation via auth-service, Valkey, Kratos, and Hydra | yes | yes | pending | pending | implemented | JWT claims/future-skew/missing-sub, gRPC interceptor/HTTP middleware validity checker tests pass |
+| Valkey Geo Tracking | Sprint 11 | RR-35 | Real-time edge ingestion via WebSockets, Valkey GEO indexing, and unified map visibility tiers | yes | yes | yes | yes | implemented | WebSocket ingestion and Valkey retrieval unit/integration tests passed; frontend build successful; public/pro/admin modes implemented |
 
 ## Manual UAT Flow Checklist
 

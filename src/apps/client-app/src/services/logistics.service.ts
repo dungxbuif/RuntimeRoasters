@@ -52,6 +52,11 @@ class LogisticsService {
     await api.post(API_ENDPOINTS.LOGISTICS.UPDATE_LOCATION, data);
   }
 
+  async listDriverLocations(): Promise<{driver_id: string, latitude: number, longitude: number}[]> {
+    const res = await api.get('/v1/logistics/drivers/location');
+    return res.data.locations || [];
+  }
+
   async listDrivers(): Promise<Driver[]> {
     const res = await api.get(API_ENDPOINTS.LOGISTICS.DRIVERS);
     return res.data.drivers || [];

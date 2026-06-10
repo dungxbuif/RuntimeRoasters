@@ -133,14 +133,13 @@ Last Updated: 2026-06-06
 - **Internal Shared Secret**: Standardized across all `.env` files.
 
 ## Next Steps
-- [ ] Implement actual Valkey Geo tracking in `logistics-service`.
+- [x] Implement Valkey Geo Tracking in `logistics-service` (BL-002 / RR-35).
 - [ ] Enhance Saga Monitor with real-time SSE updates.
 - [ ] Move to Phase 3: System Reliability & Chaos Testing.
 
 ## Active Work (Harness v1)
-- **Sprint 11 / RR-31:** Verified and completed. Live PostgreSQL, Elasticsearch,
-  Cassandra, Kafka, and UI parity checks passed; the legacy direct-DB seeder
-  and task seed:demo have been retired and removed.
+- **Sprint 11 / RR-35 (Valkey Geo Tracking):** Completed. Migrated GPS updates from HTTP polling to WebSocket event-driven ingestion. Unified `LogisticsMap` component for Public, Pro, and Admin visibility tiers. Added Valkey GEO indexing for real-time driver tracking. Completed Task 1-4 of the implementation plan.
+- **Sprint 11 / RR-31:** Verified and completed.
 - **Sprint 11 / RR-34:** Implemented user-wide timestamp-based token revocation.
   Proposed model uses PostgreSQL `tokens_valid_after` as source of truth, Valkey
   as a bounded cache, strict `iat > tokens_valid_after` enforcement, and Ory Hydra

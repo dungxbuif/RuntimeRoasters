@@ -1,0 +1,74 @@
+<h2>Role-Based Visibility & Public "Live Network"</h2>
+<p class="subtitle">Anonymized public tracking vs. Professional logistics control</p>
+
+<div class="split">
+  <!-- Professional View -->
+  <div class="mockup">
+    <div class="mockup-header">Logistics Dashboard (Auth Required)</div>
+    <div class="mockup-body" style="background: #f8fafc; height: 200px; padding: 10px; font-size: 11px;">
+      <div style="background: #1e293b; color: white; padding: 5px; border-radius: 4px; margin-bottom: 10px; font-weight: bold;">
+        ROLE: WAREHOUSE_MGR
+      </div>
+      <div style="border-left: 3px solid #004ac6; padding-left: 10px; margin-bottom: 10px;">
+        <div style="font-weight: bold;">TRUCK: RR-VN-042</div>
+        <div style="color: #64748b;">Driver: Nguyen Van A</div>
+        <div style="color: #64748b;">Shipment: SHP-882 (Harvest -> Warehouse)</div>
+        <div style="color: #004ac6; font-family: monospace;">LAT: 10.762 | LNG: 106.660</div>
+      </div>
+      <div style="border-left: 3px solid #004ac6; padding-left: 10px;">
+        <div style="font-weight: bold;">TRUCK: RR-VN-099</div>
+        <div style="color: #64748b;">Driver: Tran Thi B</div>
+        <div style="color: #64748b;">Shipment: SHP-901 (Warehouse -> Retail Q1)</div>
+      </div>
+    </div>
+    <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: center;">Full Telemetry + ID Resolution</div>
+  </div>
+
+  <!-- Public View -->
+  <div class="mockup">
+    <div class="mockup-header">Root Landing Page (Public)</div>
+    <div class="mockup-body" style="background: #0f172a; color: white; height: 200px; padding: 10px; font-size: 11px; position: relative; overflow: hidden;">
+       <div style="font-weight: bold; font-style: italic; color: #38bdf8; margin-bottom: 10px;">LIVE DELIVERY NETWORK</div>
+       
+       <!-- Anonymized Markers -->
+       <div style="position: absolute; top: 40px; left: 30px; color: #38bdf8;">🚚 <span style="font-size: 8px; color: #94a3b8;">#42 (En route to Warehouse)</span></div>
+       <div style="position: absolute; top: 100px; left: 80px; color: #38bdf8;">🚚 <span style="font-size: 8px; color: #94a3b8;">#99 (Fresh Coffee Delivery)</span></div>
+       
+       <div style="position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 8px; color: #475569;">
+         REAL-TIME DATA STREAMING FROM VALKEY GEO
+       </div>
+    </div>
+    <div style="font-size: 10px; color: #666; margin-top: 5px; text-align: center;">Anonymized Markers (No Auth)</div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Implementation Strategy</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Visibility Tiers</h4>
+      <ul>
+        <li><strong>Public:</strong> Set <code>Visibility: "public"</code> on GPS events. Strip Driver IDs & Shipment IDs in the Public UI.</li>
+        <li><strong>Role-Based:</strong> Use existing <code>Socket Service</code> filters to ensure Store/Farm Managers only see trucks assigned to their locations.</li>
+        <li><strong>Admin:</strong> Global read-only view of all metrics and locations.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="integrated" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Root Page Integration</h3>
+      <p>Add a "Live Network" section to the main landing page to show off real-time movement immediately.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="separate" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Dedicated Public Route</h3>
+      <p>Create <code>/live</code> page for a full-screen cinematic map view without login.</p>
+    </div>
+  </div>
+</div>
