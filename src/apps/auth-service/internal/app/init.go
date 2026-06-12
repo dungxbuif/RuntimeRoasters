@@ -22,9 +22,6 @@ import (
 
 func InitializeApp() (*App, func(), error) {
 	cfg := config.Load()
-	if cfg.HydraAdminURL == "" {
-		cfg.HydraAdminURL = "http://localhost:4445"
-	}
 	if cfg.KafkaPolicyTopic == "" {
 		cfg.KafkaPolicyTopic = "auth.policy.changed"
 	}
@@ -94,7 +91,7 @@ func InitializeApp() (*App, func(), error) {
 
 	// 8. Handlers & Build App
 	handler := authgrpc.NewHandler(&cfg, enforcer, userUsecase, securityUsecase)
-	app := NewApp(baseApp, &cfg, enforcer, handler, userUsecase, keyProvider)
+	app := NewApp(baseApp, &cfg, pgDb, enforcer, handler, userUsecase, keyProvider)
 
 	cleanup := func() {
 		producer.Close()

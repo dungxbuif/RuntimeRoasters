@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { retailService, Order } from '@/services/retail.service';
-import { ShoppingBag, CreditCard, CheckCircle2, Truck, Package, AlertCircle, RefreshCw, Loader2, Search, X } from 'lucide-react';
+import { ShoppingBag, CreditCard, CheckCircle2, Truck, Package, AlertCircle, RefreshCw, Loader2, Search, X, Radio } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import StatusPipeline, { PipelineStep } from '@/components/common/StatusPipeline';
 import { AUTH_ACTIONS, AUTH_RESOURCES } from '@/constants/resources';
 import { CasbinGuard } from '@/lib/auth';
+import { useSocket } from '@/hooks/useSocket';
 
 const SAGA_STEPS: PipelineStep[] = [
   { key: 'PENDING', label: 'Created' },
@@ -33,14 +34,41 @@ const STATUS_CONFIG: Record<string, { label: string, color: string, icon: Lucide
   FAILED: { label: 'Saga Failed', color: 'bg-error text-white border-error', icon: AlertCircle },
 };
 
+/** Topics that indicate a saga state change and should trigger an order refetch. */
+const SAGA_TOPICS = [
+  'retail.order',
+  'payment.',
+  'warehouse.stock',
+  'warehouse.dispatch',
+  'logistics.delivery',
+  'logistics.shipment',
+];
+
+function isSagaEvent(type: string): boolean {
+  return SAGA_TOPICS.some(prefix => type?.includes(prefix));
+}
+
 export default function RetailOperationsPage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('');
 
+  // WebSocket real-time stream — invalidate orders on any saga-related event.
+  // Falls back to 30-second polling when the socket is unavailable.
+  const { isConnected, lastMessage } = useSocket();
+
+  useEffect(() => {
+    if (!lastMessage) return;
+    const topic: string = lastMessage.type ?? '';
+    if (isSagaEvent(topic)) {
+      queryClient.invalidateQueries({ queryKey: ['retail', 'orders'] });
+    }
+  }, [lastMessage, queryClient]);
+
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['retail', 'orders'],
     queryFn: () => retailService.listOrders(),
-    refetchInterval: 5000,
+    // Fallback polling: 30 s when WebSocket is connected, 5 s when disconnected.
+    refetchInterval: isConnected ? 30_000 : 5_000,
   });
 
   const payMutation = useMutation({
@@ -71,8 +99,20 @@ export default function RetailOperationsPage() {
             <ShoppingBag className="w-7 h-7 text-primary" />
             Retail Paid Orders
           </h1>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic flex items-center gap-2">
             Fulfillment Saga Orchestrator & Live Status
+            {/* Real-time connection badge */}
+            <span
+              title={isConnected ? 'Live — real-time updates active' : 'Offline — polling fallback'}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest transition-colors ${
+                isConnected
+                  ? 'bg-green-50 text-green-600 border-green-200'
+                  : 'bg-amber-50 text-amber-600 border-amber-200'
+              }`}
+            >
+              <Radio className={`w-2.5 h-2.5 ${isConnected ? 'animate-pulse' : ''}`} />
+              {isConnected ? 'Live' : 'Polling'}
+            </span>
           </p>
         </div>
         <div className="flex gap-4">

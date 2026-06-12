@@ -60,14 +60,8 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 	if cfg.BaseConfig.GRPCPort == 0 {
 		cfg.BaseConfig.GRPCPort = 50060
 	}
-	if cfg.BaseConfig.InternalHost == "" {
-		cfg.BaseConfig.InternalHost = "127.0.0.1"
-	}
 	if cfg.KafkaGroupID == "" {
 		cfg.KafkaGroupID = "socket-service-group"
-	}
-	if cfg.ValkeyAddr == "" {
-		cfg.ValkeyAddr = "localhost:6379"
 	}
 	cfg.BaseConfig.ValkeyAddr = cfg.ValkeyAddr
 	if cfg.SessionTTL == "" {

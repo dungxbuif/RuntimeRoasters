@@ -39,7 +39,7 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 	require.NoError(t, err)
 
 	infraEnforcer := &infra_casbin.Enforcer{Enforcer: e}
-	handler := grpc.NewHandler(infraEnforcer)
+	handler := grpc.NewHandler(nil, infraEnforcer, nil, nil)
 
 	// 2. Test GetFullSnapshot
 	resp, err := handler.GetFullSnapshot(context.Background(), &authv1.GetFullSnapshotRequest{})

@@ -87,9 +87,6 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 	if cfg.GRPCPort == 0 {
 		cfg.GRPCPort = 50054
 	}
-	if cfg.InternalHost == "" {
-		cfg.InternalHost = "127.0.0.1"
-	}
 	if cfg.KafkaGroupID == "" {
 		cfg.KafkaGroupID = "retail-service-group"
 	}

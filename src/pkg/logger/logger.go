@@ -20,6 +20,8 @@ func InitLogger(env string, levelStr string) {
 
 	if env == "production" {
 		cfg = zap.NewProductionConfig()
+		cfg.OutputPaths = []string{"stdout"}
+		cfg.ErrorOutputPaths = []string{"stdout"}
 	} else {
 		cfg = zap.NewDevelopmentConfig()
 		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder

@@ -10,6 +10,7 @@ import (
 	"RuntimeRoasters/apps/auth-service/internal/usecase"
 	"RuntimeRoasters/pkg/base"
 	"RuntimeRoasters/pkg/base/auth/provider"
+	"RuntimeRoasters/pkg/database"
 	"RuntimeRoasters/pkg/logger"
 	authv1 "RuntimeRoasters/runtime/auth/v1"
 	systemv1 "RuntimeRoasters/runtime/system/v1"
@@ -19,16 +20,18 @@ import (
 type App struct {
 	Base        *base.App
 	Cfg         *svcconfig.Config
+	DB          *database.DB
 	Enforcer    *casbin.Enforcer
 	Handler     *grpc.Handler
 	UseCase     usecase.UserUsecase
 	KeyProvider provider.KeyProvider
 }
 
-func NewApp(baseApp *base.App, cfg *svcconfig.Config, enforcer *casbin.Enforcer, handler *grpc.Handler, uc usecase.UserUsecase, keyProvider provider.KeyProvider) *App {
+func NewApp(baseApp *base.App, cfg *svcconfig.Config, db *database.DB, enforcer *casbin.Enforcer, handler *grpc.Handler, uc usecase.UserUsecase, keyProvider provider.KeyProvider) *App {
 	return &App{
 		Base:        baseApp,
 		Cfg:         cfg,
+		DB:          db,
 		Enforcer:    enforcer,
 		Handler:     handler,
 		UseCase:     uc,
@@ -69,6 +72,8 @@ func (a *App) Run() {
 	// Register Gateway (REST -> gRPC Bridge)
 	a.Base.RegisterGateway(authv1.RegisterAuthServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
 	a.Base.RegisterGateway(systemv1.RegisterSystemServiceHandlerFromEndpoint, a.Cfg.GRPCPort)
+
+	a.Base.RegisterReadiness(func() error { return a.DB.Ping(context.Background()) })
 
 	a.Base.FinalizeRoutes()
 

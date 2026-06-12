@@ -1,9 +1,56 @@
 # ☕ Runtime Roasters — Farm-to-Cup Coffee Supply Chain Platform
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/dungxbuif/RuntimeRoasters)](https://goreportcard.com/report/github.com/dungxbuif/RuntimeRoasters)
+[![CI](https://github.com/dungxbuif/RuntimeRoasters/actions/workflows/ci.yml/badge.svg)](https://github.com/dungxbuif/RuntimeRoasters/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/dungxbuif/RuntimeRoasters)](https://golang.org/)
+
 ## 🌟 Overview
 **Runtime Roasters** is a production-grade **Microservices** ecosystem built with **Golang**. It digitizes the entire coffee lifecycle—from plantation harvest to retail delivery—ensuring absolute transparency, traceability, and efficiency in the supply chain.
 
 This project serves as a **technical showcase** for modern distributed system patterns, demonstrating how to build resilient, scalable, and observable applications.
+
+### 🏛️ High-Level Architecture
+
+```mermaid
+graph TD
+    Client[Web/Mobile Client] -->|HTTPS| Ingress[Kubernetes Nginx Ingress]
+    
+    Ingress -->|/api/*| Gateway[KrakenD API Gateway]
+    Ingress -->|/.well-known/*| IdentityProxy[Identity Proxy]
+    
+    IdentityProxy --> Kratos[Ory Kratos / Hydra]
+    Gateway --> Auth[Auth Service]
+    Gateway --> Retail[Retail Service]
+    Gateway --> Logistics[Logistics Service]
+    Gateway --> Trace[Trace Service]
+    
+    subgraph Event Backbone
+        Kafka[(Apache Kafka)]
+    end
+    
+    Auth -->|Produce| Kafka
+    Retail -->|Produce/Consume| Kafka
+    Logistics -->|Produce/Consume| Kafka
+    Trace -->|Consume| Kafka
+    
+    subgraph Persistence Layer
+        Postgres[(PostgreSQL)]
+        Elastic[(Elasticsearch)]
+        Valkey[(Valkey Cache/GEO)]
+    end
+    
+    Retail --> Postgres
+    Logistics --> Valkey
+    Trace --> Elastic
+```
+
+### 📺 Video Demo & Screenshots
+
+> 🎥 **[Watch the full Demo Video here](https://youtube.com/your-video-link)**
+
+![Dashboard Screenshot](docs/assets/demo-screenshot.png)
+*(Note: Replace `docs/assets/demo-screenshot.png` with an actual screenshot of the Next.js control plane showing real-time driver tracking or order Saga flows)*
 
 ### 🚀 Technical Highlights
 *   **Event-Driven Architecture:** Core communication via **Apache Kafka** with **Transactional Outbox/Inbox** patterns for guaranteed consistency.
@@ -61,6 +108,21 @@ Follow these steps to get the system running locally:
     - To start the full backend + frontend: `task dev`
     - To start only backend services: `task be`
     - Individual services can be started via `air` in their respective `src/apps/` folders.
+
+---
+
+### 🚢 Kubernetes & Cloud Native
+
+Runtime Roasters is built to be **Enterprise Kubernetes Ready**. It follows strict 12-Factor App principles:
+
+- **Centralized Config:** `config.yaml` for GitOps-friendly defaults, overlaid with K8s `ConfigMap` and Vault secrets.
+- **Fail-Fast Bootstrapping:** Services will securely crash if injected configurations are invalid.
+- **Liveness/Readiness Probes:** 100% integration (`/health/live`, `/health/ready`) with downstream dependency checks.
+- **Graceful Shutdown & Idempotency:** Implements `sync.WaitGroup` to drain active Kafka messages on `SIGTERM` and relies on the **Transactional Inbox Pattern** for robust duplicate message handling.
+- **Unprivileged Containers:** Multi-stage Dockerfiles (`deployments/Dockerfile.service`) dropping permissions to `nonroot:nonroot` within minimal Alpine images.
+- **Native Migrations:** Automated PostgreSQL schema evolutions executed via isolated K8s Jobs.
+
+Check out the K8s manifests in the [`deployments/k8s/`](deployments/k8s/) directory.
 
 ---
 

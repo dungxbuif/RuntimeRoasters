@@ -1,0 +1,22 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache postgresql-client bash
+
+WORKDIR /migrations
+
+# Copy migration files from all services
+COPY src/apps/auth-service/migrations/ /migrations/auth/
+COPY src/apps/logistics-service/migrations/ /migrations/logistics/
+COPY src/apps/retail-service/migrations/ /migrations/retail/
+COPY src/apps/warehouse-service/migrations/ /migrations/warehouse/
+COPY src/apps/farm-service/migrations/ /migrations/farm/
+COPY src/apps/payment-service/migrations/ /migrations/payment/
+COPY src/apps/audit-service/migrations/ /migrations/audit/
+COPY src/apps/trace-service/migrations/ /migrations/trace/
+
+COPY deployments/run-migrations.sh /scripts/run-migrations.sh
+RUN chmod +x /scripts/run-migrations.sh
+
+USER nobody
+
+ENTRYPOINT ["/scripts/run-migrations.sh"]

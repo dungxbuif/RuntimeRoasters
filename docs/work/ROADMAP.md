@@ -36,7 +36,9 @@ Use this file to group work into milestones or major phases.
 | --- | --- | --- | --- |
 | M1 | Phase 1: System Bootstrap & Seeding | done | TBD |
 | M2 | Phase 2: Logistics Real-time Tracking & Saga Simulator | done | TBD |
-| M3 | Phase 3: Reliability & Traceability | active | [PHASE-3-RELIABILITY.md](phases/PHASE-3-RELIABILITY.md) |
+| M3 | Phase 3: Reliability & Traceability | done | [PHASE-3-RELIABILITY.md](phases/PHASE-3-RELIABILITY.md) |
+| M4 | Release v1.0.0 | done | [v1.0.0.md](../releases/v1.0.0.md) |
+| M5 | Phase 4: K8s Cluster Deployment & Load Testing | draft | TBD |
 
 ## Legacy Roadmap Notes
 

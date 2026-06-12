@@ -78,14 +78,8 @@ func defaults(cfg svcconfig.Config) svcconfig.Config {
 	if cfg.KafkaGroupID == "" {
 		cfg.KafkaGroupID = "trace-service-group"
 	}
-	if cfg.ElasticsearchURL == "" {
-		cfg.ElasticsearchURL = "http://localhost:9200"
-	}
 	if cfg.ElasticsearchIndex == "" {
 		cfg.ElasticsearchIndex = "coffee_traceability"
-	}
-	if cfg.RetailServiceURL == "" {
-		cfg.RetailServiceURL = "http://localhost:8084"
 	}
 	if len(cfg.TraceTopics) == 0 {
 		cfg.TraceTopics = events.TraceableTopics

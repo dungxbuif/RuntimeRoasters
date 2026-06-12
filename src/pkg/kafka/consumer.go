@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"sync"
 	"time"
 
 	"RuntimeRoasters/pkg/logger"
@@ -17,6 +18,7 @@ import (
 
 type consumer struct {
 	reader *kafka.Reader
+	wg     sync.WaitGroup
 }
 
 func NewConsumer(brokers []string, groupID string, topic string) Consumer {
@@ -43,14 +45,16 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 	log.Info("consumer listening")
 
 	for {
-		m, err := c.reader.ReadMessage(ctx)
+		m, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, io.EOF) {
 				return nil
 			}
-			log.Warn("failed to read message", zap.Error(err))
+			log.Warn("failed to fetch message", zap.Error(err))
 			continue
 		}
+
+		c.wg.Add(1)
 
 		headers := kafkaHeadersCarrier(m.Headers)
 		msgCtx := otel.GetTextMapPropagator().Extract(ctx, &headers)
@@ -78,9 +82,16 @@ func (c *consumer) Listen(ctx context.Context, handler Handler) error {
 			span.SetStatus(codes.Error, err.Error())
 			msgLog.Error("failed to handle message", zap.Error(err))
 			span.End()
+			c.wg.Done()
 			continue
 		}
+		
+		if err := c.reader.CommitMessages(ctx, m); err != nil {
+			msgLog.Error("failed to commit message", zap.Error(err))
+		}
+
 		span.End()
+		c.wg.Done()
 	}
 }
 
@@ -89,5 +100,7 @@ func (c *consumer) Topic() string {
 }
 
 func (c *consumer) Close() error {
-	return c.reader.Close()
+	err := c.reader.Close()
+	c.wg.Wait()
+	return err
 }

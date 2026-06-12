@@ -32,17 +32,20 @@ type BaseConfig struct {
 func LoadConfig(path string, name string, out any) error {
 	v := viper.New()
 	v.AddConfigPath(path)
-	v.SetConfigName(name)
-	v.SetConfigType("env")
+	// 1. Try to load config.yaml (Defaults)
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	_ = v.ReadInConfig() // Ignore error if config.yaml doesn't exist in the current path
+
+	// 2. Try to merge .env (Local Overrides)
+	if name != "" {
+		v.SetConfigName(name)
+		v.SetConfigType("env")
+		_ = v.MergeInConfig() // Ignore error if .env doesn't exist
+	}
 
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
-		}
-	}
 
 	if err := v.Unmarshal(out); err != nil {
 		return err

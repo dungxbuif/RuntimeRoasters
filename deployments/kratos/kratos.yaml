@@ -85,6 +85,7 @@ serve:
       enabled: true
       allowed_origins:
         - http://localhost:3000
+        - https://runtimeroasters.production
       allowed_methods:
         - POST
         - GET

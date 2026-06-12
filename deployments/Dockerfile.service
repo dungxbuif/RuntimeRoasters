@@ -1,0 +1,40 @@
+FROM golang:alpine AS builder
+
+WORKDIR /workspace
+
+# Install dependencies for CGO if needed (mostly for Alpine)
+RUN apk add --no-cache git tzdata
+
+# Copy workspace files
+COPY go.work go.work.sum ./
+COPY src/ src/
+COPY api/ api/
+
+ARG APP_NAME
+ENV APP_NAME=${APP_NAME}
+
+RUN cd src/apps/${APP_NAME} && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /workspace/main ./cmd/main.go
+
+# Final Stage
+FROM alpine:3.19
+
+# Create a non-root user
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+
+# Copy CA certs and tzdata
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+WORKDIR /app
+
+# Copy the built binary
+COPY --from=builder /workspace/main /app/main
+
+# Change ownership
+RUN chown -R nonroot:nonroot /app
+
+# Use the non-root user
+USER nonroot
+
+ENTRYPOINT ["/app/main"]

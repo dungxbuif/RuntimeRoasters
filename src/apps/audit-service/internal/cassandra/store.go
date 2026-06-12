@@ -13,12 +13,6 @@ type Store struct {
 }
 
 func NewStore(hosts []string, keyspace string) (*Store, error) {
-	if len(hosts) == 0 {
-		hosts = []string{"127.0.0.1:9042"}
-	}
-	if keyspace == "" {
-		keyspace = "runtime_roasters_audit"
-	}
 
 	setup := gocql.NewCluster(hosts...)
 	setup.Consistency = gocql.Quorum

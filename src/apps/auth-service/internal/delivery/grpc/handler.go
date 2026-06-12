@@ -197,19 +197,6 @@ func (h *Handler) GetSystemStatus(ctx context.Context, req *authv1.GetSystemStat
 		}
 	}
 
-	// Fallback hardcoded if needed
-	if len(targets) == 0 {
-		targets = map[string]string{
-			"farm":      "http://localhost:8083/v1/system/status",
-			"retail":    "http://localhost:8084/v1/system/status",
-			"logistics": "http://localhost:8085/v1/system/status",
-			"warehouse": "http://localhost:8089/v1/system/status",
-			"payment":   "http://localhost:8086/v1/system/status",
-			"trace":     "http://localhost:8087/v1/system/status",
-			"audit":     "http://localhost:8088/v1/system/status",
-		}
-	}
-
 	// 2. Query each service in parallel
 	httpClient := &http.Client{Timeout: 5 * time.Second}
 	var mu sync.Mutex
@@ -337,37 +324,6 @@ func (h *Handler) SeedData(ctx context.Context, req *systemv1.SeedDataRequest) (
 		}
 		if h.cfg.AuditServiceURL != "" {
 			targets = append(targets, h.cfg.AuditServiceURL+"/v1/system/seed")
-		}
-	}
-
-	// Fallback to legacy hardcoded logic if no targets defined in config
-	if len(targets) == 0 {
-		farmURL := "http://localhost:8083"
-		retailURL := "http://localhost:8084"
-		logisticsURL := "http://localhost:8085"
-		warehouseURL := "http://localhost:8089"
-		paymentURL := "http://localhost:8086"
-		traceURL := "http://localhost:8087"
-		auditURL := "http://localhost:8088"
-
-		if h.cfg != nil && (strings.Contains(h.cfg.KratosAdminURL, "rr-kratos") || strings.Contains(h.cfg.KratosAdminURL, "kratos")) && !strings.Contains(h.cfg.KratosAdminURL, "localhost") {
-			farmURL = "http://farm-service:8083"
-			retailURL = "http://retail-service:8084"
-			logisticsURL = "http://logistics-service:8085"
-			warehouseURL = "http://warehouse-service:8089"
-			paymentURL = "http://payment-service:8086"
-			traceURL = "http://trace-service:8087"
-			auditURL = "http://audit-service:8088"
-		}
-
-		targets = []string{
-			farmURL + "/v1/system/seed",
-			retailURL + "/v1/system/seed",
-			logisticsURL + "/v1/system/seed",
-			warehouseURL + "/v1/system/seed",
-			paymentURL + "/v1/system/seed",
-			traceURL + "/v1/system/seed",
-			auditURL + "/v1/system/seed",
 		}
 	}
 

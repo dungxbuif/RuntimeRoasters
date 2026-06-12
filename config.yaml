@@ -1,0 +1,58 @@
+# ==============================================================================
+# RuntimeRoasters Global Configuration Defaults
+# ==============================================================================
+# This file contains NON-SENSITIVE default configurations.
+# Environment variables (or Vault secrets) will automatically OVERRIDE these values.
+# DO NOT add passwords, secrets, or access keys here.
+# ==============================================================================
+
+APP_ENV: "production"
+LOG_LEVEL: "info"
+DB_LOG_LEVEL: "warn"
+APP_PORT: 8080
+GRPC_PORT: 9090
+
+# ------------------------------------------------------------------------------
+# Infrastructure Endpoints
+# ------------------------------------------------------------------------------
+VALKEY_ADDR: "rr-socket-valkey:6379"
+KAFKA_BROKERS: "rr-kafka:9092"
+ELASTICSEARCH_URL: "http://rr-elasticsearch:9200"
+
+# ------------------------------------------------------------------------------
+# Tracing & Telemetry
+# ------------------------------------------------------------------------------
+OTEL_EXPORTER_OTLP_ENDPOINT: "http://rr-otel-collector:4317"
+OTEL_TRACES_SAMPLE_RATE: 1.0
+
+# ------------------------------------------------------------------------------
+# Internal Services
+# ------------------------------------------------------------------------------
+INTERNAL_HOST: "runtimeroasters.internal"
+
+# Note: The following URLs are used for bootstrapping/seeding
+FARM_SERVICE_URL: "http://rr-farm-service:8080"
+RETAIL_SERVICE_URL: "http://rr-retail-service:8080"
+LOGISTICS_SERVICE_URL: "http://rr-logistics-service:8080"
+WAREHOUSE_SERVICE_URL: "http://rr-warehouse-service:8080"
+PAYMENT_SERVICE_URL: "http://rr-payment-service:8080"
+TRACE_SERVICE_URL: "http://rr-trace-service:8080"
+AUDIT_SERVICE_URL: "http://rr-audit-service:8080"
+
+# ------------------------------------------------------------------------------
+# Service-Specific Non-Sensitive Configs
+# ------------------------------------------------------------------------------
+
+# Auth Service
+EXPECTED_ISSUER: "http://runtimeroasters.production/"
+JWKS_URL: "http://rr-hydra:4444/.well-known/jwks.json"
+JWKS_CACHE_TTL: "10m"
+
+# Trace Service
+TRACE_TOPICS: "audit-logs,system-events,farm-events,logistics-events,warehouse-events"
+
+# Payment Service
+STRIPE_WEBHOOK_SECRET: "" # Inject via Vault
+
+# Retail Service
+CATALOG_TOPICS: "catalog-updates"

@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runtimeroasters-db-migrations
+  labels:
+    app: runtimeroasters
+    component: migrations
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      name: runtimeroasters-db-migrations
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrator
+          image: rr-migrations:latest # Built from deployments/Dockerfile.migrations
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PG_DB_HOST
+              value: "postgres-service"
+            - name: PG_DB_PORT
+              value: "5432"
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: PG_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+          securityContext:
+            runAsUser: 65534 # nobody
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false

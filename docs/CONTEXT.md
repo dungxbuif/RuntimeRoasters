@@ -6,7 +6,7 @@ owner: shared
 ---
 # Session Context & Development State
 
-Last Updated: 2026-06-06
+Last Updated: 2026-06-12
 
 ## Current Git Snapshot
 **Checked:** 2026-06-06
@@ -138,13 +138,24 @@ Last Updated: 2026-06-06
 - [ ] Move to Phase 3: System Reliability & Chaos Testing.
 
 ## Active Work (Harness v1)
+- **Sprint 12 / BL-003 (Saga Monitor Real-time):** Completed. Replaced 5-second HTTP polling with WebSocket-first real-time updates in the Saga Monitor page (`/dashboard/retail`). Orders query is now invalidated immediately when saga-related events arrive over the authenticated `/v1/realtime/stream` WebSocket. Fallback polling at 30s (5s when WS disconnected). Added Live/Polling connection badge. 11/11 tests pass, lint clean.
+- **Sprint 12 / Config Extraction (K8s Readiness #1):** Completed. Removed all hardcoded localhost fallbacks from Go source: `auth-service` HydraAdminURL + status/seed handler maps, `trace-service` ElasticsearchURL + RetailServiceURL, `socket-service` ValkeyAddr + InternalHost, `retail-service` InternalHost, `audit-service` Cassandra hosts. All 5 services pass `go vet` clean. Config structs were already ENV-driven; the fallbacks were dead code hiding misconfiguration.
+- **Sprint 12 / Health Probes (K8s Readiness #2):** Completed. Audited the base application routing. Found 9/10 services already wired up `/health/ready` by calling `a.Base.RegisterReadiness()`. Updated `auth-service` to thread the PostgreSQL connection through to the `App` struct and properly register its own readiness probe. All 10 backend services now correctly expose both `/health/live` and `/health/ready`.
+- **Sprint 12 / Graceful Shutdown (K8s Readiness #3):** Completed. Upgraded `pkg/kafka/consumer.go` to use `FetchMessage` + `CommitMessages` ensuring at-least-once idempotency. Wrapped handlers in `sync.WaitGroup` to block `consumer.Close()` until all active messages finish processing. Validated that `pkg/base/app.go` already correctly handles `SIGTERM` by triggering `httpServer.Shutdown()` and `grpcServer.GracefulStop()` before returning to trigger defer cleanup hooks.
+- **Sprint 12 / Logging (K8s Readiness #4):** Completed. Updated `pkg/logger/logger.go` to explicitly route `zap.NewProductionConfig()` output and errors to `stdout` instead of the default `stderr`, ensuring compliant JSON stdout logging for Kubernetes log aggregators.
+- **Sprint 12 / Docker Hardening (K8s Readiness #5):** Completed. Created a unified `deployments/Dockerfile.service` utilizing a multi-stage Go build pattern (using `golang:alpine` builder and `alpine:3.19` runner) that compiles any Go microservice dynamically via the `APP_NAME` build argument. Ensured the final image executes as the unprivileged `nonroot` user.
+- **Sprint 12 / Ingress Mapping (K8s Readiness #6):** Completed. Defined the primary Kubernetes `Ingress` manifest (`deployments/k8s/ingress.yaml`) to correctly route `/api` to KrakenD, `/.well-known` to the Identity Proxy (for public JWKS discovery), and `/` as the fallback to the Frontend Client App.
+- **Sprint 12 / CORS (K8s Readiness #7):** Completed. Extracted and standardized Cross-Origin Resource Sharing (CORS) lists in `deployments/krakend/krakend.json` and `deployments/kratos/kratos.yaml`, appending the production `https://runtimeroasters.production` origin alongside existing localhost development endpoints.
+- **Sprint 12 / Migrations (K8s Readiness #8):** Completed. Transitioned raw `psql` shell migrations into a dedicated Kubernetes `Job` (`deployments/k8s/migrations-job.yaml`). Packaged the `*.up.sql` files and a unified runner script into a new minimal `deployments/Dockerfile.migrations` container image running as `nobody`.
+- **Sprint 12 / Secrets & Configs (K8s Readiness #9):** Completed. Confirmed HashiCorp Vault / External Secrets Operator will handle sensitive passwords. Provisioned a GitOps-friendly `ConfigMap` (`deployments/k8s/configmap.yaml`) to centralize all non-sensitive environment variables (Log levels, Ports, Kafka URLs) that can be safely committed directly to the repository.
+- **Sprint 12 / Idempotency Verification (K8s Readiness #10):** Completed. Audited the Kafka consumption flow. Validated that services employ the Transactional Inbox Pattern: using deterministic `kafka.MessageID` (derived from CloudEvent IDs or Partition/Offsets) and checking the `inbox_events` table within the same PostgreSQL transaction as the domain logic. Combined with the explicit `CommitMessages` added during the Graceful Shutdown task, this guarantees robust protection against at-least-once duplicate redelivery.
+- **Sprint 12 / Continuous Integration (K8s Readiness #11):** Completed. Initialized a GitHub Actions workflow (`.github/workflows/ci.yml`) triggering on pushes and PRs to `main`. It provisions the `golangci/golangci-lint-action` step using a tailored `src/.golangci.yml` configuration alongside standard `go test ./...` unit testing.
 - **Sprint 11 / RR-35 (Valkey Geo Tracking):** Completed. Migrated GPS updates from HTTP polling to WebSocket event-driven ingestion. Unified `LogisticsMap` component for Public, Pro, and Admin visibility tiers. Added Valkey GEO indexing for real-time driver tracking. Completed Task 1-4 of the implementation plan.
 - **Sprint 11 / RR-31:** Verified and completed.
-- **Sprint 11 / RR-34:** Implemented user-wide timestamp-based token revocation.
-  Proposed model uses PostgreSQL `tokens_valid_after` as source of truth, Valkey
-  as a bounded cache, strict `iat > tokens_valid_after` enforcement, and Ory Hydra
-  login/consent and Kratos session invalidations. Implementation is complete and
-  pending proto generation and test verification.
+- **Sprint 11 / RR-34:** Verified and completed. Implemented user-wide timestamp-based token revocation.
+  Uses PostgreSQL `tokens_valid_after` as source of truth, Valkey as a bounded cache,
+  strict `iat > tokens_valid_after` enforcement, and Ory Hydra login/consent and
+  Kratos session invalidations. Proto generation and test verification complete.
 - **Harness Migration:** Upgrading to Harness v1 (Pure Markdown) - structure reconciled against cloned Harness reference; content was rewritten/merged from RuntimeRoasters docs rather than blindly copied.
 - **Next Up:** BL-002 Valkey Geo Tracking Implementation.
 - RR-URG-07A is done at
