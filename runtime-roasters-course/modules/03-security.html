@@ -1,0 +1,109 @@
+<section class="module" id="module-3">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 3</span>
+    <h1 class="module-title">Secure Gates & Roles</h1>
+    <p class="module-subtitle">How Runtime Roasters protects public data and limits administrative access.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Gatekeepers: API Gateway & Casbin</h3>
+        <p>In a microservice system, not all APIs should be exposed to the public. For example, customers should query trace info, but only store managers should view invoice logs.</p>
+        <p>We use <span class="term" data-definition="KrakenD: A high-performance open-source API Gateway that aggregates services and manages security gates.">KrakenD API Gateway</span> as the front door. It routes public requests but hides internal microservice URLs. To verify *who* can do *what*, we use <span class="term" data-definition="Casbin: An authorization library that supports Access Control Lists (ACL) and Role-Based Access Control (RBAC).">Casbin</span>.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Concert Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #E06B56; color: white;">🎟️</div>
+            <div>
+              <strong>Front Gate (KrakenD)</strong>
+              <p>Checks if you have a valid general ticket (authentication token). If you don't, you can't enter.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">🕶️</div>
+            <div>
+              <strong>VIP Section Guard (Casbin RBAC)</strong>
+              <p>Checks your specific pass. Only people with "Backstage Store Manager" badges are allowed in.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Access Policy Matcher</h3>
+      <p>Let's look at the frontend Casbin configuration model. It defines how the system matches a user's role (the subject) against the requested URL (the object) and action:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">CASBIN MODEL</span>
+          <pre><code><span class="code-line">[request_definition]</span>
+<span class="code-line">r = sub, obj, act</span>
+<span class="code-line"></span>
+<span class="code-line">[matchers]</span>
+<span class="code-line">m = (r.sub == 'ADMIN') || \</span>
+<span class="code-line">  ((r.sub == p.sub || g(r.sub, p.sub)) && \</span>
+<span class="code-line">   keyMatch(r.obj, p.obj) && \</span>
+<span class="code-line">   regexMatch(r.act, p.act))</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a request request template: Who (subject), What (object), Action (read/write).</p>
+            <p class="tl">Let's check if the rule matches. The backslashes allow splitting the formula over lines.</p>
+            <p class="tl">If the user role is ADMIN, let them in immediately with no further checks.</p>
+            <p class="tl">Otherwise, check if user matches the policy role directly OR inherits it (e.g. manager inherits staff).</p>
+            <p class="tl">Check if the requested URL matches the resource path defined in our policy (e.g. `/v1/sales/*`).</p>
+            <p class="tl">Check if the action (GET/POST/DELETE) matches the allowed action pattern.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Declare, Don't Hardcode</strong>
+        <p>Why write a policy model instead of standard <code>if (role == "manager")</code> checks in the code? Declaring policies in Casbin means you can change roles and paths in a configuration file without rewriting and redeploying your codebase. This makes scaling authorization policies extremely simple.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Security Scenario Quiz</h3>
+      <div class="quiz-container" id="quiz-module3">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! If the model didn't allow ADMIN to skip checking, the system would search for specific policies. Since ADMIN is matched first with OR (||), admin users bypass path matching completely."
+             data-explanation-wrong="Not quite. Look at the OR (||) operator. If r.sub == 'ADMIN' is true, the entire rule evaluates to true immediately, meaning admin policies aren't even evaluated.">
+          <h4 class="quiz-question">How does the matcher handle an administrator requesting a resource that doesn't have an explicit permission policy defined?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It blocks the administrator because there is no matching rule.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It allows them in because the rule evaluates the ADMIN bypass first.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It triggers a runtime crash in the API gateway.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

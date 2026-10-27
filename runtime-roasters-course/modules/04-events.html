@@ -1,0 +1,137 @@
+<section class="module" id="module-4">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 4</span>
+    <h1 class="module-title">Event-Driven Flow</h1>
+    <p class="module-subtitle">How Kafka and WebSockets stream updates to dashboards in real-time.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Publish & Subscribe</h3>
+        <p>When operations occur (like warehouse dispatching or driver GPS moving), we want the manager dashboard to update instantly. We do this using an <span class="term" data-definition="Event-Driven Architecture: A system pattern where services communicate by producing and reacting to events rather than direct commands.">event-driven</span> flow.</p>
+        <p>The service that processes the action publishes an event to <span class="term" data-definition="Kafka: A distributed event streaming platform used to send messages reliably between services.">Kafka</span>. Other services can subscribe to this stream and process events asynchronously.</p>
+      </div>
+
+      <div class="card">
+        <h3>Real-Time Streaming</h3>
+        <p>To get these events from Kafka to the customer's web browser, we use a <span class="term" data-definition="WebSocket: A protocol providing full-duplex communication channels over a single TCP connection, allowing real-time data streaming.">WebSocket</span>. WebSockets keep a persistent connection open, letting the server push data instantly without the browser needing to refresh.</p>
+      </div>
+    </div>
+
+    <!-- Data Flow Animation -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Path of an Event</h3>
+      <p>Click "Next Step" to trace how a warehouse dispatch notification travels from the source service to the browser in real-time:</p>
+
+      <div class="flow-animation" data-steps='[
+        {"highlight":"flow-actor-1","label":"Warehouse Service records a new shipment dispatch"},
+        {"highlight":"flow-actor-1","label":"Sends the event message to Kafka","packet":true,"from":"actor-1","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"Kafka holds the message and notifies subscribers"},
+        {"highlight":"flow-actor-3","label":"Socket Service consumes the message from Kafka","packet":true,"from":"actor-2","to":"actor-3"},
+        {"highlight":"flow-actor-4","label":"Socket Service pumps the message to the browser via WebSocket","packet":true,"from":"actor-3","to":"actor-4"}
+      ]'>
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1">
+            <div class="flow-actor-icon">🏢</div>
+            <span>Warehouse Service</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-2">
+            <div class="flow-actor-icon">📥</div>
+            <span>Kafka Topic</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-3">
+            <div class="flow-actor-icon">⚡</div>
+            <span>Socket Service</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-4">
+            <div class="flow-actor-icon">💻</div>
+            <span>Browser UI</span>
+          </div>
+        </div>
+
+        <div class="flow-packet" id="flow-packet"></div>
+        <div class="flow-step-label" id="flow-label">Click "Next Step" to begin</div>
+
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">Next Step</button>
+          <button class="btn flow-reset-btn">Restart</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Go Send Pump</h3>
+      <p>This Go function in the <code>socket-service</code> continuously listens to a Go <span class="term" data-definition="Channel: A typed conduit through which you can send and receive values with the channel operator.">channel</span> (a queue of messages) and writes them to the browser's WebSocket:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">writePump</span>(client *Client) {</span>
+<span class="code-line">  <span class="code-keyword">defer</span> client.cancel()</span>
+<span class="code-line">  <span class="code-keyword">for</span> body := <span class="code-keyword">range</span> client.send {</span>
+<span class="code-line">    err := client.conn.<span class="code-function">WriteMessage</span>(websocket.TextMessage, body)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">      <span class="code-keyword">return</span></span>
+<span class="code-line">    }</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define the writePump method which handles sending messages to a single client.</p>
+            <p class="tl">Ensure the client's context is canceled and cleaned up when this function exits.</p>
+            <p class="tl">Start a loop that waits for new data packets arriving in the client's send channel.</p>
+            <p class="tl">Write the data block directly into the WebSocket connection as a text message.</p>
+            <p class="tl">If writing fails (e.g. the customer closed their browser tab), exit the function.</p>
+            <p class="tl">End of the loop and clean shutdown code.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Don't Poll, Push!</strong>
+        <p>In traditional web design, apps query the server every 5 seconds ("polling") to check for changes. This wastes CPU and network bandwidth. WebSockets allow the server to push messages ONLY when something actually happens, reducing server load and making updates instant.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Event Loop Quiz</h3>
+      <div class="quiz-container" id="quiz-module4">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Correct! The defer statement runs client.cancel() when writePump exits, cleaning up resources and preventing leak build-ups."
+             data-explanation-wrong="Not quite. Look at the defer statement. Defer ensures that the resource cleanup function runs when the containing function terminates.">
+          <h4 class="quiz-question">What is the purpose of the 'defer client.cancel()' statement at the start of writePump?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It halts execution of the loop for 5 seconds.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It retries sending the WebSocket packet if it fails.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It ensures the client's connection resources are cleaned up when the function stops.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

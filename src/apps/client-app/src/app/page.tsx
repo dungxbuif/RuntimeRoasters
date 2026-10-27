@@ -61,6 +61,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-8">
+            <Link href="/course" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Interactive Tour</Link>
             <Link href="/coffee" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Coffee Kiosk</Link>
             <Link href="/trace" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Traceability</Link>
             <Link href="/login" className="bg-white text-slate-950 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-xl">
@@ -100,6 +101,9 @@ export default function LandingPage() {
             <div className="flex gap-4">
               <Link href="/coffee" className="bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-3 shadow-2xl shadow-primary/30">
                 Order a Traceable Cup <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link href="/course" className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-3 shadow-2xl">
+                Interactive Tour <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

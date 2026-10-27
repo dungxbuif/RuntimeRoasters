@@ -1,0 +1,112 @@
+<section class="module" id="module-5">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 5</span>
+    <h1 class="module-title">Real-Time Driver GPS</h1>
+    <p class="module-subtitle">How Valkey tracks delivery driver locations in real-time using geospatial coordinates.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Geospatial Querying</h3>
+        <p>When driver locations are constantly changing, writing them to a standard SQL database like PostgreSQL creates massive write overhead. Instead, we use <span class="term" data-definition="Valkey: A high-performance, open-source key-value storage engine (compatible with Redis) designed for ultra-fast, in-memory operations.">Valkey</span>.</p>
+        <p>Valkey has native support for <span class="term" data-definition="Geospatial Index: A data structure optimized for storing and querying points defined by longitude and latitude coordinates.">geospatial indexes</span>, which makes it extremely efficient to store GPS positions and quickly query which drivers are closest to a retail store.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Push-Pin Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2D8B55; color: white;">📍</div>
+            <div>
+              <strong>Putting Pins on the Board</strong>
+              <p>Every time a driver sends a GPS coordinate, it is like pinning their location on a grid board. Valkey keeps this board entirely in system memory for instant lookups.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">⚡</div>
+            <div>
+              <strong>Drawing a Circle search</strong>
+              <p>To find nearby drivers, the server asks Valkey: "Find all driver pins within a 5-mile radius of Store A." Valkey computes this in milliseconds.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Location Saver</h3>
+      <p>Let's look at the Go implementation in the <code>logistics-service</code>. It saves the driver's coordinates and updates their "last seen" timestamp in Valkey:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">storeDriverLocation</span>(ctx context.Context, driverID <span class="code-keyword">string</span>, lat <span class="code-keyword">float64</span>, long <span class="code-keyword">float64</span>) <span class="code-keyword">error</span> {</span>
+<span class="code-line">  err := s.rdb.<span class="code-function">GeoAdd</span>(ctx, driverLocationsKey, &redis.GeoLocation{</span>
+<span class="code-line">    Name:      driverID,</span>
+<span class="code-line">    Longitude: long,</span>
+<span class="code-line">    Latitude:  lat,</span>
+<span class="code-line">  }).<span class="code-function">Err</span>()</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> s.rdb.<span class="code-function">Set</span>(ctx, <span class="code-string">"driver:last_seen:"</span>+driverID, time.<span class="code-function">Now</span>().<span class="code-function">Format</span>(time.RFC3339), 90*time.Second).<span class="code-function">Err</span>()</span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a helper function that takes the driver ID, latitude, and longitude, and saves them.</p>
+            <p class="tl">Call the Valkey GeoAdd command to store the driver's ID and coordinates under the geospatial index key.</p>
+            <p class="tl">Provide the specific longitude first, then the latitude matching Valkey's coordinate standard.</p>
+            <p class="tl">Check if the Valkey Geospatial operation returned an error. If so, fail immediately.</p>
+            <p class="tl">No error? Set a standard key-value entry with a 90-second expiration to track when we last heard from the driver.</p>
+            <p class="tl">Return nil (no error) to indicate the driver location was successfully recorded.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Expiring Keys</strong>
+        <p>Valkey allows you to set a "Time to Live" (TTL) on any key (e.g. <code>90*time.Second</code>). Once that time expires, Valkey deletes the key automatically. This is perfect for heartbeats — if a driver's phone loses signal or battery dies, the driver disappears from the active dashboard map automatically because their "last_seen" key expires.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Geospatial Quiz</h3>
+      <div class="quiz-container" id="quiz-module5">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Correct! Memory-based databases like Valkey are order of magnitude faster for high-frequency write operations, while relational databases like Postgres are better for relational transactions and financial sales records."
+             data-explanation-wrong="Not quite. Traditional disk-bound databases like Postgres will struggle with high-frequency concurrent writes from hundreds of delivery devices, causing CPU and disk IO bottlenecks.">
+          <h4 class="quiz-question">Why do we write driver coordinates to Valkey instead of directly saving them to PostgreSQL?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because Valkey coordinates are more accurate than PostgreSQL ones.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because PostgreSQL cannot store floating-point numbers.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To avoid overloading the main transactional SQL database with high-frequency updates.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

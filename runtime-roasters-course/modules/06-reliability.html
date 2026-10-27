@@ -1,0 +1,107 @@
+<section class="module" id="module-6">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 6</span>
+    <h1 class="module-title">Inbox/Outbox Reliability</h1>
+    <p class="module-subtitle">How Runtime Roasters uses transactional inbox/outbox patterns to prevent dual-write failures.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>The Dual-Write Problem</h3>
+        <p>In a microservice system, when you complete a sale, you must update the database AND publish an event to Kafka. But what happens if the database update succeeds, and then the power cuts out before publishing the message to Kafka?</p>
+        <p>Your systems are now out of sync — a "dual-write failure". To prevent this, we use the <span class="term" data-definition="Transactional Outbox Pattern: A pattern that commits database updates and outgoing event messages together in a single atomic transaction.">Transactional Outbox Pattern</span>.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Double-Entry Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">🖋️</div>
+            <div>
+              <strong>Atomic Commit</strong>
+              <p>Just like double-entry bookkeeping, we write both the order log and the message-to-be-sent into the database in one single transaction.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2A7B9B; color: white;">🔄</div>
+            <div>
+              <strong>Relay Service</strong>
+              <p>A separate process scans the database for unsent outbox messages and publishes them to Kafka safely. If publishing fails, it retries.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Atomic Database Transaction</h3>
+      <p>Let's look at the Go implementation in the <code>retail-service</code>. In one single, atomic transaction block, we create the order and the outbox event record:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line">err = s.db.WithContext(ctx).<span class="code-function">Transaction</span>(<span class="code-keyword">func</span>(tx *gorm.DB) <span class="code-keyword">error</span> {</span>
+<span class="code-line">  <span class="code-keyword">if</span> err := tx.<span class="code-function">Create</span>(order).Error; err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> tx.<span class="code-function">Create</span>(outbox).Error</span>
+<span class="code-line">})</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Begin a database transaction block. Everything inside this block must succeed together, or fail together.</p>
+            <p class="tl">Try to insert the new order record into the database table.</p>
+            <p class="tl">If creating the order fails, return the error immediately to abort (rollback) the transaction.</p>
+            <p class="tl">Insert the outbox event record containing the Kafka payload into the outbox events table.</p>
+            <p class="tl">Return from the transaction. GORM commits the transaction if this function returns nil.</p>
+            <p class="tl">End of the GORM database transaction block.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: What is Atomicity?</strong>
+        <p>In databases, <span class="term" data-definition="Atomicity: The guarantee that a series of database operations either all occur, or none occur.">atomicity</span> ensures that you never end up in a half-finished state. If the server crashes after inserting the order but before inserting the outbox event, the database rolls back the order insert, ensuring clean data integrity.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Reliability Quiz</h3>
+      <div class="quiz-container" id="quiz-module6">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! If the outbox write fails, the entire transaction rolls back. This prevents situations where an order is placed but no event is ever published."
+             data-explanation-wrong="Not quite. If the outbox write fails, the database will roll back the entire transaction, meaning the order will NOT be committed either.">
+          <h4 class="quiz-question">What happens if the order is successfully saved, but writing the outbox event fails within the transaction block?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The order is saved anyway, but the notification is skipped.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The entire transaction is rolled back, and the order is not saved.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The system retries writing the outbox event for 5 minutes.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module6')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module6')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

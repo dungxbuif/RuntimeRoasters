@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Runtime Roasters: The Digital Bean Journey</title>
+  <title>Runtime Roasters Codebase Course</title>
 
   <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,10 +14,10 @@
 
   <style>
     :root {
-      --color-accent:       #D94F30;
-      --color-accent-hover: #C4432A;
-      --color-accent-light: #FDEEE9;
-      --color-accent-muted: #E8836C;
+      --color-accent:       #D4A843;
+      --color-accent-hover: #BF9530;
+      --color-accent-light: #FDF5E0;
+      --color-accent-muted: #E0C070;
     }
   </style>
 
@@ -28,21 +28,19 @@
   <nav class="nav" id="nav">
     <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
     <div class="nav-inner">
-      <span class="nav-title">Runtime Roasters: Digital Journey</span>
+      <span class="nav-title">Runtime Roasters Codebase Course</span>
       <div class="nav-dots" id="nav-dots" role="tablist">
-        <button class="nav-dot" data-target="module-1" data-tooltip="The Digital Birth" role="tab" aria-label="Module 1: The Digital Birth"></button>
-        <button class="nav-dot" data-target="module-2" data-tooltip="The Cast of Services" role="tab" aria-label="Module 2: The Cast of Services"></button>
-        <button class="nav-dot" data-target="module-3" data-tooltip="The Logistics Pulse" role="tab" aria-label="Module 3: The Logistics Pulse"></button>
-        <button class="nav-dot" data-target="module-4" data-tooltip="The Retail Dance" role="tab" aria-label="Module 4: The Retail Dance"></button>
-        <button class="nav-dot" data-target="module-5" data-tooltip="Transparent Proof" role="tab" aria-label="Module 5: Transparent Proof"></button>
-        <button class="nav-dot" data-target="module-6" data-tooltip="When Nodes Whisper" role="tab" aria-label="Module 6: When Nodes Whisper"></button>
-        <button class="nav-dot" data-target="module-7" data-tooltip="Steering the Roaster" role="tab" aria-label="Module 7: Steering the Roaster"></button>
+        <button class="nav-dot" data-target="module-1" data-tooltip="Customer's Coffee Journey" role="tab" aria-label="Module 1: Customer's Coffee Journey"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="Meet the Services" role="tab" aria-label="Module 2: Meet the Services"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="Secure Gates & Roles" role="tab" aria-label="Module 3: Secure Gates & Roles"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="Event-Driven Flow" role="tab" aria-label="Module 4: Event-Driven Flow"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="Real-Time Driver GPS" role="tab" aria-label="Module 5: Real-Time Driver GPS"></button>
+        <button class="nav-dot" data-target="module-6" data-tooltip="Inbox/Outbox Reliability" role="tab" aria-label="Module 6: Inbox/Outbox Reliability"></button>
       </div>
     </div>
   </nav>
 
   <main id="main">
-    <!-- modules/*.html content is assembled here by build.sh -->
 <section class="module" id="module-1" style="background: var(--color-bg-warm)">
   <div class="module-content">
     <header class="module-header animate-in">
@@ -114,7 +112,268 @@
       </section>
     </div>
   </div>
-</section><section class="module" id="module-2" style="background: var(--color-bg-cool)">
+</section><section class="module" id="module-1">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 1</span>
+    <h1 class="module-title">Customer's Coffee Journey</h1>
+    <p class="module-subtitle">Trace a single cup of coffee from a customer's hands back to the origin farm.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>How Tracing Works</h3>
+        <p>Imagine you buy an organic, single-origin cup of coffee. The cup has a <span class="term" data-definition="Quick Response Code: A scannable barcode containing a URL or identifier.">QR code</span> printed on the side. When you scan it, your phone loads a beautiful web page showing exactly which farm grew your coffee, when it was harvested, and how it was processed.</p>
+        <p>But under the hood, how does this page fetch this information? It starts with the <span class="term" data-definition="Trace service: The specialized service responsible for tracking coffee beans through the supply chain.">trace-service</span> querying the system.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Tracing Journey</h3>
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>Scan QR Code</strong>
+              <p>Your browser sends a request with the cup's unique Product ID.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>Lookup Retail Sale</strong>
+              <p>The trace-service queries the retail-service to find when and where it was sold.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Query History Log</strong>
+              <p>We query the database for supply chain events matching the batch and harvest ID.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Lineage Query</h3>
+      <p>Let's look at the actual Go code in the <code>trace-service</code> usecase that aggregates this trace data. We first look up the retail item, then fetch all the upstream events associated with that batch.</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">GetPublicTrace</span>(ctx context.Context, traceCode <span class="code-keyword">string</span>) (*PublicTraceDocument, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">  item, err := s.retail.<span class="code-function">GetSoldItem</span>(ctx, traceCode)</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  events, err := s.<span class="code-function">findLineageEvents</span>(ctx, item.SourceBatchID, item.SourceHarvestID)</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> &PublicTraceDocument{</span>
+<span class="code-line">    ProductID: item.ProductID,</span>
+<span class="code-line">    TraceCode: item.TraceCode,</span>
+<span class="code-line">    OriginBatchID: item.SourceBatchID,</span>
+<span class="code-line">  }, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a function that takes a trace code and returns the complete trace document.</p>
+            <p class="tl">Call the retail service over HTTP/gRPC to get the sold item info for this cup.</p>
+            <p class="tl">If the retail service returns an error (e.g. cup doesn't exist), fail immediately.</p>
+            <p class="tl">No error? Proceed to find the farm batch and harvest event lineage in the database.</p>
+            <p class="tl">If fetching events fails, return that error instead of half-baked details.</p>
+            <p class="tl">Return a brand new trace document containing the customer cup details and the bean lineage!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Data Separation</strong>
+        <p>Notice that we don't store everything in one massive database. The customer's purchase lives in <code>retail-service</code>, while the farm harvests live in the trace logs database. A microservice architecture fetches data dynamically from multiple places rather than centralizing it, which helps keep the services independent and fast.</p>
+      </div>
+    </div>
+
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Module Quiz</h3>
+      <div class="quiz-container" id="quiz-module1">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Correct! We query the retail service to resolve the batch ID and harvest ID first, then fetch the history matching those IDs."
+             data-explanation-wrong="Not quite. We don't query events directly with the trace code, because events only know about agricultural batches and harvests. We need the retail service to translate the trace code first.">
+          <h4 class="quiz-question">Why does the trace-service need to contact the retail-service first before searching database events?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because the events database is too slow to query directly.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To resolve the cup's batch and harvest IDs, which the database events are keyed by.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To authorize the customer's credit card before showing details.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module1')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module1')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-2">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 2</span>
+    <h1 class="module-title">Meet the Services</h1>
+    <p class="module-subtitle">Understand the microservices that make up Runtime Roasters.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>The Actors</h3>
+        <p>Runtime Roasters is a <span class="term" data-definition="Microservice Architecture: An architecture where a single application is built as a suite of small, independent services.">microservice</span> application. Rather than a single giant server, multiple specialized services cooperate to fulfill requests.</p>
+        <p>Knowing which service owns what data makes it easy to instruct AI where to add features. For example, driver GPS tracking belongs to the logistics service, not the retail service.</p>
+      </div>
+
+      <div class="card">
+        <h3>Roles & Responsibilities</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2A7B9B; color: white;">🛡️</div>
+            <div>
+              <strong>Auth Service</strong>
+              <p>Checks identities and enforces rules on who can read/write what.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">☕</div>
+            <div>
+              <strong>Retail Service</strong>
+              <p>Manages menus, stores, transactions, and cup purchases.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2D8B55; color: white;">🚚</div>
+            <div>
+              <strong>Logistics Service</strong>
+              <p>Tracks warehouse shipments, delivery routes, and driver GPS coordinates.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Chat Animation -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Microservice Conversation</h3>
+      <p>Here is what happens behind the scenes when a cup is sold at the cash register. Watch how the services coordinate using a group chat metaphor:</p>
+
+      <div class="chat-window" id="chat-module2">
+        <div class="chat-messages">
+          <div class="chat-message" data-msg="0" data-sender="retail" style="display:none">
+            <div class="chat-avatar" style="background: #D4A843; color: white;">☕</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: #D4A843">Retail Service</span>
+              <p>Hey everyone, a customer just purchased a cup of Espresso at the store!</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="1" data-sender="kafka" style="display:none">
+            <div class="chat-avatar" style="background: #7F8C8D; color: white;">📨</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: #7F8C8D">Kafka Message Broker</span>
+              <p>Got it. Broadcasting the <code>retail.sale.completed</code> event to all subscribed services.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="2" data-sender="socket" style="display:none">
+            <div class="chat-avatar" style="background: #9B59B6; color: white;">⚡</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: #9B59B6">Socket Service</span>
+              <p>I caught the event! Pushing a live notification to the manager's Dashboard via WebSocket.</p>
+            </div>
+          </div>
+          <div class="chat-message" data-msg="3" data-sender="audit" style="display:none">
+            <div class="chat-avatar" style="background: #34495E; color: white;">📝</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color: #34495E">Audit Service</span>
+              <p>I caught it too. Logging the transaction to the Cassandra audit log for compliance.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-typing" id="chat-module2-typing" style="display:none">
+          <div class="chat-avatar" id="chat-module2-typing-avatar">?</div>
+          <div class="chat-typing-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+
+        <div class="chat-controls">
+          <button class="btn chat-next-btn">Next Message</button>
+          <button class="btn chat-all-btn">Play All</button>
+          <button class="btn chat-reset-btn">Replay</button>
+          <span class="chat-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metaphor card -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">🎭</div>
+      <div class="aha-content">
+        <strong>The Theater Metaphor</strong>
+        <p>Think of microservices like a theater production. Instead of one actor trying to play all roles, you have specialized actors (Retail, Auth, Logistics) reading from the same script. If one actor catches a cold (crashes), the others can still perform their scenes, making the system highly robust.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Test Your Knowledge</h3>
+      <div class="quiz-container" id="quiz-module2">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Exactly. In microservices, services communicate using messages or lightweight protocols. If one service goes down, the others remain operational."
+             data-explanation-wrong="Not quite. Microservices are independent. A crash in one service should not drag down unrelated services unless they are tightly coupled.">
+          <h4 class="quiz-question">What is a key reliability benefit of splitting Runtime Roasters into multiple microservices?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It allows them to share the exact same database tables directly.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It guarantees that network latency is reduced to zero.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>If the Logistics service crashes, customers can still purchase coffee via the Retail service.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module2')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module2')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-cool)">
   <div class="module-content">
     <header class="module-header animate-in">
       <span class="module-number">02</span>
@@ -241,7 +500,116 @@
       </section>
     </div>
   </div>
-</section><section class="module" id="module-4" style="background: var(--color-bg-cool)">
+</section><section class="module" id="module-3">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 3</span>
+    <h1 class="module-title">Secure Gates & Roles</h1>
+    <p class="module-subtitle">How Runtime Roasters protects public data and limits administrative access.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Gatekeepers: API Gateway & Casbin</h3>
+        <p>In a microservice system, not all APIs should be exposed to the public. For example, customers should query trace info, but only store managers should view invoice logs.</p>
+        <p>We use <span class="term" data-definition="KrakenD: A high-performance open-source API Gateway that aggregates services and manages security gates.">KrakenD API Gateway</span> as the front door. It routes public requests but hides internal microservice URLs. To verify *who* can do *what*, we use <span class="term" data-definition="Casbin: An authorization library that supports Access Control Lists (ACL) and Role-Based Access Control (RBAC).">Casbin</span>.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Concert Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #E06B56; color: white;">🎟️</div>
+            <div>
+              <strong>Front Gate (KrakenD)</strong>
+              <p>Checks if you have a valid general ticket (authentication token). If you don't, you can't enter.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">🕶️</div>
+            <div>
+              <strong>VIP Section Guard (Casbin RBAC)</strong>
+              <p>Checks your specific pass. Only people with "Backstage Store Manager" badges are allowed in.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Access Policy Matcher</h3>
+      <p>Let's look at the frontend Casbin configuration model. It defines how the system matches a user's role (the subject) against the requested URL (the object) and action:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">CASBIN MODEL</span>
+          <pre><code><span class="code-line">[request_definition]</span>
+<span class="code-line">r = sub, obj, act</span>
+<span class="code-line"></span>
+<span class="code-line">[matchers]</span>
+<span class="code-line">m = (r.sub == 'ADMIN') || \</span>
+<span class="code-line">  ((r.sub == p.sub || g(r.sub, p.sub)) && \</span>
+<span class="code-line">   keyMatch(r.obj, p.obj) && \</span>
+<span class="code-line">   regexMatch(r.act, p.act))</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a request request template: Who (subject), What (object), Action (read/write).</p>
+            <p class="tl">Let's check if the rule matches. The backslashes allow splitting the formula over lines.</p>
+            <p class="tl">If the user role is ADMIN, let them in immediately with no further checks.</p>
+            <p class="tl">Otherwise, check if user matches the policy role directly OR inherits it (e.g. manager inherits staff).</p>
+            <p class="tl">Check if the requested URL matches the resource path defined in our policy (e.g. `/v1/sales/*`).</p>
+            <p class="tl">Check if the action (GET/POST/DELETE) matches the allowed action pattern.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Declare, Don't Hardcode</strong>
+        <p>Why write a policy model instead of standard <code>if (role == "manager")</code> checks in the code? Declaring policies in Casbin means you can change roles and paths in a configuration file without rewriting and redeploying your codebase. This makes scaling authorization policies extremely simple.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Security Scenario Quiz</h3>
+      <div class="quiz-container" id="quiz-module3">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! If the model didn't allow ADMIN to skip checking, the system would search for specific policies. Since ADMIN is matched first with OR (||), admin users bypass path matching completely."
+             data-explanation-wrong="Not quite. Look at the OR (||) operator. If r.sub == 'ADMIN' is true, the entire rule evaluates to true immediately, meaning admin policies aren't even evaluated.">
+          <h4 class="quiz-question">How does the matcher handle an administrator requesting a resource that doesn't have an explicit permission policy defined?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It blocks the administrator because there is no matching rule.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It allows them in because the rule evaluates the ADMIN bypass first.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It triggers a runtime crash in the API gateway.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-cool)">
   <div class="module-content">
     <header class="module-header animate-in">
       <span class="module-number">04</span>
@@ -286,7 +654,256 @@
       </section>
     </div>
   </div>
-</section><section class="module" id="module-5" style="background: var(--color-bg-warm)">
+</section><section class="module" id="module-4">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 4</span>
+    <h1 class="module-title">Event-Driven Flow</h1>
+    <p class="module-subtitle">How Kafka and WebSockets stream updates to dashboards in real-time.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Publish & Subscribe</h3>
+        <p>When operations occur (like warehouse dispatching or driver GPS moving), we want the manager dashboard to update instantly. We do this using an <span class="term" data-definition="Event-Driven Architecture: A system pattern where services communicate by producing and reacting to events rather than direct commands.">event-driven</span> flow.</p>
+        <p>The service that processes the action publishes an event to <span class="term" data-definition="Kafka: A distributed event streaming platform used to send messages reliably between services.">Kafka</span>. Other services can subscribe to this stream and process events asynchronously.</p>
+      </div>
+
+      <div class="card">
+        <h3>Real-Time Streaming</h3>
+        <p>To get these events from Kafka to the customer's web browser, we use a <span class="term" data-definition="WebSocket: A protocol providing full-duplex communication channels over a single TCP connection, allowing real-time data streaming.">WebSocket</span>. WebSockets keep a persistent connection open, letting the server push data instantly without the browser needing to refresh.</p>
+      </div>
+    </div>
+
+    <!-- Data Flow Animation -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Path of an Event</h3>
+      <p>Click "Next Step" to trace how a warehouse dispatch notification travels from the source service to the browser in real-time:</p>
+
+      <div class="flow-animation" data-steps='[
+        {"highlight":"flow-actor-1","label":"Warehouse Service records a new shipment dispatch"},
+        {"highlight":"flow-actor-1","label":"Sends the event message to Kafka","packet":true,"from":"actor-1","to":"actor-2"},
+        {"highlight":"flow-actor-2","label":"Kafka holds the message and notifies subscribers"},
+        {"highlight":"flow-actor-3","label":"Socket Service consumes the message from Kafka","packet":true,"from":"actor-2","to":"actor-3"},
+        {"highlight":"flow-actor-4","label":"Socket Service pumps the message to the browser via WebSocket","packet":true,"from":"actor-3","to":"actor-4"}
+      ]'>
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-actor-1">
+            <div class="flow-actor-icon">🏢</div>
+            <span>Warehouse Service</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-2">
+            <div class="flow-actor-icon">📥</div>
+            <span>Kafka Topic</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-3">
+            <div class="flow-actor-icon">⚡</div>
+            <span>Socket Service</span>
+          </div>
+          <div class="flow-actor" id="flow-actor-4">
+            <div class="flow-actor-icon">💻</div>
+            <span>Browser UI</span>
+          </div>
+        </div>
+
+        <div class="flow-packet" id="flow-packet"></div>
+        <div class="flow-step-label" id="flow-label">Click "Next Step" to begin</div>
+
+        <div class="flow-controls">
+          <button class="btn flow-next-btn">Next Step</button>
+          <button class="btn flow-reset-btn">Restart</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Go Send Pump</h3>
+      <p>This Go function in the <code>socket-service</code> continuously listens to a Go <span class="term" data-definition="Channel: A typed conduit through which you can send and receive values with the channel operator.">channel</span> (a queue of messages) and writes them to the browser's WebSocket:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">writePump</span>(client *Client) {</span>
+<span class="code-line">  <span class="code-keyword">defer</span> client.cancel()</span>
+<span class="code-line">  <span class="code-keyword">for</span> body := <span class="code-keyword">range</span> client.send {</span>
+<span class="code-line">    err := client.conn.<span class="code-function">WriteMessage</span>(websocket.TextMessage, body)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">      <span class="code-keyword">return</span></span>
+<span class="code-line">    }</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define the writePump method which handles sending messages to a single client.</p>
+            <p class="tl">Ensure the client's context is canceled and cleaned up when this function exits.</p>
+            <p class="tl">Start a loop that waits for new data packets arriving in the client's send channel.</p>
+            <p class="tl">Write the data block directly into the WebSocket connection as a text message.</p>
+            <p class="tl">If writing fails (e.g. the customer closed their browser tab), exit the function.</p>
+            <p class="tl">End of the loop and clean shutdown code.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Don't Poll, Push!</strong>
+        <p>In traditional web design, apps query the server every 5 seconds ("polling") to check for changes. This wastes CPU and network bandwidth. WebSockets allow the server to push messages ONLY when something actually happens, reducing server load and making updates instant.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Event Loop Quiz</h3>
+      <div class="quiz-container" id="quiz-module4">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Correct! The defer statement runs client.cancel() when writePump exits, cleaning up resources and preventing leak build-ups."
+             data-explanation-wrong="Not quite. Look at the defer statement. Defer ensures that the resource cleanup function runs when the containing function terminates.">
+          <h4 class="quiz-question">What is the purpose of the 'defer client.cancel()' statement at the start of writePump?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It halts execution of the loop for 5 seconds.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It retries sending the WebSocket packet if it fails.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>It ensures the client's connection resources are cleaned up when the function stops.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-5">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 5</span>
+    <h1 class="module-title">Real-Time Driver GPS</h1>
+    <p class="module-subtitle">How Valkey tracks delivery driver locations in real-time using geospatial coordinates.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>Geospatial Querying</h3>
+        <p>When driver locations are constantly changing, writing them to a standard SQL database like PostgreSQL creates massive write overhead. Instead, we use <span class="term" data-definition="Valkey: A high-performance, open-source key-value storage engine (compatible with Redis) designed for ultra-fast, in-memory operations.">Valkey</span>.</p>
+        <p>Valkey has native support for <span class="term" data-definition="Geospatial Index: A data structure optimized for storing and querying points defined by longitude and latitude coordinates.">geospatial indexes</span>, which makes it extremely efficient to store GPS positions and quickly query which drivers are closest to a retail store.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Push-Pin Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2D8B55; color: white;">📍</div>
+            <div>
+              <strong>Putting Pins on the Board</strong>
+              <p>Every time a driver sends a GPS coordinate, it is like pinning their location on a grid board. Valkey keeps this board entirely in system memory for instant lookups.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">⚡</div>
+            <div>
+              <strong>Drawing a Circle search</strong>
+              <p>To find nearby drivers, the server asks Valkey: "Find all driver pins within a 5-mile radius of Store A." Valkey computes this in milliseconds.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Location Saver</h3>
+      <p>Let's look at the Go implementation in the <code>logistics-service</code>. It saves the driver's coordinates and updates their "last seen" timestamp in Valkey:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">storeDriverLocation</span>(ctx context.Context, driverID <span class="code-keyword">string</span>, lat <span class="code-keyword">float64</span>, long <span class="code-keyword">float64</span>) <span class="code-keyword">error</span> {</span>
+<span class="code-line">  err := s.rdb.<span class="code-function">GeoAdd</span>(ctx, driverLocationsKey, &redis.GeoLocation{</span>
+<span class="code-line">    Name:      driverID,</span>
+<span class="code-line">    Longitude: long,</span>
+<span class="code-line">    Latitude:  lat,</span>
+<span class="code-line">  }).<span class="code-function">Err</span>()</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> s.rdb.<span class="code-function">Set</span>(ctx, <span class="code-string">"driver:last_seen:"</span>+driverID, time.<span class="code-function">Now</span>().<span class="code-function">Format</span>(time.RFC3339), 90*time.Second).<span class="code-function">Err</span>()</span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a helper function that takes the driver ID, latitude, and longitude, and saves them.</p>
+            <p class="tl">Call the Valkey GeoAdd command to store the driver's ID and coordinates under the geospatial index key.</p>
+            <p class="tl">Provide the specific longitude first, then the latitude matching Valkey's coordinate standard.</p>
+            <p class="tl">Check if the Valkey Geospatial operation returned an error. If so, fail immediately.</p>
+            <p class="tl">No error? Set a standard key-value entry with a 90-second expiration to track when we last heard from the driver.</p>
+            <p class="tl">Return nil (no error) to indicate the driver location was successfully recorded.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Expiring Keys</strong>
+        <p>Valkey allows you to set a "Time to Live" (TTL) on any key (e.g. <code>90*time.Second</code>). Once that time expires, Valkey deletes the key automatically. This is perfect for heartbeats — if a driver's phone loses signal or battery dies, the driver disappears from the active dashboard map automatically because their "last_seen" key expires.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Geospatial Quiz</h3>
+      <div class="quiz-container" id="quiz-module5">
+        <div class="quiz-question-block"
+             data-correct="option-c"
+             data-explanation-right="Correct! Memory-based databases like Valkey are order of magnitude faster for high-frequency write operations, while relational databases like Postgres are better for relational transactions and financial sales records."
+             data-explanation-wrong="Not quite. Traditional disk-bound databases like Postgres will struggle with high-frequency concurrent writes from hundreds of delivery devices, causing CPU and disk IO bottlenecks.">
+          <h4 class="quiz-question">Why do we write driver coordinates to Valkey instead of directly saving them to PostgreSQL?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because Valkey coordinates are more accurate than PostgreSQL ones.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because PostgreSQL cannot store floating-point numbers.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To avoid overloading the main transactional SQL database with high-frequency updates.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-5" style="background: var(--color-bg-warm)">
   <div class="module-content">
     <header class="module-header animate-in">
       <span class="module-number">05</span>
@@ -443,7 +1060,114 @@
       </section>
     </div>
   </div>
-</section><section class="module" id="module-7" style="background: var(--color-bg-warm)">
+</section><section class="module" id="module-6">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 6</span>
+    <h1 class="module-title">Inbox/Outbox Reliability</h1>
+    <p class="module-subtitle">How Runtime Roasters uses transactional inbox/outbox patterns to prevent dual-write failures.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>The Dual-Write Problem</h3>
+        <p>In a microservice system, when you complete a sale, you must update the database AND publish an event to Kafka. But what happens if the database update succeeds, and then the power cuts out before publishing the message to Kafka?</p>
+        <p>Your systems are now out of sync — a "dual-write failure". To prevent this, we use the <span class="term" data-definition="Transactional Outbox Pattern: A pattern that commits database updates and outgoing event messages together in a single atomic transaction.">Transactional Outbox Pattern</span>.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Double-Entry Metaphor</h3>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #D4A843; color: white;">🖋️</div>
+            <div>
+              <strong>Atomic Commit</strong>
+              <p>Just like double-entry bookkeeping, we write both the order log and the message-to-be-sent into the database in one single transaction.</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: #2A7B9B; color: white;">🔄</div>
+            <div>
+              <strong>Relay Service</strong>
+              <p>A separate process scans the database for unsent outbox messages and publishes them to Kafka safely. If publishing fails, it retries.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Translation Block -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Atomic Database Transaction</h3>
+      <p>Let's look at the Go implementation in the <code>retail-service</code>. In one single, atomic transaction block, we create the order and the outbox event record:</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line">err = s.db.WithContext(ctx).<span class="code-function">Transaction</span>(<span class="code-keyword">func</span>(tx *gorm.DB) <span class="code-keyword">error</span> {</span>
+<span class="code-line">  <span class="code-keyword">if</span> err := tx.<span class="code-function">Create</span>(order).Error; err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> tx.<span class="code-function">Create</span>(outbox).Error</span>
+<span class="code-line">})</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Begin a database transaction block. Everything inside this block must succeed together, or fail together.</p>
+            <p class="tl">Try to insert the new order record into the database table.</p>
+            <p class="tl">If creating the order fails, return the error immediately to abort (rollback) the transaction.</p>
+            <p class="tl">Insert the outbox event record containing the Kafka payload into the outbox events table.</p>
+            <p class="tl">Return from the transaction. GORM commits the transaction if this function returns nil.</p>
+            <p class="tl">End of the GORM database transaction block.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: What is Atomicity?</strong>
+        <p>In databases, <span class="term" data-definition="Atomicity: The guarantee that a series of database operations either all occur, or none occur.">atomicity</span> ensures that you never end up in a half-finished state. If the server crashes after inserting the order but before inserting the outbox event, the database rolls back the order insert, ensuring clean data integrity.</p>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Reliability Quiz</h3>
+      <div class="quiz-container" id="quiz-module6">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Exactly! If the outbox write fails, the entire transaction rolls back. This prevents situations where an order is placed but no event is ever published."
+             data-explanation-wrong="Not quite. If the outbox write fails, the database will roll back the entire transaction, meaning the order will NOT be committed either.">
+          <h4 class="quiz-question">What happens if the order is successfully saved, but writing the outbox event fails within the transaction block?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The order is saved anyway, but the notification is skipped.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The entire transaction is rolled back, and the order is not saved.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>The system retries writing the outbox event for 5 minutes.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module6')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module6')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-7" style="background: var(--color-bg-warm)">
   <div class="module-content">
     <header class="module-header animate-in">
       <span class="module-number">07</span>

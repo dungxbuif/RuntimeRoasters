@@ -1,0 +1,121 @@
+<section class="module" id="module-1">
+  <div class="module-header animate-in">
+    <span class="module-number">Module 1</span>
+    <h1 class="module-title">Customer's Coffee Journey</h1>
+    <p class="module-subtitle">Trace a single cup of coffee from a customer's hands back to the origin farm.</p>
+  </div>
+
+  <div class="module-content">
+    <div class="grid grid-2 animate-in">
+      <div class="card">
+        <h3>How Tracing Works</h3>
+        <p>Imagine you buy an organic, single-origin cup of coffee. The cup has a <span class="term" data-definition="Quick Response Code: A scannable barcode containing a URL or identifier.">QR code</span> printed on the side. When you scan it, your phone loads a beautiful web page showing exactly which farm grew your coffee, when it was harvested, and how it was processed.</p>
+        <p>But under the hood, how does this page fetch this information? It starts with the <span class="term" data-definition="Trace service: The specialized service responsible for tracking coffee beans through the supply chain.">trace-service</span> querying the system.</p>
+      </div>
+
+      <div class="card">
+        <h3>The Tracing Journey</h3>
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>Scan QR Code</strong>
+              <p>Your browser sends a request with the cup's unique Product ID.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>Lookup Retail Sale</strong>
+              <p>The trace-service queries the retail-service to find when and where it was sold.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Query History Log</strong>
+              <p>We query the database for supply chain events matching the batch and harvest ID.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>The Lineage Query</h3>
+      <p>Let's look at the actual Go code in the <code>trace-service</code> usecase that aggregates this trace data. We first look up the retail item, then fetch all the upstream events associated with that batch.</p>
+
+      <div class="translation-block">
+        <div class="translation-code">
+          <span class="translation-label">GO CODE</span>
+          <pre><code><span class="code-line"><span class="code-keyword">func</span> (s *Service) <span class="code-function">GetPublicTrace</span>(ctx context.Context, traceCode <span class="code-keyword">string</span>) (*PublicTraceDocument, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">  item, err := s.retail.<span class="code-function">GetSoldItem</span>(ctx, traceCode)</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  events, err := s.<span class="code-function">findLineageEvents</span>(ctx, item.SourceBatchID, item.SourceHarvestID)</span>
+<span class="code-line">  <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> &PublicTraceDocument{</span>
+<span class="code-line">    ProductID: item.ProductID,</span>
+<span class="code-line">    TraceCode: item.TraceCode,</span>
+<span class="code-line">    OriginBatchID: item.SourceBatchID,</span>
+<span class="code-line">  }, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">PLAIN ENGLISH</span>
+          <div class="translation-lines">
+            <p class="tl">Define a function that takes a trace code and returns the complete trace document.</p>
+            <p class="tl">Call the retail service over HTTP/gRPC to get the sold item info for this cup.</p>
+            <p class="tl">If the retail service returns an error (e.g. cup doesn't exist), fail immediately.</p>
+            <p class="tl">No error? Proceed to find the farm batch and harvest event lineage in the database.</p>
+            <p class="tl">If fetching events fails, return that error instead of half-baked details.</p>
+            <p class="tl">Return a brand new trace document containing the customer cup details and the bean lineage!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHA Box -->
+    <div class="aha-box animate-in" style="margin-top: var(--space-8);">
+      <div class="aha-icon">💡</div>
+      <div class="aha-content">
+        <strong>Vibe Coder Insight: Data Separation</strong>
+        <p>Notice that we don't store everything in one massive database. The customer's purchase lives in <code>retail-service</code>, while the farm harvests live in the trace logs database. A microservice architecture fetches data dynamically from multiple places rather than centralizing it, which helps keep the services independent and fast.</p>
+      </div>
+    </div>
+
+    <div class="card animate-in" style="margin-top: var(--space-8);">
+      <h3>Module Quiz</h3>
+      <div class="quiz-container" id="quiz-module1">
+        <div class="quiz-question-block"
+             data-correct="option-b"
+             data-explanation-right="Correct! We query the retail service to resolve the batch ID and harvest ID first, then fetch the history matching those IDs."
+             data-explanation-wrong="Not quite. We don't query events directly with the trace code, because events only know about agricultural batches and harvests. We need the retail service to translate the trace code first.">
+          <h4 class="quiz-question">Why does the trace-service need to contact the retail-service first before searching database events?</h4>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>Because the events database is too slow to query directly.</span>
+            </button>
+            <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To resolve the cup's batch and harvest IDs, which the database events are keyed by.</span>
+            </button>
+            <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+              <div class="quiz-option-radio"></div>
+              <span>To authorize the customer's credit card before showing details.</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-actions" style="margin-top: var(--space-4);">
+          <button class="btn quiz-check-btn" onclick="checkQuiz('quiz-module1')">Check Answer</button>
+          <button class="btn quiz-reset-btn" onclick="resetQuiz('quiz-module1')">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
